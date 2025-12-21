@@ -19,13 +19,9 @@ async def get_summary_report() -> Dict[str, Any]:
     # Total surgeries
     total_surgeries = await collection.count_documents({})
     
-    # Success rate
-    successful_surgeries = await collection.count_documents({"outcomes.success": True})
-    success_rate = (successful_surgeries / total_surgeries * 100) if total_surgeries > 0 else 0
-    
-    # Complications
+    # Complications (using new postoperative_events structure)
     surgeries_with_complications = await collection.count_documents({
-        "outcomes.complications": {"$exists": True, "$ne": []}
+        "postoperative_events.complications": {"$exists": True, "$ne": []}
     })
     complication_rate = (surgeries_with_complications / total_surgeries * 100) if total_surgeries > 0 else 0
     
@@ -33,34 +29,52 @@ async def get_summary_report() -> Dict[str, Any]:
     readmissions = await collection.count_documents({"outcomes.readmission_30day": True})
     readmission_rate = (readmissions / total_surgeries * 100) if total_surgeries > 0 else 0
     
-    # Mortality
-    mortality_count = await collection.count_documents({"outcomes.mortality": True})
+    # Mortality (30-day)
+    mortality_count = await collection.count_documents({"outcomes.mortality_30day": True})
     mortality_rate = (mortality_count / total_surgeries * 100) if total_surgeries > 0 else 0
+    
+    # Return to theatre
+    return_to_theatre = await collection.count_documents({
+        "postoperative_events.return_to_theatre.occurred": True
+    })
+    return_to_theatre_rate = (return_to_theatre / total_surgeries * 100) if total_surgeries > 0 else 0
+    
+    # ICU/HDU escalation
+    escalation_of_care = await collection.count_documents({
+        "postoperative_events.escalation_of_care.occurred": True
+    })
+    escalation_rate = (escalation_of_care / total_surgeries * 100) if total_surgeries > 0 else 0
     
     # Average length of stay
     pipeline = [
-        {"$match": {"outcomes.length_of_stay_days": {"$exists": True, "$ne": None}}},
-        {"$group": {"_id": None, "avg_los": {"$avg": "$outcomes.length_of_stay_days"}}}
+        {"$match": {"perioperative_timeline.length_of_stay_days": {"$exists": True, "$ne": None}}},
+        {"$group": {"_id": None, "avg_los": {"$avg": "$perioperative_timeline.length_of_stay_days"}}}
     ]
     avg_los_result = await collection.aggregate(pipeline).to_list(length=1)
     avg_length_of_stay = round(avg_los_result[0]["avg_los"], 2) if avg_los_result else 0
     
-    # Average patient satisfaction
-    pipeline = [
-        {"$match": {"outcomes.patient_satisfaction": {"$exists": True, "$ne": None}}},
-        {"$group": {"_id": None, "avg_satisfaction": {"$avg": "$outcomes.patient_satisfaction"}}}
-    ]
-    avg_satisfaction_result = await collection.aggregate(pipeline).to_list(length=1)
-    avg_satisfaction = round(avg_satisfaction_result[0]["avg_satisfaction"], 2) if avg_satisfaction_result else 0
+    # Surgeries by urgency
+    urgency_breakdown = {}
+    for urgency in ["elective", "emergency", "urgent"]:
+        count = await collection.count_documents({"classification.urgency": urgency})
+        urgency_breakdown[urgency] = count
+    
+    # Surgeries by category
+    category_breakdown = {}
+    for category in ["major_resection", "proctology", "hernia", "cholecystectomy", "other"]:
+        count = await collection.count_documents({"classification.category": category})
+        category_breakdown[category] = count
     
     return {
         "total_surgeries": total_surgeries,
-        "success_rate": round(success_rate, 2),
         "complication_rate": round(complication_rate, 2),
         "readmission_rate": round(readmission_rate, 2),
         "mortality_rate": round(mortality_rate, 2),
+        "return_to_theatre_rate": round(return_to_theatre_rate, 2),
+        "escalation_rate": round(escalation_rate, 2),
         "avg_length_of_stay_days": avg_length_of_stay,
-        "avg_patient_satisfaction": avg_satisfaction,
+        "urgency_breakdown": urgency_breakdown,
+        "category_breakdown": category_breakdown,
         "generated_at": datetime.utcnow().isoformat()
     }
 
@@ -72,13 +86,13 @@ async def get_complications_report() -> Dict[str, Any]:
     
     # Unwind complications array and group by type
     pipeline = [
-        {"$match": {"outcomes.complications": {"$exists": True, "$ne": []}}},
-        {"$unwind": "$outcomes.complications"},
+        {"$match": {"postoperative_events.complications": {"$exists": True, "$ne": []}}},
+        {"$unwind": "$postoperative_events.complications"},
         {"$group": {
-            "_id": "$outcomes.complications.type",
+            "_id": "$postoperative_events.complications.type",
             "count": {"$sum": 1},
-            "severity_breakdown": {
-                "$push": "$outcomes.complications.severity"
+            "clavien_dindo_breakdown": {
+                "$push": "$postoperative_events.complications.clavien_dindo_grade"
             }
         }},
         {"$sort": {"count": -1}}
@@ -86,12 +100,13 @@ async def get_complications_report() -> Dict[str, Any]:
     
     complication_types = await collection.aggregate(pipeline).to_list(length=100)
     
-    # Count severity levels
+    # Count Clavien-Dindo grades
     for comp in complication_types:
-        severity_counts = {}
-        for severity in comp["severity_breakdown"]:
-            severity_counts[severity] = severity_counts.get(severity, 0) + 1
-        comp["severity_breakdown"] = severity_counts
+        grade_counts = {}
+        for grade in comp["clavien_dindo_breakdown"]:
+            if grade:  # Handle None values
+                grade_counts[grade] = grade_counts.get(grade, 0) + 1
+        comp["clavien_dindo_breakdown"] = grade_counts
     
     return {
         "complications_by_type": complication_types,
@@ -110,19 +125,24 @@ async def get_trends_report(
     
     # Surgeries by date
     pipeline = [
-        {"$match": {"procedure.date": {"$gte": start_date}}},
+        {"$match": {"perioperative_timeline.surgery_date": {"$gte": start_date}}},
         {"$group": {
-            "_id": {"$dateToString": {"format": "%Y-%m-%d", "date": "$procedure.date"}},
+            "_id": {"$dateToString": {"format": "%Y-%m-%d", "date": "$perioperative_timeline.surgery_date"}},
             "count": {"$sum": 1},
-            "successful": {"$sum": {"$cond": ["$outcomes.success", 1, 0]}},
             "with_complications": {
                 "$sum": {
                     "$cond": [
-                        {"$gt": [{"$size": {"$ifNull": ["$outcomes.complications", []]}}, 0]},
+                        {"$gt": [{"$size": {"$ifNull": ["$postoperative_events.complications", []]}}, 0]},
                         1,
                         0
                     ]
                 }
+            },
+            "return_to_theatre": {
+                "$sum": {"$cond": ["$postoperative_events.return_to_theatre.occurred", 1, 0]}
+            },
+            "escalation_of_care": {
+                "$sum": {"$cond": ["$postoperative_events.escalation_of_care.occurred", 1, 0]}
             }
         }},
         {"$sort": {"_id": 1}}
@@ -146,32 +166,48 @@ async def get_surgeon_performance() -> Dict[str, Any]:
     
     pipeline = [
         {"$group": {
-            "_id": "$team.surgeon",
+            "_id": "$team.primary_surgeon",
             "total_surgeries": {"$sum": 1},
-            "successful_surgeries": {"$sum": {"$cond": ["$outcomes.success", 1, 0]}},
             "surgeries_with_complications": {
                 "$sum": {
                     "$cond": [
-                        {"$gt": [{"$size": {"$ifNull": ["$outcomes.complications", []]}}, 0]},
+                        {"$gt": [{"$size": {"$ifNull": ["$postoperative_events.complications", []]}}, 0]},
                         1,
                         0
                     ]
                 }
             },
-            "avg_duration": {"$avg": "$procedure.duration_minutes"},
-            "avg_los": {"$avg": "$outcomes.length_of_stay_days"},
-            "avg_satisfaction": {"$avg": "$outcomes.patient_satisfaction"}
+            "return_to_theatre_count": {
+                "$sum": {"$cond": ["$postoperative_events.return_to_theatre.occurred", 1, 0]}
+            },
+            "icu_admissions": {
+                "$sum": {"$cond": ["$postoperative_events.escalation_of_care.occurred", 1, 0]}
+            },
+            "readmissions": {
+                "$sum": {"$cond": ["$outcomes.readmission_30day", 1, 0]}
+            },
+            "mortality_30day": {
+                "$sum": {"$cond": ["$outcomes.mortality_30day", 1, 0]}
+            },
+            "avg_duration": {"$avg": "$perioperative_timeline.operation_duration_minutes"},
+            "avg_los": {"$avg": "$perioperative_timeline.length_of_stay_days"}
         }},
         {"$addFields": {
-            "success_rate": {
-                "$multiply": [
-                    {"$divide": ["$successful_surgeries", "$total_surgeries"]},
-                    100
-                ]
-            },
             "complication_rate": {
                 "$multiply": [
                     {"$divide": ["$surgeries_with_complications", "$total_surgeries"]},
+                    100
+                ]
+            },
+            "readmission_rate": {
+                "$multiply": [
+                    {"$divide": ["$readmissions", "$total_surgeries"]},
+                    100
+                ]
+            },
+            "mortality_rate": {
+                "$multiply": [
+                    {"$divide": ["$mortality_30day", "$total_surgeries"]},
                     100
                 ]
             }
@@ -183,14 +219,13 @@ async def get_surgeon_performance() -> Dict[str, Any]:
     
     # Round numeric values
     for stat in surgeon_stats:
-        stat["success_rate"] = round(stat["success_rate"], 2)
         stat["complication_rate"] = round(stat["complication_rate"], 2)
+        stat["readmission_rate"] = round(stat["readmission_rate"], 2)
+        stat["mortality_rate"] = round(stat["mortality_rate"], 2)
         if stat["avg_duration"]:
             stat["avg_duration"] = round(stat["avg_duration"], 2)
         if stat["avg_los"]:
             stat["avg_los"] = round(stat["avg_los"], 2)
-        if stat["avg_satisfaction"]:
-            stat["avg_satisfaction"] = round(stat["avg_satisfaction"], 2)
     
     return {
         "surgeon_performance": surgeon_stats,

@@ -35,10 +35,8 @@ async def create_surgery(surgery: SurgeryCreate):
             detail=f"Surgery with ID {surgery.surgery_id} already exists"
         )
     
-    # Insert surgery
+    # Insert surgery (audit_trail is already included in SurgeryCreate model)
     surgery_dict = surgery.model_dump()
-    surgery_dict["created_at"] = datetime.utcnow()
-    surgery_dict["updated_at"] = datetime.utcnow()
     
     result = await collection.insert_one(surgery_dict)
     
@@ -52,7 +50,11 @@ async def list_surgeries(
     skip: int = 0,
     limit: int = 100,
     patient_id: Optional[str] = Query(None, description="Filter by patient ID"),
-    procedure_type: Optional[str] = Query(None, description="Filter by procedure type")
+    category: Optional[str] = Query(None, description="Filter by category (major_resection/proctology/hernia/cholecystectomy)"),
+    urgency: Optional[str] = Query(None, description="Filter by urgency (elective/emergency/urgent)"),
+    primary_surgeon: Optional[str] = Query(None, description="Filter by primary surgeon"),
+    start_date: Optional[str] = Query(None, description="Filter surgeries after this date (YYYY-MM-DD)"),
+    end_date: Optional[str] = Query(None, description="Filter surgeries before this date (YYYY-MM-DD)")
 ):
     """List all surgeries with pagination and optional filters"""
     collection = await get_surgeries_collection()
@@ -61,10 +63,23 @@ async def list_surgeries(
     query = {}
     if patient_id:
         query["patient_id"] = patient_id
-    if procedure_type:
-        query["procedure.type"] = procedure_type
+    if category:
+        query["classification.category"] = category
+    if urgency:
+        query["classification.urgency"] = urgency
+    if primary_surgeon:
+        query["team.primary_surgeon"] = primary_surgeon
     
-    cursor = collection.find(query).skip(skip).limit(limit)
+    # Date range filtering
+    if start_date or end_date:
+        date_query = {}
+        if start_date:
+            date_query["$gte"] = datetime.fromisoformat(start_date)
+        if end_date:
+            date_query["$lte"] = datetime.fromisoformat(end_date)
+        query["perioperative_timeline.surgery_date"] = date_query
+    
+    cursor = collection.find(query).sort("perioperative_timeline.surgery_date", -1).skip(skip).limit(limit)
     surgeries = await cursor.to_list(length=limit)
     
     return [Surgery(**surgery) for surgery in surgeries]
@@ -101,10 +116,16 @@ async def update_surgery(surgery_id: str, surgery_update: SurgeryUpdate):
     # Update only provided fields
     update_data = surgery_update.model_dump(exclude_unset=True)
     if update_data:
-        update_data["updated_at"] = datetime.utcnow()
+        # Update audit trail
         await collection.update_one(
             {"surgery_id": surgery_id},
-            {"$set": update_data}
+            {
+                "$set": {
+                    **update_data,
+                    "audit_trail.updated_at": datetime.utcnow(),
+                    "audit_trail.updated_by": "system"  # TODO: Replace with actual user from auth
+                }
+            }
         )
     
     # Return updated surgery

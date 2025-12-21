@@ -29,6 +29,9 @@ class Demographics(BaseModel):
     age: int = Field(..., ge=0, le=150)
     gender: str = Field(..., min_length=1)
     ethnicity: Optional[str] = None
+    bmi: Optional[float] = Field(None, ge=10, le=80)
+    weight_kg: Optional[float] = Field(None, ge=20, le=300)
+    height_cm: Optional[float] = Field(None, ge=100, le=250)
 
 
 class Contact(BaseModel):
@@ -40,8 +43,11 @@ class Contact(BaseModel):
 class MedicalHistory(BaseModel):
     """Patient medical history"""
     conditions: List[str] = Field(default_factory=list)
+    previous_surgeries: List[dict] = Field(default_factory=list)
     medications: List[str] = Field(default_factory=list)
     allergies: List[str] = Field(default_factory=list)
+    smoking_status: Optional[str] = Field(None, description="never/former/current")
+    alcohol_use: Optional[str] = None
 
 
 class PatientBase(BaseModel):
@@ -69,7 +75,9 @@ class PatientInDB(PatientBase):
     """Patient model as stored in database"""
     id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
     created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_by: Optional[str] = None
     updated_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_by: Optional[str] = None
     
     class Config:
         populate_by_name = True

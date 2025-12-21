@@ -54,11 +54,14 @@ Build a full-stack application to store, manage, and report on patient surgery o
 ```json
 {
   "_id": "ObjectId",
-  "patient_id": "string (unique)",
+  "patient_id": "string (unique, hospital MRN)",
   "demographics": {
     "age": "number",
     "gender": "string",
-    "ethnicity": "string"
+    "ethnicity": "string",
+    "bmi": "number",
+    "weight_kg": "number",
+    "height_cm": "number"
   },
   "contact": {
     "phone": "string",
@@ -66,11 +69,16 @@ Build a full-stack application to store, manage, and report on patient surgery o
   },
   "medical_history": {
     "conditions": ["array of strings"],
+    "previous_surgeries": ["array of objects"],
     "medications": ["array of strings"],
-    "allergies": ["array of strings"]
+    "allergies": ["array of strings"],
+    "smoking_status": "string (never/former/current)",
+    "alcohol_use": "string"
   },
   "created_at": "datetime",
-  "updated_at": "datetime"
+  "created_by": "string (user ID)",
+  "updated_at": "datetime",
+  "updated_by": "string (user ID)"
 }
 ```
 
@@ -78,34 +86,184 @@ Build a full-stack application to store, manage, and report on patient surgery o
 ```json
 {
   "_id": "ObjectId",
-  "surgery_id": "string (unique)",
-  "patient_id": "string (ref to Patient)",
+  "surgery_id": "string (unique, internal tracking)",
+  "patient_id": "string (ref to Patient MRN)",
+  
+  "classification": {
+    "urgency": "string (elective/emergency/urgent)",
+    "category": "string (major_resection/proctology/hernia/cholecystectomy/other)",
+    "complexity": "string (routine/intermediate/complex)",
+    "primary_diagnosis": "string",
+    "indication": "string (cancer/ibd/diverticular/benign/other)"
+  },
+  
   "procedure": {
-    "type": "string",
-    "code": "string (CPT/ICD)",
-    "description": "string",
-    "date": "datetime",
-    "duration_minutes": "number"
+    "primary_procedure": "string",
+    "additional_procedures": ["array of strings"],
+    "cpt_codes": ["array of strings"],
+    "icd10_codes": ["array of strings"],
+    "approach": "string (open/laparoscopic/robotic/converted)",
+    "description": "string"
   },
+  
+  "perioperative_timeline": {
+    "admission_date": "datetime",
+    "surgery_date": "datetime",
+    "surgery_start_time": "datetime",
+    "surgery_end_time": "datetime",
+    "anesthesia_duration_minutes": "number",
+    "operation_duration_minutes": "number",
+    "discharge_date": "datetime",
+    "length_of_stay_days": "number"
+  },
+  
   "team": {
-    "surgeon": "string",
+    "primary_surgeon": "string",
+    "assistant_surgeons": ["array of strings"],
     "anesthesiologist": "string",
-    "nurses": ["array of strings"]
+    "scrub_nurse": "string",
+    "circulating_nurse": "string"
   },
+  
+  "intraoperative": {
+    "anesthesia_type": "string (general/regional/local)",
+    "blood_loss_ml": "number",
+    "transfusion_required": "boolean",
+    "units_transfused": "number",
+    "findings": "string",
+    "specimens_sent": ["array of strings"],
+    "drains_placed": "boolean",
+    "drain_types": ["array of strings"]
+  },
+  
+  "cancer_specific": {
+    "applicable": "boolean",
+    "cancer_type": "string",
+    "tnm_staging": {
+      "clinical_t": "string",
+      "clinical_n": "string",
+      "clinical_m": "string",
+      "pathological_t": "string",
+      "pathological_n": "string",
+      "pathological_m": "string"
+    },
+    "pathology": {
+      "histology": "string",
+      "grade": "string",
+      "lymph_nodes_examined": "number",
+      "lymph_nodes_positive": "number",
+      "margins": "string (clear/involved/close)",
+      "margin_distance_mm": "number",
+      "tumor_size_mm": "number",
+      "lymphovascular_invasion": "boolean",
+      "perineural_invasion": "boolean"
+    },
+    "neoadjuvant_therapy": "boolean",
+    "neoadjuvant_details": "string",
+    "adjuvant_therapy_planned": "boolean"
+  },
+  
+  "ibd_specific": {
+    "applicable": "boolean",
+    "disease_type": "string (crohns/ulcerative_colitis)",
+    "disease_extent": "string",
+    "previous_biologics": ["array of strings"],
+    "indication_for_surgery": "string",
+    "stoma_created": "boolean",
+    "stoma_type": "string"
+  },
+  
+  "hernia_specific": {
+    "applicable": "boolean",
+    "hernia_type": "string (inguinal/ventral/incisional/umbilical/femoral)",
+    "hernia_size_cm": "number",
+    "recurrent": "boolean",
+    "mesh_used": "boolean",
+    "mesh_type": "string",
+    "mesh_fixation": "string",
+    "component_separation": "boolean"
+  },
+  
+  "postoperative_events": {
+    "return_to_theatre": {
+      "occurred": "boolean",
+      "date": "datetime",
+      "reason": "string",
+      "procedure_performed": "string"
+    },
+    "escalation_of_care": {
+      "occurred": "boolean",
+      "destination": "string (hdu/icu)",
+      "date": "datetime",
+      "reason": "string",
+      "duration_days": "number"
+    },
+    "complications": [{
+      "type": "string",
+      "clavien_dindo_grade": "string (I/II/IIIa/IIIb/IVa/IVb/V)",
+      "description": "string",
+      "date_identified": "datetime",
+      "treatment": "string",
+      "resolved": "boolean"
+    }]
+  },
+  
   "outcomes": {
-    "success": "boolean",
-    "complications": ["array of objects"],
-    "length_of_stay_days": "number",
     "readmission_30day": "boolean",
-    "mortality": "boolean",
-    "patient_satisfaction": "number (1-10)"
+    "readmission_date": "datetime",
+    "readmission_reason": "string",
+    "mortality_30day": "boolean",
+    "mortality_90day": "boolean",
+    "date_of_death": "datetime",
+    "cause_of_death": "string"
   },
+  
   "follow_up": {
-    "appointments": ["array of objects"],
-    "notes": ["array of strings"]
+    "appointments": [{
+      "date": "datetime",
+      "type": "string (post_op/surveillance/mdt)",
+      "provider": "string",
+      "findings": "string",
+      "imaging_results": "string",
+      "plan": "string"
+    }],
+    "long_term_outcomes": {
+      "recurrence": "boolean",
+      "recurrence_date": "datetime",
+      "recurrence_type": "string",
+      "functional_status": "string",
+      "quality_of_life_score": "number"
+    }
   },
-  "created_at": "datetime",
-  "updated_at": "datetime"
+  
+  "documents": [{
+    "type": "string (operation_note/pathology_report/imaging/discharge_summary)",
+    "filename": "string",
+    "file_path": "string",
+    "uploaded_date": "datetime",
+    "uploaded_by": "string"
+  }],
+  
+  "audit_trail": {
+    "created_at": "datetime",
+    "created_by": "string (user ID/name)",
+    "updated_at": "datetime",
+    "updated_by": "string (user ID/name)",
+    "modifications": [{
+      "timestamp": "datetime",
+      "user": "string",
+      "field_changed": "string",
+      "old_value": "string",
+      "new_value": "string"
+    }]
+  },
+  
+  "integration_data": {
+    "ehr_encounter_id": "string",
+    "lab_system_ids": ["array of strings"],
+    "pacs_study_ids": ["array of strings"],
+    "last_sync": "datetime"
+  }
 }
 ```
 

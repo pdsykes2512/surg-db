@@ -1,5 +1,5 @@
 """
-Initialize MongoDB database with proper schemas and indexes
+Initialize MongoDB database with proper schemas and indexes for general surgery outcomes
 Execution script for database setup
 """
 import asyncio
@@ -28,7 +28,11 @@ async def init_database():
     
     print(f"Initializing database: {DB_NAME}")
     
-    # Create patients collection with validation
+    # Drop existing collections for fresh start (optional - comment out to preserve data)
+    # await db["patients"].drop()
+    # await db["surgeries"].drop()
+    
+    # Create patients collection with enhanced validation
     print("Creating patients collection...")
     try:
         await db.create_collection(
@@ -36,11 +40,11 @@ async def init_database():
             validator={
                 "$jsonSchema": {
                     "bsonType": "object",
-                    "required": ["patient_id", "demographics", "created_at", "updated_at"],
+                    "required": ["patient_id", "demographics", "created_at", "created_by", "updated_at"],
                     "properties": {
                         "patient_id": {
                             "bsonType": "string",
-                            "description": "Unique patient identifier"
+                            "description": "Unique patient identifier (MRN)"
                         },
                         "demographics": {
                             "bsonType": "object",
@@ -48,26 +52,34 @@ async def init_database():
                             "properties": {
                                 "age": {"bsonType": "int", "minimum": 0, "maximum": 150},
                                 "gender": {"bsonType": "string"},
-                                "ethnicity": {"bsonType": "string"}
+                                "ethnicity": {"bsonType": ["string", "null"]},
+                                "bmi": {"bsonType": ["double", "null"], "minimum": 10, "maximum": 80},
+                                "weight_kg": {"bsonType": ["double", "null"]},
+                                "height_cm": {"bsonType": ["double", "null"]}
                             }
                         },
                         "contact": {
-                            "bsonType": "object",
+                            "bsonType": ["object", "null"],
                             "properties": {
-                                "phone": {"bsonType": "string"},
-                                "email": {"bsonType": "string"}
+                                "phone": {"bsonType": ["string", "null"]},
+                                "email": {"bsonType": ["string", "null"]}
                             }
                         },
                         "medical_history": {
-                            "bsonType": "object",
+                            "bsonType": ["object", "null"],
                             "properties": {
                                 "conditions": {"bsonType": "array", "items": {"bsonType": "string"}},
+                                "previous_surgeries": {"bsonType": "array"},
                                 "medications": {"bsonType": "array", "items": {"bsonType": "string"}},
-                                "allergies": {"bsonType": "array", "items": {"bsonType": "string"}}
+                                "allergies": {"bsonType": "array", "items": {"bsonType": "string"}},
+                                "smoking_status": {"bsonType": ["string", "null"]},
+                                "alcohol_use": {"bsonType": ["string", "null"]}
                             }
                         },
                         "created_at": {"bsonType": "date"},
-                        "updated_at": {"bsonType": "date"}
+                        "created_by": {"bsonType": ["string", "null"]},
+                        "updated_at": {"bsonType": "date"},
+                        "updated_by": {"bsonType": ["string", "null"]}
                     }
                 }
             }
@@ -84,9 +96,11 @@ async def init_database():
     patients_collection = db["patients"]
     await patients_collection.create_index("patient_id", unique=True)
     await patients_collection.create_index("created_at")
+    await patients_collection.create_index("updated_at")
+    await patients_collection.create_index([("demographics.age", 1)])
     print("✓ Patient indexes created")
     
-    # Create surgeries collection with validation
+    # Create surgeries collection with comprehensive validation
     print("Creating surgeries collection...")
     try:
         await db.create_collection(
@@ -94,43 +108,91 @@ async def init_database():
             validator={
                 "$jsonSchema": {
                     "bsonType": "object",
-                    "required": ["surgery_id", "patient_id", "procedure", "team", "outcomes", "created_at", "updated_at"],
+                    "required": [
+                        "surgery_id", "patient_id", "classification", "procedure",
+                        "perioperative_timeline", "team", "audit_trail"
+                    ],
                     "properties": {
-                        "surgery_id": {"bsonType": "string"},
-                        "patient_id": {"bsonType": "string"},
+                        "surgery_id": {
+                            "bsonType": "string",
+                            "description": "Unique surgery identifier"
+                        },
+                        "patient_id": {
+                            "bsonType": "string",
+                            "description": "Reference to patient MRN"
+                        },
+                        "classification": {
+                            "bsonType": "object",
+                            "required": ["urgency", "category", "primary_diagnosis"],
+                            "properties": {
+                                "urgency": {
+                                    "bsonType": "string",
+                                    "enum": ["elective", "emergency", "urgent"]
+                                },
+                                "category": {
+                                    "bsonType": "string",
+                                    "enum": ["major_resection", "proctology", "hernia", "cholecystectomy", "other"]
+                                },
+                                "complexity": {
+                                    "bsonType": ["string", "null"],
+                                    "enum": ["routine", "intermediate", "complex", None]
+                                },
+                                "primary_diagnosis": {"bsonType": "string"},
+                                "indication": {
+                                    "bsonType": ["string", "null"],
+                                    "enum": ["cancer", "ibd", "diverticular", "benign", "other", None]
+                                }
+                            }
+                        },
                         "procedure": {
                             "bsonType": "object",
-                            "required": ["type", "code", "description", "date", "duration_minutes"],
+                            "required": ["primary_procedure", "approach"],
                             "properties": {
-                                "type": {"bsonType": "string"},
-                                "code": {"bsonType": "string"},
-                                "description": {"bsonType": "string"},
-                                "date": {"bsonType": "date"},
-                                "duration_minutes": {"bsonType": "int", "minimum": 0}
+                                "primary_procedure": {"bsonType": "string"},
+                                "additional_procedures": {"bsonType": "array"},
+                                "cpt_codes": {"bsonType": "array"},
+                                "icd10_codes": {"bsonType": "array"},
+                                "approach": {
+                                    "bsonType": "string",
+                                    "enum": ["open", "laparoscopic", "robotic", "converted"]
+                                },
+                                "description": {"bsonType": ["string", "null"]}
+                            }
+                        },
+                        "perioperative_timeline": {
+                            "bsonType": "object",
+                            "required": ["admission_date", "surgery_date"],
+                            "properties": {
+                                "admission_date": {"bsonType": "date"},
+                                "surgery_date": {"bsonType": "date"},
+                                "surgery_start_time": {"bsonType": ["date", "null"]},
+                                "surgery_end_time": {"bsonType": ["date", "null"]},
+                                "discharge_date": {"bsonType": ["date", "null"]},
+                                "length_of_stay_days": {"bsonType": ["int", "null"], "minimum": 0}
                             }
                         },
                         "team": {
                             "bsonType": "object",
-                            "required": ["surgeon"],
+                            "required": ["primary_surgeon"],
                             "properties": {
-                                "surgeon": {"bsonType": "string"},
-                                "anesthesiologist": {"bsonType": "string"},
-                                "nurses": {"bsonType": "array", "items": {"bsonType": "string"}}
+                                "primary_surgeon": {"bsonType": "string"},
+                                "assistant_surgeons": {"bsonType": "array"},
+                                "anesthesiologist": {"bsonType": ["string", "null"]},
+                                "scrub_nurse": {"bsonType": ["string", "null"]},
+                                "circulating_nurse": {"bsonType": ["string", "null"]}
                             }
                         },
-                        "outcomes": {
+                        "audit_trail": {
                             "bsonType": "object",
+                            "required": ["created_at", "created_by", "updated_at"],
                             "properties": {
-                                "success": {"bsonType": "bool"},
-                                "complications": {"bsonType": "array"},
-                                "length_of_stay_days": {"bsonType": "int", "minimum": 0},
-                                "readmission_30day": {"bsonType": "bool"},
-                                "mortality": {"bsonType": "bool"},
-                                "patient_satisfaction": {"bsonType": "int", "minimum": 1, "maximum": 10}
+                                "created_at": {"bsonType": "date"},
+                                "created_by": {"bsonType": "string"},
+                                "updated_at": {"bsonType": "date"},
+                                "updated_by": {"bsonType": ["string", "null"]},
+                                "modifications": {"bsonType": "array"}
                             }
-                        },
-                        "created_at": {"bsonType": "date"},
-                        "updated_at": {"bsonType": "date"}
+                        }
                     }
                 }
             }
@@ -142,20 +204,71 @@ async def init_database():
         else:
             print(f"✗ Error creating surgeries collection: {e}")
     
-    # Create indexes for surgeries collection
+    # Create comprehensive indexes for surgeries collection
     print("Creating indexes for surgeries...")
     surgeries_collection = db["surgeries"]
+    
+    # Unique and lookup indexes
     await surgeries_collection.create_index("surgery_id", unique=True)
     await surgeries_collection.create_index("patient_id")
-    await surgeries_collection.create_index("procedure.date")
-    await surgeries_collection.create_index("procedure.type")
-    await surgeries_collection.create_index("team.surgeon")
-    await surgeries_collection.create_index("created_at")
+    
+    # Classification indexes for filtering
+    await surgeries_collection.create_index([("classification.urgency", 1)])
+    await surgeries_collection.create_index([("classification.category", 1)])
+    await surgeries_collection.create_index([("classification.complexity", 1)])
+    await surgeries_collection.create_index([("classification.indication", 1)])
+    
+    # Procedure indexes
+    await surgeries_collection.create_index([("procedure.primary_procedure", 1)])
+    await surgeries_collection.create_index([("procedure.approach", 1)])
+    
+    # Timeline indexes
+    await surgeries_collection.create_index([("perioperative_timeline.admission_date", 1)])
+    await surgeries_collection.create_index([("perioperative_timeline.surgery_date", -1)])
+    await surgeries_collection.create_index([("perioperative_timeline.discharge_date", 1)])
+    
+    # Team indexes for surgeon performance
+    await surgeries_collection.create_index([("team.primary_surgeon", 1)])
+    await surgeries_collection.create_index([("team.primary_surgeon", 1), ("perioperative_timeline.surgery_date", -1)])
+    
+    # Cancer-specific indexes
+    await surgeries_collection.create_index([("cancer_specific.applicable", 1)])
+    await surgeries_collection.create_index([("cancer_specific.cancer_type", 1)])
+    
+    # Outcome indexes
+    await surgeries_collection.create_index([("outcomes.readmission_30day", 1)])
+    await surgeries_collection.create_index([("outcomes.mortality_30day", 1)])
+    await surgeries_collection.create_index([("postoperative_events.return_to_theatre.occurred", 1)])
+    await surgeries_collection.create_index([("postoperative_events.escalation_of_care.occurred", 1)])
+    
+    # Audit trail indexes
+    await surgeries_collection.create_index([("audit_trail.created_at", -1)])
+    await surgeries_collection.create_index([("audit_trail.created_by", 1)])
+    await surgeries_collection.create_index([("audit_trail.updated_at", -1)])
+    
+    # Compound indexes for common queries
+    await surgeries_collection.create_index([
+        ("classification.category", 1),
+        ("perioperative_timeline.surgery_date", -1)
+    ])
+    await surgeries_collection.create_index([
+        ("team.primary_surgeon", 1),
+        ("classification.category", 1)
+    ])
+    
     print("✓ Surgery indexes created")
     
     print("\n✅ Database initialization complete!")
     print(f"Database: {DB_NAME}")
     print(f"Collections: patients, surgeries")
+    print("\n📊 Indexes created for optimized queries:")
+    print("   - Patient lookups and filtering")
+    print("   - Surgery classification and urgency")
+    print("   - Surgeon performance tracking")
+    print("   - Date-based queries and timelines")
+    print("   - Cancer staging and outcomes")
+    print("   - Complication and readmission tracking")
+    print("   - Audit trail for data governance")
     
     client.close()
 

@@ -29,7 +29,9 @@ async def create_patient(patient: PatientCreate):
     # Insert patient
     patient_dict = patient.model_dump()
     patient_dict["created_at"] = datetime.utcnow()
+    patient_dict["created_by"] = "system"  # TODO: Replace with actual user from auth
     patient_dict["updated_at"] = datetime.utcnow()
+    patient_dict["updated_by"] = None
     
     result = await collection.insert_one(patient_dict)
     
@@ -81,6 +83,7 @@ async def update_patient(patient_id: str, patient_update: PatientUpdate):
     update_data = patient_update.model_dump(exclude_unset=True)
     if update_data:
         update_data["updated_at"] = datetime.utcnow()
+        update_data["updated_by"] = "system"  # TODO: Replace with actual user from auth
         await collection.update_one(
             {"patient_id": patient_id},
             {"$set": update_data}
