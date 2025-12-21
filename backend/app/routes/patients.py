@@ -18,12 +18,12 @@ async def create_patient(patient: PatientCreate):
     """Create a new patient"""
     collection = await get_patients_collection()
     
-    # Check if patient_id already exists
-    existing = await collection.find_one({"patient_id": patient.patient_id})
+    # Check if record_number already exists
+    existing = await collection.find_one({"record_number": patient.record_number})
     if existing:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Patient with ID {patient.patient_id} already exists"
+            detail=f"Patient with record number {patient.record_number} already exists"
         )
     
     # Insert patient
@@ -51,32 +51,32 @@ async def list_patients(skip: int = 0, limit: int = 100):
     return [Patient(**patient) for patient in patients]
 
 
-@router.get("/{patient_id}", response_model=Patient)
-async def get_patient(patient_id: str):
-    """Get a specific patient by patient_id"""
+@router.get("/{record_number}", response_model=Patient)
+async def get_patient(record_number: str):
+    """Get a specific patient by record_number"""
     collection = await get_patients_collection()
     
-    patient = await collection.find_one({"patient_id": patient_id})
+    patient = await collection.find_one({"record_number": record_number})
     if not patient:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Patient {patient_id} not found"
+            detail=f"Patient {record_number} not found"
         )
     
     return Patient(**patient)
 
 
-@router.put("/{patient_id}", response_model=Patient)
-async def update_patient(patient_id: str, patient_update: PatientUpdate):
+@router.put("/{record_number}", response_model=Patient)
+async def update_patient(record_number: str, patient_update: PatientUpdate):
     """Update a patient"""
     collection = await get_patients_collection()
     
     # Check if patient exists
-    existing = await collection.find_one({"patient_id": patient_id})
+    existing = await collection.find_one({"record_number": record_number})
     if not existing:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Patient {patient_id} not found"
+            detail=f"Patient {record_number} not found"
         )
     
     # Update only provided fields
@@ -85,26 +85,26 @@ async def update_patient(patient_id: str, patient_update: PatientUpdate):
         update_data["updated_at"] = datetime.utcnow()
         update_data["updated_by"] = "system"  # TODO: Replace with actual user from auth
         await collection.update_one(
-            {"patient_id": patient_id},
+            {"record_number": record_number},
             {"$set": update_data}
         )
     
     # Return updated patient
-    updated_patient = await collection.find_one({"patient_id": patient_id})
+    updated_patient = await collection.find_one({"record_number": record_number})
     return Patient(**updated_patient)
 
 
-@router.delete("/{patient_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_patient(patient_id: str):
+@router.delete("/{record_number}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_patient(record_number: str):
     """Delete a patient"""
     collection = await get_patients_collection()
     
-    result = await collection.delete_one({"patient_id": patient_id})
+    result = await collection.delete_one({"record_number": record_number})
     
     if result.deleted_count == 0:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Patient {patient_id} not found"
+            detail=f"Patient {record_number} not found"
         )
     
     return None
