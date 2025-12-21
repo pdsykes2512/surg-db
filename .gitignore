@@ -41,6 +41,7 @@ env/
 .cache/
 .config/
 .dotnet/
+.npm/
 .vscode/
 .vscode-server/
 .idea/
