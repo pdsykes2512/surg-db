@@ -13,8 +13,10 @@ export function PageHeader({ title, subtitle, action, icon }: PageHeaderProps) {
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           {icon && (
-            <div className="flex-shrink-0 w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-              {icon}
+            <div className="flex-shrink-0 w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600">
+              <div className="w-6 h-6 flex items-center justify-center">
+                {icon}
+              </div>
             </div>
           )}
           <div>

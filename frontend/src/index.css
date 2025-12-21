@@ -1,3 +1,11 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  /* Ensure SVGs respect their width/height classes */
+  svg {
+    max-width: 100%;
+    max-height: 100%;
+  }
+}
