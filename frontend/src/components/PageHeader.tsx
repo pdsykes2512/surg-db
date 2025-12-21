@@ -9,14 +9,12 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, subtitle, action, icon }: PageHeaderProps) {
   return (
-    <div className="mb-8">
+    <div className="mb-6 pb-6 border-b border-gray-200">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           {icon && (
-            <div className="flex-shrink-0 w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600">
-              <div className="w-6 h-6 flex items-center justify-center">
-                {icon}
-              </div>
+            <div className="flex-shrink-0 w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 [&>svg]:w-6 [&>svg]:h-6">
+              {icon}
             </div>
           )}
           <div>
