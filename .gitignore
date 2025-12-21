@@ -38,6 +38,9 @@ env/
 .venv
 
 # IDE
+.cache/
+.config
+.dotnet/
 .vscode/
 .vscode-server/
 .idea/
@@ -51,3 +54,5 @@ Thumbs.db
 .bash_history
 .ssh/
 .profile
+.wget-hsts
+get-docker.sh
