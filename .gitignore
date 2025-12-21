@@ -39,7 +39,7 @@ env/
 
 # IDE
 .cache/
-.config
+.config/
 .dotnet/
 .vscode/
 .vscode-server/
@@ -56,3 +56,5 @@ Thumbs.db
 .profile
 .wget-hsts
 get-docker.sh
+.git-credentials
+.gitignore
