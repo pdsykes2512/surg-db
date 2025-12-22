@@ -5,7 +5,7 @@ import { SurgeonSearch } from './SurgeonSearch'
 import { SearchableSelect } from './SearchableSelect'
 import { TumourModal } from './TumourModal'
 import { AddTreatmentModal } from './AddTreatmentModal'
-import { formatSurgeon } from '../utils/formatters'
+import { formatSurgeon, formatCancerType } from '../utils/formatters'
 
 interface CancerEpisodeFormProps {
   onSubmit: (data: any) => void
@@ -827,7 +827,7 @@ export function CancerEpisodeForm({ onSubmit, onCancel, initialData, mode = 'cre
             <dt className="text-gray-600">Patient:</dt>
             <dd className="font-medium">{formData.patient_id}</dd>
             <dt className="text-gray-600">Cancer Type:</dt>
-            <dd className="font-medium">{formData.cancer_type}</dd>
+            <dd className="font-medium">{formatCancerType(formData.cancer_type)}</dd>
             <dt className="text-gray-600">Lead Clinician:</dt>
             <dd className="font-medium">{formData.lead_clinician}</dd>
             <dt className="text-gray-600">Referral Date:</dt>
