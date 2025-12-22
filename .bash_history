@@ -468,3 +468,33 @@ cd /root && git add TODO.md && git commit -m "docs: add comprehensive TODO list 
 - Include episode management, reports, and analytics tasks
 - Document technical debt and future enhancements"
 git push origin feat/app-scaffold
+ps aux | grep "npm run dev" | grep -v grep | awk '{print $2}' | xargs kill -9 2>/dev/null
+sleep 2 && cd /root/frontend && npm run dev > /root/.tmp/frontend.log 2>&1 &
+echo "Frontend restarted, logging to .tmp/frontend.log"
+pkill -f "uvicorn app.main" && sleep 2 && cd /root/backend && python3 -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 > /root/.tmp/backend.log 2>&1 &
+echo "Backend restarted, logging to .tmp/backend.log"
+ls -la /root/.tmp 2>/dev/null || echo "Directory does not exist"
+cd /root/backend && python3 -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 > /tmp/backend.log 2>&1 &
+echo "Backend started with PID: $!"
+sleep 3 && curl -s http://localhost:8000/health
+cat /tmp/backend.log | tail -30
+lsof -i :8000 | grep LISTEN
+pkill -f "uvicorn.*8000" && cd /root/backend && python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 > /tmp/backend.log 2>&1 &
+sleep 2 && curl -s http://localhost:8000/health
+cat /tmp/backend.log | tail -20
+ps aux | grep uvicorn | grep -v grep
+cd /root/frontend && nohup npm run dev > /tmp/frontend.log 2>&1 & echo "Frontend PID: $!"
+sleep 4 && tail -15 /tmp/frontend.log && echo "---" && tail -10 /tmp/backend.log
+pkill -f uvicorn && sleep 2 && cd /root/backend && nohup python3 -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 > /tmp/backend.log 2>&1 & sleep 3 && tail -10 /tmp/backend.log
+curl -s http://localhost:8000/health && echo ""
+curl -s http://localhost:3000 2>&1 | grep -o "tailwind\|stylesheet" | head -5
+git status --short
+git add directives/ui_design_system.md frontend/postcss.config.js frontend/package.json && git commit -m "feat: add PostCSS config and UI design system documentation"
+git push origin feat/app-scaffold
+ps aux | grep -E "npm run dev|vite" | grep -v grep
+tail -20 /tmp/frontend.log
+curl -s -o /dev/null -w "%{http_code}" http://localhost:3000
+curl -s http://localhost:3000 | head -20
+cd /root/backend && nohup python3 -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 > /tmp/backend.log 2>&1 & echo "Backend PID: $!"
+ps aux | grep -E "uvicorn|npm run dev|vite" | grep -v grep
+cd /root/frontend && cat postcss.config.js

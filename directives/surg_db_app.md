@@ -428,6 +428,30 @@ Build a full-stack application to store, manage, and report on patient surgery o
 - Multi-facility support
 - Data export for research purposes
 
+## Development Workflow
+
+### Starting the Backend
+Use the startup script to ensure logs are stored in the correct location:
+```bash
+./execution/start_backend.sh
+```
+
+This will:
+- Start uvicorn on port 8000
+- Enable hot-reload for development
+- Store logs in `~/.tmp/backend.log` (NOT `/tmp`)
+
+### Starting the Frontend
+```bash
+cd frontend
+npm run dev
+```
+
+### Checking Logs
+```bash
+tail -f ~/.tmp/backend.log
+```
+
 ## Version Control
 Follow the branching strategy:
 - `feat/backend-api` - Backend API development

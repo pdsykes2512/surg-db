@@ -14,7 +14,6 @@ interface Episode {
   patient_id: string
   classification: {
     urgency: string
-    category: string
     primary_diagnosis: string
   }
   procedure: {
@@ -42,11 +41,13 @@ export function EpisodesPage() {
   const [patientInfo, setPatientInfo] = useState<any>(null)
   
   // Filters
-  const [categoryFilter, setCategoryFilter] = useState('')
   const [urgencyFilter, setUrgencyFilter] = useState('')
   const [surgeonFilter, setSurgeonFilter] = useState('')
   const [startDateFilter, setStartDateFilter] = useState('')
   const [endDateFilter, setEndDateFilter] = useState('')
+  const [surgeons, setSurgeons] = useState<any[]>([])
+  const [surgeonSearch, setSurgeonSearch] = useState('')
+  const [showSurgeonDropdown, setShowSurgeonDropdown] = useState(false)
 
   const showToast = (message: string, type: 'success' | 'error' | 'info' | 'warning' = 'info') => {
     const id = Date.now().toString()
@@ -57,12 +58,32 @@ export function EpisodesPage() {
     setToasts(prev => prev.filter(toast => toast.id !== id))
   }
 
+  // Fetch surgeons list
+  useEffect(() => {
+    const fetchSurgeons = async () => {
+      try {
+        const response = await fetch('http://localhost:8000/api/admin/surgeons', {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        })
+        if (response.ok) {
+          const data = await response.json()
+          setSurgeons(data)
+        }
+      } catch (error) {
+        console.error('Error fetching surgeons:', error)
+      }
+    }
+    fetchSurgeons()
+  }, [])
+
   useEffect(() => {
     loadEpisodes()
     if (patientId) {
       loadPatientInfo()
     }
-  }, [categoryFilter, urgencyFilter, surgeonFilter, startDateFilter, endDateFilter, patientId])
+  }, [urgencyFilter, surgeonFilter, startDateFilter, endDateFilter, patientId])
 
   const loadPatientInfo = async () => {
     if (!patientId) return
@@ -82,7 +103,6 @@ export function EpisodesPage() {
       if (patientId) {
         params.patient_id = patientId
       }
-      if (categoryFilter) params.category = categoryFilter
       if (urgencyFilter) params.urgency = urgencyFilter
       if (surgeonFilter) params.primary_surgeon = surgeonFilter
       if (startDateFilter) params.start_date = startDateFilter
@@ -259,34 +279,18 @@ export function EpisodesPage() {
               placeholder="Search by Surgery ID, Patient ID, Procedure, or Surgeon..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full h-10 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
 
           {/* Filter dropdowns */}
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-              <select
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">All Categories</option>
-                <option value="major_resection">Major Resection</option>
-                <option value="proctology">Proctology</option>
-                <option value="hernia">Hernia</option>
-                <option value="cholecystectomy">Cholecystectomy</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Urgency</label>
               <select
                 value={urgencyFilter}
                 onChange={(e) => setUrgencyFilter(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 appearance-none bg-white"
               >
                 <option value="">All Urgencies</option>
                 <option value="elective">Elective</option>
@@ -295,15 +299,68 @@ export function EpisodesPage() {
               </select>
             </div>
 
-            <div>
+            <div className="relative">
               <label className="block text-sm font-medium text-gray-700 mb-1">Surgeon</label>
               <input
                 type="text"
-                placeholder="Surgeon name"
-                value={surgeonFilter}
-                onChange={(e) => setSurgeonFilter(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                placeholder="Type to search surgeons..."
+                value={surgeonSearch || surgeonFilter}
+                onChange={(e) => {
+                  setSurgeonSearch(e.target.value)
+                  setShowSurgeonDropdown(true)
+                }}
+                onFocus={() => setShowSurgeonDropdown(true)}
+                onBlur={() => setTimeout(() => setShowSurgeonDropdown(false), 200)}
+                className="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               />
+              {showSurgeonDropdown && (
+                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                  <div
+                    onClick={() => {
+                      setSurgeonFilter('')
+                      setSurgeonSearch('')
+                      setShowSurgeonDropdown(false)
+                    }}
+                    className="px-3 py-2 hover:bg-blue-50 cursor-pointer border-b border-gray-100 text-gray-500 italic"
+                  >
+                    All Surgeons
+                  </div>
+                  {surgeons
+                    .filter(surgeon => {
+                      const searchLower = (surgeonSearch || '').toLowerCase()
+                      const fullName = `${surgeon.first_name} ${surgeon.surname}`.toLowerCase()
+                      const reverseName = `${surgeon.surname} ${surgeon.first_name}`.toLowerCase()
+                      return fullName.includes(searchLower) || reverseName.includes(searchLower)
+                    })
+                    .map((surgeon) => (
+                      <div
+                        key={surgeon._id}
+                        onClick={() => {
+                          const surgeonName = `${surgeon.first_name} ${surgeon.surname}`
+                          setSurgeonFilter(surgeonName)
+                          setSurgeonSearch('')
+                          setShowSurgeonDropdown(false)
+                        }}
+                        className="px-3 py-2 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                      >
+                        <div className="font-medium text-gray-900">
+                          {surgeon.surname}, {surgeon.first_name}
+                        </div>
+                        {surgeon.gmc_number && (
+                          <div className="text-xs text-gray-500">GMC: {surgeon.gmc_number}</div>
+                        )}
+                      </div>
+                    ))}
+                  {surgeons.filter(surgeon => {
+                    const searchLower = (surgeonSearch || '').toLowerCase()
+                    const fullName = `${surgeon.first_name} ${surgeon.surname}`.toLowerCase()
+                    const reverseName = `${surgeon.surname} ${surgeon.first_name}`.toLowerCase()
+                    return fullName.includes(searchLower) || reverseName.includes(searchLower)
+                  }).length === 0 && (
+                    <div className="px-3 py-2 text-sm text-gray-500">No surgeons found</div>
+                  )}
+                </div>
+              )}
             </div>
 
             <div>
@@ -312,7 +369,7 @@ export function EpisodesPage() {
                 type="date"
                 value={startDateFilter}
                 onChange={(e) => setStartDateFilter(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
@@ -322,17 +379,16 @@ export function EpisodesPage() {
                 type="date"
                 value={endDateFilter}
                 onChange={(e) => setEndDateFilter(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>
 
-          {(categoryFilter || urgencyFilter || surgeonFilter || startDateFilter || endDateFilter) && (
+          {(urgencyFilter || surgeonFilter || startDateFilter || endDateFilter) && (
             <div className="flex justify-end">
               <Button
                 variant="secondary"
                 onClick={() => {
-                  setCategoryFilter('')
                   setUrgencyFilter('')
                   setSurgeonFilter('')
                   setStartDateFilter('')
@@ -359,11 +415,11 @@ export function EpisodesPage() {
             </svg>
             <h3 className="text-lg font-medium text-gray-900 mb-2">No Episode Records</h3>
             <p className="text-gray-500 mb-4">
-              {searchTerm || categoryFilter || urgencyFilter || surgeonFilter || startDateFilter || endDateFilter
+              {searchTerm || urgencyFilter || surgeonFilter || startDateFilter || endDateFilter
                 ? 'No episodes match your search criteria'
                 : 'Begin tracking surgical outcomes by recording your first surgery'}
             </p>
-            {!searchTerm && !categoryFilter && !urgencyFilter && !surgeonFilter && !startDateFilter && !endDateFilter && (
+            {!searchTerm && !urgencyFilter && !surgeonFilter && !startDateFilter && !endDateFilter && (
               <Button 
                 variant="primary"
                 onClick={() => {
@@ -396,9 +452,6 @@ export function EpisodesPage() {
                     Surgeon
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Category
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Urgency
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -423,9 +476,6 @@ export function EpisodesPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {episode.team.primary_surgeon}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {episode.classification.category.replace('_', ' ')}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getUrgencyColor(episode.classification.urgency)}`}>

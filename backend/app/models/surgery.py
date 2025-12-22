@@ -11,7 +11,6 @@ from .patient import PyObjectId
 class Classification(BaseModel):
     """Surgery classification"""
     urgency: str = Field(..., description="elective/emergency/urgent")
-    category: str = Field(..., description="major_resection/proctology/hernia/cholecystectomy/other")
     complexity: Optional[str] = Field(None, description="routine/intermediate/complex")
     primary_diagnosis: str
     indication: Optional[str] = Field(None, description="cancer/ibd/diverticular/benign/other")

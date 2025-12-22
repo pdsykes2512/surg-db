@@ -8,20 +8,25 @@ from bson import ObjectId
 import re
 
 
-class PyObjectId(ObjectId):
-    """Custom ObjectId type for Pydantic"""
+class PyObjectId(str):
+    """Custom ObjectId type for Pydantic v2"""
     @classmethod
-    def __get_validators__(cls):
-        yield cls.validate
+    def __get_pydantic_core_schema__(cls, _source_type, _handler):
+        from pydantic_core import core_schema
+        
+        def validate(value):
+            if isinstance(value, ObjectId):
+                return str(value)
+            if isinstance(value, str):
+                if not ObjectId.is_valid(value):
+                    raise ValueError("Invalid ObjectId")
+                return value
+            raise ValueError("Invalid ObjectId type")
+        
+        return core_schema.no_info_plain_validator_function(validate)
     
     @classmethod
-    def validate(cls, v):
-        if not ObjectId.is_valid(v):
-            raise ValueError("Invalid ObjectId")
-        return ObjectId(v)
-    
-    @classmethod
-    def __get_pydantic_json_schema__(cls, field_schema):
+    def __get_pydantic_json_schema__(cls, field_schema, _handler):
         field_schema.update(type="string")
 
 

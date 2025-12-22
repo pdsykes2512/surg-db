@@ -12,7 +12,6 @@ interface SummaryReport {
   escalation_rate: number
   avg_length_of_stay_days: number
   urgency_breakdown: Record<string, number>
-  category_breakdown: Record<string, number>
 }
 
 interface SurgeonPerformance {
@@ -188,34 +187,6 @@ export function ReportsPage() {
                 </div>
               )
             })}
-          </div>
-        </Card>
-
-        {/* Category Breakdown */}
-        <Card>
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Surgery Categories</h3>
-          <div className="space-y-3">
-            {Object.entries(summary.category_breakdown)
-              .filter(([_, count]) => count > 0)
-              .map(([category, count]) => {
-                const percentage = (count / summary.total_surgeries * 100).toFixed(1)
-                return (
-                  <div key={category}>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span className="capitalize font-medium text-gray-700">
-                        {category.replace('_', ' ')}
-                      </span>
-                      <span className="text-gray-600">{count} ({percentage}%)</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="h-2 rounded-full bg-blue-500"
-                        style={{ width: `${percentage}%` }}
-                      />
-                    </div>
-                  </div>
-                )
-              })}
           </div>
         </Card>
       </div>

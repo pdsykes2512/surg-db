@@ -142,7 +142,6 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
     patient_id: '',
     classification: {
       urgency: 'elective',
-      category: 'other',
       complexity: 'routine',
       primary_diagnosis: '',
       indication: ''
@@ -203,10 +202,11 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
 
   // Auto-generate surgery ID when creating new episode
   useEffect(() => {
-    if (mode === 'create' && !initialData?.surgery_id) {
+    if (mode === 'create') {
+      // Always generate a new ID when in create mode
       updateSimpleField('surgery_id', generateSurgeryId())
     }
-  }, [])
+  }, [mode])
 
   const updateField = (section: string, field: string, value: any) => {
     setFormData((prev: any) => {
@@ -701,7 +701,7 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
               required
               value={formData.surgery_id}
               onChange={(e) => updateSimpleField('surgery_id', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50"
+              className="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50"
               placeholder="Auto-generated"
               readOnly
               title="Surgery ID is automatically generated"
@@ -723,7 +723,7 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
                   type="text"
                   value={formData.patient_id}
                   readOnly
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700"
+                  className="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700"
                   title="Patient ID is pre-filled from patient selection"
                 />
                 <p className="mt-1 text-xs text-gray-500">Patient ID is pre-filled from selected patient</p>
@@ -744,7 +744,7 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
                   }}
                   onFocus={() => setShowPatientDropdown(true)}
                   onBlur={() => setTimeout(() => setShowPatientDropdown(false), 200)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   placeholder="Search by record number or NHS number..."
                 />
 
@@ -808,7 +808,7 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
                   required
                   value={formData.classification.urgency}
                   onChange={(e) => updateField('classification', 'urgency', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 appearance-none bg-white"
                 >
                   <option value="elective">Elective</option>
                   <option value="urgent">Urgent</option>
@@ -823,7 +823,7 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
                 <select
                   value={formData.classification.complexity}
                   onChange={(e) => updateField('classification', 'complexity', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 appearance-none bg-white"
                 >
                   <option value="routine">Routine</option>
                   <option value="intermediate">Intermediate</option>
@@ -849,7 +849,7 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
                 }}
                 onFocus={() => setShowDiagnosisDropdown(true)}
                 onBlur={() => setTimeout(() => setShowDiagnosisDropdown(false), 200)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 placeholder="Type to search diagnoses..."
               />
 
@@ -918,7 +918,7 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
                   }}
                   onFocus={() => setShowProcedureDropdown(true)}
                   onBlur={() => setTimeout(() => setShowProcedureDropdown(false), 200)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   placeholder="Type to search procedures..."
                 />
                 
@@ -976,7 +976,7 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
                   required
                   value={formData.procedure.approach}
                   onChange={(e) => updateField('procedure', 'approach', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 appearance-none bg-white"
                 >
                   <option value="open">Open</option>
                   <option value="laparoscopic">Laparoscopic</option>
@@ -1034,7 +1034,7 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
                       setShowAdditionalProcDropdown(false)
                     }
                   }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   placeholder="Type to search or enter custom procedure..."
                 />
                 
@@ -1121,7 +1121,7 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
                     type="text"
                     value={(formData.procedure.icd10_codes || []).join(', ')}
                     readOnly
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700"
+                    className="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700"
                     placeholder="Auto-populated"
                   />
                   <p className="mt-1 text-xs text-gray-500">
@@ -1137,7 +1137,7 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
                     type="text"
                     value={(formData.procedure.opcs_codes || []).join(', ')}
                     readOnly
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700"
+                    className="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700"
                     placeholder="Auto-populated"
                   />
                   <p className="mt-1 text-xs text-gray-500">
@@ -1165,7 +1165,7 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
                 required
                 value={formData.perioperative_timeline.admission_date}
                 onChange={(e) => updateField('perioperative_timeline', 'admission_date', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
@@ -1178,7 +1178,7 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
                 required
                 value={formData.perioperative_timeline.surgery_date}
                 onChange={(e) => updateField('perioperative_timeline', 'surgery_date', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
@@ -1190,7 +1190,7 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
                 type="time"
                 value={formData.perioperative_timeline.induction_time ? formData.perioperative_timeline.induction_time.split('T')[1] || '' : ''}
                 onChange={(e) => updateField('perioperative_timeline', 'induction_time', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               />
               <p className="mt-1 text-xs text-gray-500">When anaesthesia begins (automatically uses surgery date)</p>
             </div>
@@ -1203,7 +1203,7 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
                 type="time"
                 value={formData.perioperative_timeline.knife_to_skin_time ? formData.perioperative_timeline.knife_to_skin_time.split('T')[1] || '' : ''}
                 onChange={(e) => updateField('perioperative_timeline', 'knife_to_skin_time', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               />
               <p className="mt-1 text-xs text-gray-500">When surgery incision begins (automatically uses surgery date)</p>
             </div>
@@ -1216,7 +1216,7 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
                 type="datetime-local"
                 value={formData.perioperative_timeline.surgery_end_time || (formData.perioperative_timeline.surgery_date ? `${formData.perioperative_timeline.surgery_date}T` : '')}
                 onChange={(e) => updateField('perioperative_timeline', 'surgery_end_time', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               />
               <p className="mt-1 text-xs text-gray-500">Date and time when surgery ends</p>
             </div>
@@ -1229,7 +1229,7 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
                 type="date"
                 value={formData.perioperative_timeline.discharge_date}
                 onChange={(e) => updateField('perioperative_timeline', 'discharge_date', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
@@ -1241,7 +1241,7 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
                 type="number"
                 value={formData.perioperative_timeline.operation_duration_minutes || ''}
                 readOnly
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700"
+                className="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700"
                 placeholder="Auto-calculated"
               />
               <p className="mt-1 text-xs text-gray-500">Calculated from knife to skin to end time</p>
@@ -1255,7 +1255,7 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
                 type="number"
                 value={formData.perioperative_timeline.anesthesia_duration_minutes || ''}
                 readOnly
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700"
+                className="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700"
                 placeholder="Auto-calculated"
               />
               <p className="mt-1 text-xs text-gray-500">Calculated from induction to end time</p>
@@ -1270,7 +1270,7 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
                 min="0"
                 value={formData.perioperative_timeline.length_of_stay_days || ''}
                 readOnly
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700"
+                className="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700"
                 placeholder="Auto-calculated"
               />
               <p className="mt-1 text-xs text-gray-500">Calculated from admission to discharge date</p>
@@ -1300,7 +1300,7 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
                   }}
                   onFocus={() => setShowSurgeonDropdown(true)}
                   onBlur={() => setTimeout(() => setShowSurgeonDropdown(false), 200)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   placeholder="Type to search surgeons..."
                 />
                 {showSurgeonDropdown && (
@@ -1351,7 +1351,7 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
                   type="text"
                   value={(formData.team.assistant_surgeons || []).join(', ')}
                   onChange={(e) => handleArrayInput('team', 'assistant_surgeons', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   placeholder="Comma-separated names"
                 />
               </div>
@@ -1365,7 +1365,7 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
                     type="text"
                     value={formData.team.anesthesiologist}
                     onChange={(e) => updateField('team', 'anesthesiologist', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
 
@@ -1377,7 +1377,7 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
                     type="text"
                     value={formData.team.scrub_nurse}
                     onChange={(e) => updateField('team', 'scrub_nurse', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
 
@@ -1389,7 +1389,7 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
                     type="text"
                     value={formData.team.circulating_nurse}
                     onChange={(e) => updateField('team', 'circulating_nurse', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               </div>
@@ -1408,7 +1408,7 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
                   <select
                     value={formData.intraoperative.anesthesia_type}
                     onChange={(e) => updateField('intraoperative', 'anesthesia_type', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 appearance-none bg-white"
                   >
                     <option value="general">General</option>
                     <option value="regional">Regional</option>
@@ -1425,7 +1425,7 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
                     min="0"
                     value={formData.intraoperative.blood_loss_ml || ''}
                     onChange={(e) => updateField('intraoperative', 'blood_loss_ml', e.target.value ? parseInt(e.target.value) : null)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                     placeholder="Milliliters"
                   />
                 </div>
@@ -1449,7 +1449,7 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
                       min="0"
                       value={formData.intraoperative.units_transfused || ''}
                       onChange={(e) => updateField('intraoperative', 'units_transfused', e.target.value ? parseInt(e.target.value) : null)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                       placeholder="Units transfused"
                     />
                   </div>
@@ -1464,7 +1464,7 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
                   value={formData.intraoperative.findings}
                   onChange={(e) => updateField('intraoperative', 'findings', e.target.value)}
                   rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   placeholder="Description of operative findings..."
                 />
               </div>
@@ -1477,7 +1477,7 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
                   type="text"
                   value={(formData.intraoperative.specimens_sent || []).join(', ')}
                   onChange={(e) => handleArrayInput('intraoperative', 'specimens_sent', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   placeholder="Comma-separated specimen types"
                 />
               </div>
@@ -1498,7 +1498,7 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
                     type="text"
                     value={(formData.intraoperative.drain_types || []).join(', ')}
                     onChange={(e) => handleArrayInput('intraoperative', 'drain_types', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                     placeholder="Comma-separated drain types"
                   />
                 )}
@@ -1529,8 +1529,6 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
               <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
                 <dt className="text-gray-600">Urgency:</dt>
                 <dd className="text-gray-900">{formData.classification.urgency}</dd>
-                <dt className="text-gray-600">Category:</dt>
-                <dd className="text-gray-900">{formData.classification.category}</dd>
                 <dt className="text-gray-600">Primary Diagnosis:</dt>
                 <dd className="text-gray-900 col-span-1">{formData.classification.primary_diagnosis}</dd>
               </dl>
@@ -1592,7 +1590,12 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
             <Button 
               type="button" 
               variant="primary"
-              onClick={() => setStep(step + 1)}
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                console.log('Next clicked, current step:', step, 'moving to:', step + 1)
+                setStep(step + 1)
+              }}
             >
               Next →
             </Button>

@@ -59,12 +59,6 @@ async def get_summary_report() -> Dict[str, Any]:
         count = await collection.count_documents({"classification.urgency": urgency})
         urgency_breakdown[urgency] = count
     
-    # Surgeries by category
-    category_breakdown = {}
-    for category in ["major_resection", "proctology", "hernia", "cholecystectomy", "other"]:
-        count = await collection.count_documents({"classification.category": category})
-        category_breakdown[category] = count
-    
     return {
         "total_surgeries": total_surgeries,
         "complication_rate": round(complication_rate, 2),
@@ -74,7 +68,6 @@ async def get_summary_report() -> Dict[str, Any]:
         "escalation_rate": round(escalation_rate, 2),
         "avg_length_of_stay_days": avg_length_of_stay,
         "urgency_breakdown": urgency_breakdown,
-        "category_breakdown": category_breakdown,
         "generated_at": datetime.utcnow().isoformat()
     }
 

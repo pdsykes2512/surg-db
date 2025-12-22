@@ -66,10 +66,10 @@ Auto-dismiss after 3 seconds or click X to close immediately.
 
 1. **Start the backend:**
    ```bash
-   cd backend
-   # Activate your Python environment
-   uvicorn app.main:app --reload
+   ./execution/start_backend.sh
    ```
+   
+   Logs are stored in `~/.tmp/backend.log`
 
 2. **Start the frontend:**
    ```bash

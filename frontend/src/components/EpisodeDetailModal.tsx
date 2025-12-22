@@ -84,12 +84,6 @@ export function EpisodeDetailModal({ episode, onClose, onEdit }: EpisodeDetailMo
                 </p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">Category</label>
-                <p className="text-sm text-gray-900 mt-1 capitalize">
-                  {episode.classification.category.replace('_', ' ')}
-                </p>
-              </div>
-              <div>
                 <label className="text-sm font-medium text-gray-500">Complexity</label>
                 <p className="text-sm text-gray-900 mt-1 capitalize">
                   {episode.classification.complexity || '—'}

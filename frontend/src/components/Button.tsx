@@ -14,6 +14,7 @@ export function Button({
   icon,
   className = '',
   disabled,
+  type = 'button',
   ...props 
 }: ButtonProps) {
   const baseClasses = 'inline-flex items-center justify-center font-medium rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2'
@@ -34,6 +35,7 @@ export function Button({
 
   return (
     <button
+      type={type}
       className={`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${className} ${disabled ? 'cursor-not-allowed opacity-50' : ''}`}
       disabled={disabled}
       {...props}

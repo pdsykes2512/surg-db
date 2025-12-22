@@ -51,11 +51,17 @@ Errors are learning opportunities. When something breaks:
 **Deliverables vs Intermediates:** - **Deliverables**: Google Sheets, Google Slides, or other cloud-based outputs that the user can access  
 - **Intermediates**: Temporary files needed during processing
 
-**Directory structure:** - `.tmp/` - All intermediate files (dossiers, scraped data, temp exports). Never commit, always regenerated.  
-- `execution/` - Python scripts (the deterministic tools)  
+**Directory structure:** - `.tmp/` (or `~/.tmp/`) - All intermediate files (dossiers, scraped data, temp exports, **log files**). Never commit, always regenerated.  
+- `execution/` - Python scripts (the deterministic tools) and startup scripts  
 - `directives/` - SOPs in Markdown (the instruction set)  
 - `.env` - Environment variables and API keys  
 - `credentials.json`, `token.json` - Google OAuth credentials (required files, in `.gitignore`)
+
+**IMPORTANT - Log Files:** 
+- Always use `~/.tmp/` (NOT `/tmp/`) for application logs
+- Use existing startup scripts in `execution/` directory (e.g., `start_backend.sh`)
+- Never hardcode `/tmp` paths in commands - they bypass our file organization
+- Example: `~/.tmp/backend.log` (correct) vs `/tmp/backend.log` (wrong)
 
 **Key principle:** Local files are only for processing. Deliverables live in cloud services (Google Sheets, Slides, etc.) where the user can access them. Everything in `.tmp/` can be deleted and regenerated.
 

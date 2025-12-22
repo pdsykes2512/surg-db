@@ -43,6 +43,8 @@ async def create_episode(surgery: SurgeryCreate):
         
         # Retrieve and return created surgery
         created_surgery = await collection.find_one({"_id": result.inserted_id})
+        if created_surgery:
+            created_surgery["_id"] = str(created_surgery["_id"])
         return Surgery(**created_surgery)
     except HTTPException:
         raise
@@ -61,7 +63,6 @@ async def list_episodes(
     skip: int = 0,
     limit: int = 100,
     patient_id: Optional[str] = Query(None, description="Filter by patient ID"),
-    category: Optional[str] = Query(None, description="Filter by category (major_resection/proctology/hernia/cholecystectomy)"),
     urgency: Optional[str] = Query(None, description="Filter by urgency (elective/emergency/urgent)"),
     primary_surgeon: Optional[str] = Query(None, description="Filter by primary surgeon"),
     start_date: Optional[str] = Query(None, description="Filter surgeries after this date (YYYY-MM-DD)"),
@@ -74,8 +75,6 @@ async def list_episodes(
     query = {}
     if patient_id:
         query["patient_id"] = patient_id
-    if category:
-        query["classification.category"] = category
     if urgency:
         query["classification.urgency"] = urgency
     if primary_surgeon:
@@ -93,6 +92,10 @@ async def list_episodes(
     cursor = collection.find(query).sort("perioperative_timeline.surgery_date", -1).skip(skip).limit(limit)
     surgeries = await cursor.to_list(length=limit)
     
+    # Convert ObjectIds to strings
+    for surgery in surgeries:
+        surgery["_id"] = str(surgery["_id"])
+    
     return [Surgery(**surgery) for surgery in surgeries]
 
 
@@ -108,6 +111,7 @@ async def get_episode(surgery_id: str):
             detail=f"Surgery {surgery_id} not found"
         )
     
+    surgery["_id"] = str(surgery["_id"])
     return Surgery(**surgery)
 
 
@@ -141,6 +145,7 @@ async def update_episode(surgery_id: str, surgery_update: SurgeryUpdate):
     
     # Return updated surgery
     updated_surgery = await collection.find_one({"surgery_id": surgery_id})
+    updated_surgery["_id"] = str(updated_surgery["_id"])
     return Surgery(**updated_surgery)
 
 
