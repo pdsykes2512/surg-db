@@ -87,10 +87,6 @@ export function SearchableSelect<T>({
           onChange={(e) => {
             const newValue = e.target.value
             setSearchTerm(newValue)
-            // Clear the selection if user clears the input
-            if (newValue === '') {
-              onChange('')
-            }
             setShowDropdown(true)
           }}
           onFocus={() => setShowDropdown(true)}
@@ -108,10 +104,26 @@ export function SearchableSelect<T>({
               }
             }, 200)
           }}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+          className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
           placeholder={placeholder}
           disabled={disabled}
         />
+        {value && !disabled && (
+          <button
+            type="button"
+            onMouseDown={(e) => {
+              e.preventDefault()
+              onChange('')
+              setSearchTerm('')
+              setShowDropdown(false)
+            }}
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+          >
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        )}
         {showDropdown && filteredOptions.length > 0 && !disabled && (
           <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
             {filteredOptions.map((option, index) => (
