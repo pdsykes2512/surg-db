@@ -258,10 +258,10 @@ export function EpisodesPage() {
       }
 
       // Date filters
-      if (startDateFilter && episode.date < startDateFilter) {
+      if (startDateFilter && episode.perioperative_timeline.surgery_date < startDateFilter) {
         return false
       }
-      if (endDateFilter && episode.date > endDateFilter) {
+      if (endDateFilter && episode.perioperative_timeline.surgery_date > endDateFilter) {
         return false
       }
 
