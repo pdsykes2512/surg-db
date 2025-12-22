@@ -257,17 +257,9 @@ export function EpisodesPage() {
         if (!matchesSearch) return false
       }
 
-      // Date filters
-      if (startDateFilter && episode.perioperative_timeline.surgery_date < startDateFilter) {
-        return false
-      }
-      if (endDateFilter && episode.perioperative_timeline.surgery_date > endDateFilter) {
-        return false
-      }
-
       return true
     })
-  }, [episodes, searchTerm, startDateFilter, endDateFilter])
+  }, [episodes, searchTerm])
 
   const filteredCancerEpisodes = useMemo(() => {
     return cancerEpisodes.filter(episode => {
@@ -283,17 +275,9 @@ export function EpisodesPage() {
         if (!matchesSearch) return false
       }
 
-      // Date filters
-      if (startDateFilter && episode.referral_date < startDateFilter) {
-        return false
-      }
-      if (endDateFilter && episode.referral_date > endDateFilter) {
-        return false
-      }
-
       return true
     })
-  }, [cancerEpisodes, searchTerm, startDateFilter, endDateFilter])
+  }, [cancerEpisodes, searchTerm])
 
   const getUrgencyColor = (urgency: string) => {
     switch (urgency) {
