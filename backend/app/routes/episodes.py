@@ -16,33 +16,44 @@ router = APIRouter(prefix="/api/episodes", tags=["episodes"])
 @router.post("/", response_model=Surgery, status_code=status.HTTP_201_CREATED)
 async def create_episode(surgery: SurgeryCreate):
     """Create a new episode record"""
-    collection = await get_surgeries_collection()
-    patients_collection = await get_patients_collection()
-    
-    # Verify patient exists
-    patient = await patients_collection.find_one({"patient_id": surgery.patient_id})
-    if not patient:
+    try:
+        collection = await get_surgeries_collection()
+        patients_collection = await get_patients_collection()
+        
+        # Verify patient exists (patient_id is the record_number/MRN)
+        patient = await patients_collection.find_one({"record_number": surgery.patient_id})
+        if not patient:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Patient with MRN {surgery.patient_id} not found"
+            )
+        
+        # Check if surgery_id already exists
+        existing = await collection.find_one({"surgery_id": surgery.surgery_id})
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Surgery with ID {surgery.surgery_id} already exists"
+            )
+        
+        # Insert surgery (audit_trail is already included in SurgeryCreate model)
+        surgery_dict = surgery.model_dump()
+        
+        result = await collection.insert_one(surgery_dict)
+        
+        # Retrieve and return created surgery
+        created_surgery = await collection.find_one({"_id": result.inserted_id})
+        return Surgery(**created_surgery)
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        print(f"Error creating episode: {str(e)}")
+        print(traceback.format_exc())
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Patient {surgery.patient_id} not found"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create episode: {str(e)}"
         )
-    
-    # Check if surgery_id already exists
-    existing = await collection.find_one({"surgery_id": surgery.surgery_id})
-    if existing:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Surgery with ID {surgery.surgery_id} already exists"
-        )
-    
-    # Insert surgery (audit_trail is already included in SurgeryCreate model)
-    surgery_dict = surgery.model_dump()
-    
-    result = await collection.insert_one(surgery_dict)
-    
-    # Retrieve and return created surgery
-    created_surgery = await collection.find_one({"_id": result.inserted_id})
-    return Surgery(**created_surgery)
 
 
 @router.get("/", response_model=List[Surgery])

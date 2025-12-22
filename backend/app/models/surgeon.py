@@ -1,13 +1,25 @@
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+import re
 
 
 class SurgeonBase(BaseModel):
     """Base surgeon model"""
     first_name: str = Field(..., description="Surgeon's first name")
     surname: str = Field(..., description="Surgeon's surname")
-    gmc_number: Optional[str] = Field(None, description="GMC registration number")
+    gmc_number: Optional[str] = Field(None, description="GMC registration number (7 digits)")
+    
+    @field_validator('gmc_number')
+    @classmethod
+    def validate_gmc_number(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and v.strip():
+            # Remove any spaces or hyphens
+            cleaned = re.sub(r'[\s-]', '', v)
+            if not re.match(r'^\d{7}$', cleaned):
+                raise ValueError('GMC number must be exactly 7 digits')
+            return cleaned
+        return None
 
 
 class SurgeonCreate(SurgeonBase):

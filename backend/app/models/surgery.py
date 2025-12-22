@@ -1,9 +1,9 @@
 """
 Surgery data models for general surgery outcomes tracking
 """
-from pydantic import BaseModel, Field
-from typing import Optional, List
-from datetime import datetime
+from pydantic import BaseModel, Field, field_validator
+from typing import Optional, List, Union
+from datetime import datetime, date
 from bson import ObjectId
 from .patient import PyObjectId
 
@@ -23,20 +23,46 @@ class Procedure(BaseModel):
     additional_procedures: List[str] = Field(default_factory=list)
     cpt_codes: List[str] = Field(default_factory=list)
     icd10_codes: List[str] = Field(default_factory=list)
+    opcs_codes: List[str] = Field(default_factory=list)
     approach: str = Field(..., description="open/laparoscopic/robotic/converted")
     description: Optional[str] = None
 
 
 class PerioperativeTimeline(BaseModel):
     """Perioperative timeline with admission, surgery, and discharge dates"""
-    admission_date: datetime
-    surgery_date: datetime
-    surgery_start_time: Optional[datetime] = None
-    surgery_end_time: Optional[datetime] = None
+    admission_date: Union[datetime, date, str]
+    surgery_date: Union[datetime, date, str]
+    induction_time: Optional[Union[datetime, str]] = None
+    knife_to_skin_time: Optional[Union[datetime, str]] = None
+    surgery_end_time: Optional[Union[datetime, str]] = None
     anesthesia_duration_minutes: Optional[int] = Field(None, ge=0)
     operation_duration_minutes: Optional[int] = Field(None, ge=0)
-    discharge_date: Optional[datetime] = None
+    discharge_date: Optional[Union[datetime, date, str]] = None
     length_of_stay_days: Optional[int] = Field(None, ge=0)
+    
+    @field_validator('admission_date', 'surgery_date', 'discharge_date', mode='before')
+    @classmethod
+    def parse_dates(cls, v):
+        if isinstance(v, str):
+            try:
+                # Try parsing as date only (YYYY-MM-DD)
+                if len(v) == 10 and 'T' not in v:
+                    return datetime.fromisoformat(v + 'T00:00:00')
+                # Try parsing as datetime
+                return datetime.fromisoformat(v.replace('Z', '+00:00'))
+            except ValueError:
+                return v
+        return v
+    
+    @field_validator('induction_time', 'knife_to_skin_time', 'surgery_end_time', mode='before')
+    @classmethod
+    def parse_datetimes(cls, v):
+        if isinstance(v, str) and v:
+            try:
+                return datetime.fromisoformat(v.replace('Z', '+00:00'))
+            except ValueError:
+                return v
+        return v
 
 
 class SurgicalTeam(BaseModel):

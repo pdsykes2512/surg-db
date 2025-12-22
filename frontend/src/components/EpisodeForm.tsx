@@ -29,6 +29,8 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
   const [showPatientDropdown, setShowPatientDropdown] = useState(false)
   const [patients, setPatients] = useState<any[]>([])
   const [surgeons, setSurgeons] = useState<any[]>([])
+  const [surgeonSearch, setSurgeonSearch] = useState('')
+  const [showSurgeonDropdown, setShowSurgeonDropdown] = useState(false)
 
   // Fetch patients list
   useEffect(() => {
@@ -244,12 +246,19 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
             updated.perioperative_timeline.knife_to_skin_time = `${value}T${timeMatch[1]}`
           }
         }
-        // Update surgery_end_time date if it already has a value
+        // Update or set surgery_end_time to use the surgery date
         if (updated.perioperative_timeline.surgery_end_time) {
+          // If surgery_end_time already has a value, update its date portion
           const timeMatch = updated.perioperative_timeline.surgery_end_time.match(/T(.+)$/)
           if (timeMatch) {
             updated.perioperative_timeline.surgery_end_time = `${value}T${timeMatch[1]}`
+          } else {
+            // If it doesn't have a time component, set it to the date
+            updated.perioperative_timeline.surgery_end_time = `${value}T00:00`
           }
+        } else {
+          // If surgery_end_time is empty, initialize it with the surgery date
+          updated.perioperative_timeline.surgery_end_time = `${value}T00:00`
         }
       }
       
@@ -1277,23 +1286,61 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Surgical Team</h3>
             
             <div className="space-y-4">
-              <div>
+              <div className="relative">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Primary Surgeon <span className="text-red-500">*</span>
                 </label>
-                <select
+                <input
+                  type="text"
                   required
-                  value={formData.team.primary_surgeon}
-                  onChange={(e) => updateField('team', 'primary_surgeon', e.target.value)}
+                  value={surgeonSearch || formData.team.primary_surgeon}
+                  onChange={(e) => {
+                    setSurgeonSearch(e.target.value)
+                    setShowSurgeonDropdown(true)
+                  }}
+                  onFocus={() => setShowSurgeonDropdown(true)}
+                  onBlur={() => setTimeout(() => setShowSurgeonDropdown(false), 200)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Select a surgeon...</option>
-                  {surgeons.map((surgeon) => (
-                    <option key={surgeon._id} value={`${surgeon.first_name} ${surgeon.surname}`}>
-                      {surgeon.surname}, {surgeon.first_name}
-                    </option>
-                  ))}
-                </select>
+                  placeholder="Type to search surgeons..."
+                />
+                {showSurgeonDropdown && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    {surgeons
+                      .filter(surgeon => {
+                        const searchLower = (surgeonSearch || '').toLowerCase()
+                        const fullName = `${surgeon.first_name} ${surgeon.surname}`.toLowerCase()
+                        const reverseName = `${surgeon.surname} ${surgeon.first_name}`.toLowerCase()
+                        return fullName.includes(searchLower) || reverseName.includes(searchLower)
+                      })
+                      .map((surgeon) => (
+                        <div
+                          key={surgeon._id}
+                          onClick={() => {
+                            const surgeonName = `${surgeon.first_name} ${surgeon.surname}`
+                            updateField('team', 'primary_surgeon', surgeonName)
+                            setSurgeonSearch('')
+                            setShowSurgeonDropdown(false)
+                          }}
+                          className="px-3 py-2 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                        >
+                          <div className="font-medium text-gray-900">
+                            {surgeon.surname}, {surgeon.first_name}
+                          </div>
+                          {surgeon.gmc_number && (
+                            <div className="text-xs text-gray-500">GMC: {surgeon.gmc_number}</div>
+                          )}
+                        </div>
+                      ))}
+                    {surgeons.filter(surgeon => {
+                      const searchLower = (surgeonSearch || '').toLowerCase()
+                      const fullName = `${surgeon.first_name} ${surgeon.surname}`.toLowerCase()
+                      const reverseName = `${surgeon.surname} ${surgeon.first_name}`.toLowerCase()
+                      return fullName.includes(searchLower) || reverseName.includes(searchLower)
+                    }).length === 0 && (
+                      <div className="px-3 py-2 text-sm text-gray-500">No surgeons found</div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div>

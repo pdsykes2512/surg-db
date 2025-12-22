@@ -527,7 +527,11 @@ export function AdminPage() {
                       onChange={(e) => setSurgeonFormData({ ...surgeonFormData, gmc_number: e.target.value })}
                       className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="1234567"
+                      pattern="[0-9]{7}"
+                      maxLength={7}
+                      title="GMC number must be exactly 7 digits"
                     />
+                    <p className="mt-1 text-xs text-gray-500">7 digits only</p>
                   </div>
                 </div>
                 <div className="flex justify-end">
