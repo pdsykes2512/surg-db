@@ -1,4 +1,4 @@
-import { formatFieldValue, formatFieldName, formatDate, formatTreatmentType, formatSurgeon } from '../utils/formatters'
+import { formatDate, formatTreatmentType, formatSurgeon } from '../utils/formatters'
 import { Button } from './Button'
 
 interface TreatmentSummaryModalProps {

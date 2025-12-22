@@ -1,4 +1,4 @@
-import { formatFieldValue, formatFieldName, capitalize } from '../utils/formatters'
+import { capitalize } from '../utils/formatters'
 import { Button } from './Button'
 
 interface TumourSummaryModalProps {

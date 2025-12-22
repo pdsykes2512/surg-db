@@ -3,8 +3,8 @@ Tumour data models for tracking individual tumour sites
 A cancer episode can have multiple tumours (primaries or metastases)
 """
 from pydantic import BaseModel, Field, field_validator
-from typing import Optional
-from datetime import datetime, date
+from typing import Optional, List, Any
+from datetime import datetime, date, timezone
 from enum import Enum
 
 
@@ -141,7 +141,7 @@ class TumourBase(BaseModel):
     
     @field_validator('diagnosis_date', 'clinical_stage_date', 'pathological_stage_date', mode='before')
     @classmethod
-    def parse_dates(cls, v):
+    def parse_dates(cls, v: Any) -> date | str:
         if isinstance(v, str) and v:
             try:
                 return datetime.fromisoformat(v).date()
@@ -193,8 +193,8 @@ class TumourUpdate(BaseModel):
 
 class Tumour(TumourBase):
     """Full tumour model with metadata"""
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    last_modified_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    last_modified_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     
     class Config:
         json_encoders = {

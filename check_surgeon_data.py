@@ -3,7 +3,6 @@
 
 import asyncio
 import os
-import sys
 from motor.motor_asyncio import AsyncIOMotorClient
 
 async def main():

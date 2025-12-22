@@ -86,7 +86,7 @@ const CRM_STATUS = [
   { value: 'not_applicable', label: 'Not Applicable' }
 ]
 
-export function TumourModal({ episodeId, onSubmit, onCancel, mode = 'create', initialData }: TumourModalProps) {
+export function TumourModal({ onSubmit, onCancel, mode = 'create', initialData }: TumourModalProps) {
   const [formData, setFormData] = useState(() => {
     if (initialData) {
       return {

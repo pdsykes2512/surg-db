@@ -56,18 +56,17 @@ export const formatFieldValue = (value: any): string => {
 }
 
 /**
- * Format date strings consistently
+ * Format date strings consistently as DD-MM-YYYY
  */
 export const formatDate = (dateStr: string | null | undefined): string => {
   if (!dateStr) return '-'
   
   try {
     const date = new Date(dateStr)
-    return date.toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    })
+    const day = date.getDate().toString().padStart(2, '0')
+    const month = (date.getMonth() + 1).toString().padStart(2, '0')
+    const year = date.getFullYear()
+    return `${day}-${month}-${year}`
   } catch {
     return dateStr
   }

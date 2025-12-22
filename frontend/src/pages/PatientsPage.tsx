@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '../components/PageHeader'
 import { Card } from '../components/Card'
 import { Button } from '../components/Button'
+import { formatDate } from '../utils/formatters'
 import api from '../services/api';
 
 interface Patient {
@@ -617,7 +618,7 @@ export function PatientsPage() {
                       {patient.nhs_number}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {patient.demographics.date_of_birth}
+                      {formatDate(patient.demographics.date_of_birth)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
@@ -687,7 +688,7 @@ export function PatientsPage() {
                 <div className="bg-gray-50 rounded-md p-3 border border-gray-200">
                   <p className="text-sm font-medium text-gray-900">Record Number: {deleteConfirmation.patient.record_number}</p>
                   <p className="text-sm text-gray-600">NHS Number: {deleteConfirmation.patient.nhs_number}</p>
-                  <p className="text-sm text-gray-600">DOB: {deleteConfirmation.patient.demographics.date_of_birth}</p>
+                  <p className="text-sm text-gray-600">DOB: {formatDate(deleteConfirmation.patient.demographics.date_of_birth)}</p>
                 </div>
               </div>
               
