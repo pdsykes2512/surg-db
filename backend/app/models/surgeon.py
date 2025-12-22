@@ -9,6 +9,7 @@ class SurgeonBase(BaseModel):
     first_name: str = Field(..., description="Surgeon's first name")
     surname: str = Field(..., description="Surgeon's surname")
     gmc_number: Optional[str] = Field(None, description="GMC registration number (7 digits)")
+    is_consultant: bool = Field(default=False, description="Whether the surgeon is a consultant (lead clinician)")
     
     @field_validator('gmc_number')
     @classmethod
@@ -32,6 +33,7 @@ class SurgeonUpdate(BaseModel):
     first_name: Optional[str] = None
     surname: Optional[str] = None
     gmc_number: Optional[str] = None
+    is_consultant: Optional[bool] = None
 
 
 class Surgeon(SurgeonBase):

@@ -7,7 +7,7 @@ from datetime import datetime
 from bson import ObjectId
 
 from ..models.patient import Patient, PatientCreate, PatientUpdate
-from ..database import get_patients_collection, get_surgeries_collection
+from ..database import get_patients_collection, get_surgeries_collection, get_episodes_collection
 
 
 router = APIRouter(prefix="/api/patients", tags=["patients"])
@@ -54,15 +54,26 @@ async def list_patients(skip: int = 0, limit: int = 100):
     # Get all record numbers
     record_numbers = [p["record_number"] for p in patients]
     
-    # Single aggregation to count episodes for all patients
+    # Count episodes from both surgeries (legacy) and episodes (cancer) collections
     episode_counts = {}
     if record_numbers:
-        pipeline = [
+        # Count legacy surgery episodes
+        surgery_pipeline = [
             {"$match": {"patient_id": {"$in": record_numbers}}},
             {"$group": {"_id": "$patient_id", "count": {"$sum": 1}}}
         ]
-        async for doc in surgeries_collection.aggregate(pipeline):
+        async for doc in surgeries_collection.aggregate(surgery_pipeline):
             episode_counts[doc["_id"]] = doc["count"]
+        
+        # Count cancer episodes and add to totals
+        episodes_collection = await get_episodes_collection()
+        cancer_pipeline = [
+            {"$match": {"patient_id": {"$in": record_numbers}}},
+            {"$group": {"_id": "$patient_id", "count": {"$sum": 1}}}
+        ]
+        async for doc in episodes_collection.aggregate(cancer_pipeline):
+            # Add to existing count or initialize
+            episode_counts[doc["_id"]] = episode_counts.get(doc["_id"], 0) + doc["count"]
     
     # Convert ObjectId to string and add episode count
     for patient in patients:

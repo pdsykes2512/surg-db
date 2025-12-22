@@ -23,6 +23,7 @@ interface Surgeon {
   first_name: string
   surname: string
   gmc_number?: string
+  is_consultant: boolean
   created_at: string
   updated_at: string
 }
@@ -51,7 +52,8 @@ export function AdminPage() {
   const [surgeonFormData, setSurgeonFormData] = useState({
     first_name: '',
     surname: '',
-    gmc_number: ''
+    gmc_number: '',
+    is_consultant: false
   })
   const [error, setError] = useState('')
 
@@ -171,20 +173,26 @@ export function AdminPage() {
     setError('')
 
     try {
+      // Prepare data: convert empty GMC number to null
+      const dataToSubmit = {
+        ...surgeonFormData,
+        gmc_number: surgeonFormData.gmc_number.trim() === '' ? null : surgeonFormData.gmc_number
+      }
+      
       if (editingSurgeon) {
         await axios.put(
           `${API_URL}/api/admin/surgeons/${editingSurgeon._id}`,
-          surgeonFormData,
+          dataToSubmit,
           { headers: { Authorization: `Bearer ${token}` } }
         )
       } else {
-        await axios.post(`${API_URL}/api/admin/surgeons`, surgeonFormData, {
+        await axios.post(`${API_URL}/api/admin/surgeons`, dataToSubmit, {
           headers: { Authorization: `Bearer ${token}` }
         })
       }
       setShowSurgeonForm(false)
       setEditingSurgeon(null)
-      setSurgeonFormData({ first_name: '', surname: '', gmc_number: '' })
+      setSurgeonFormData({ first_name: '', surname: '', gmc_number: '', is_consultant: false })
       fetchSurgeons()
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to save surgeon')
@@ -209,7 +217,8 @@ export function AdminPage() {
     setSurgeonFormData({
       first_name: surgeon.first_name,
       surname: surgeon.surname,
-      gmc_number: surgeon.gmc_number || ''
+      gmc_number: surgeon.gmc_number || '',
+      is_consultant: surgeon.is_consultant || false
     })
     setShowSurgeonForm(true)
     setError('')
@@ -534,6 +543,21 @@ export function AdminPage() {
                     <p className="mt-1 text-xs text-gray-500">7 digits only</p>
                   </div>
                 </div>
+                <div className="flex items-center p-4 bg-blue-50 border border-blue-200 rounded-md">
+                  <input
+                    type="checkbox"
+                    id="is_consultant"
+                    checked={surgeonFormData.is_consultant}
+                    onChange={(e) => setSurgeonFormData({ ...surgeonFormData, is_consultant: e.target.checked })}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="is_consultant" className="ml-2 block text-sm font-medium text-gray-900">
+                    <span className="text-blue-700">✓</span> Mark as Consultant
+                    <span className="block text-xs text-gray-600 mt-0.5">
+                      Consultants can be selected as lead clinicians for cancer episodes
+                    </span>
+                  </label>
+                </div>
                 <div className="flex justify-end">
                   <Button type="submit" variant="success">
                     {editingSurgeon ? 'Update Surgeon' : 'Add Surgeon'}
@@ -558,6 +582,9 @@ export function AdminPage() {
                       GMC Number
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Consultant
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
@@ -565,7 +592,7 @@ export function AdminPage() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {surgeons.length === 0 ? (
                     <tr>
-                      <td colSpan={4} className="px-6 py-8 text-center text-sm text-gray-500">
+                      <td colSpan={5} className="px-6 py-8 text-center text-sm text-gray-500">
                         No surgeons found
                       </td>
                     </tr>
@@ -580,6 +607,15 @@ export function AdminPage() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {surgeon.gmc_number || '—'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {surgeon.is_consultant ? (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                              ✓ Consultant
+                            </span>
+                          ) : (
+                            <span className="text-gray-400">—</span>
+                          )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                           <Button

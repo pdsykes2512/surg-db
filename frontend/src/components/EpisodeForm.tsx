@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Button } from './Button'
+import { PatientSearch } from './PatientSearch'
+import { SurgeonSearch } from './SurgeonSearch'
 
 interface EpisodeFormProps {
   onSubmit: (data: any) => void
@@ -25,52 +27,8 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
   const [showAdditionalProcDropdown, setShowAdditionalProcDropdown] = useState(false)
   const [diagnosisSearch, setDiagnosisSearch] = useState('')
   const [showDiagnosisDropdown, setShowDiagnosisDropdown] = useState(false)
-  const [patientSearch, setPatientSearch] = useState('')
-  const [showPatientDropdown, setShowPatientDropdown] = useState(false)
-  const [patients, setPatients] = useState<any[]>([])
-  const [surgeons, setSurgeons] = useState<any[]>([])
-  const [surgeonSearch, setSurgeonSearch] = useState('')
-  const [showSurgeonDropdown, setShowSurgeonDropdown] = useState(false)
 
-  // Fetch patients list
-  useEffect(() => {
-    const fetchPatients = async () => {
-      try {
-        const response = await fetch('http://localhost:8000/api/patients', {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        })
-        if (response.ok) {
-          const data = await response.json()
-          setPatients(data)
-        }
-      } catch (error) {
-        console.error('Error fetching patients:', error)
-      }
-    }
-    fetchPatients()
-  }, [])
-
-  // Fetch surgeons list
-  useEffect(() => {
-    const fetchSurgeons = async () => {
-      try {
-        const response = await fetch('http://localhost:8000/api/admin/surgeons', {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        })
-        if (response.ok) {
-          const data = await response.json()
-          setSurgeons(data)
-        }
-      } catch (error) {
-        console.error('Error fetching surgeons:', error)
-      }
-    }
-    fetchSurgeons()
-  }, [])
+  // Patient and surgeon fetching now handled by reusable components
 
   // Track and retrieve procedure usage frequency
   const getProcedureUsage = (): Record<string, number> => {
@@ -711,85 +669,13 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
             )}
           </div>
 
-          <div className="relative">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Patient ID (MRN) <span className="text-red-500">*</span>
-            </label>
-            
-            {initialData?.patient_id && mode === 'create' ? (
-              // Show patient MRN when pre-filled
-              <div>
-                <input
-                  type="text"
-                  value={formData.patient_id}
-                  readOnly
-                  className="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700"
-                  title="Patient ID is pre-filled from patient selection"
-                />
-                <p className="mt-1 text-xs text-gray-500">Patient ID is pre-filled from selected patient</p>
-              </div>
-            ) : (
-              // Searchable dropdown for selecting patient
-              <div>
-                <input
-                  type="text"
-                  required
-                  value={formData.patient_id || patientSearch}
-                  onChange={(e) => {
-                    setPatientSearch(e.target.value)
-                    setShowPatientDropdown(true)
-                    if (!e.target.value) {
-                      updateSimpleField('patient_id', '')
-                    }
-                  }}
-                  onFocus={() => setShowPatientDropdown(true)}
-                  onBlur={() => setTimeout(() => setShowPatientDropdown(false), 200)}
-                  className="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  placeholder="Search by record number or NHS number..."
-                />
-
-                {showPatientDropdown && (() => {
-                  const searchLower = patientSearch.toLowerCase()
-                  const filtered = patients.filter((patient: any) => {
-                    const recordMatch = patient.record_number?.toLowerCase().includes(searchLower)
-                    const nhsMatch = patient.nhs_number?.replace(/\s/g, '').toLowerCase().includes(searchLower.replace(/\s/g, ''))
-                    return recordMatch || nhsMatch || !searchLower
-                  }).slice(0, 20) // Limit to 20 results
-
-                  return filtered.length > 0 ? (
-                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                      {filtered.map((patient: any) => (
-                        <div
-                          key={patient.record_number}
-                          onClick={() => {
-                            updateSimpleField('patient_id', patient.record_number)
-                            setPatientSearch('')
-                            setShowPatientDropdown(false)
-                          }}
-                          className="px-3 py-2 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0"
-                        >
-                          <div className="font-medium text-gray-900">
-                            {patient.first_name} {patient.last_name}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            MRN: {patient.record_number} | NHS: {patient.nhs_number || 'N/A'}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : searchLower ? (
-                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg p-3 text-sm text-gray-500">
-                      No patients found matching "{searchLower}"
-                    </div>
-                  ) : null
-                })()}
-
-                <p className="mt-1 text-xs text-gray-500">
-                  Search by record number or NHS number
-                </p>
-              </div>
-            )}
-          </div>
+          <PatientSearch
+            value={formData.patient_id}
+            onChange={(mrn) => updateSimpleField('patient_id', mrn)}
+            label="Patient ID (MRN)"
+            required
+            placeholder="Type to search patients..."
+          />
         </div>
       )}
 
@@ -1286,62 +1172,13 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Surgical Team</h3>
             
             <div className="space-y-4">
-              <div className="relative">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Primary Surgeon <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={surgeonSearch || formData.team.primary_surgeon}
-                  onChange={(e) => {
-                    setSurgeonSearch(e.target.value)
-                    setShowSurgeonDropdown(true)
-                  }}
-                  onFocus={() => setShowSurgeonDropdown(true)}
-                  onBlur={() => setTimeout(() => setShowSurgeonDropdown(false), 200)}
-                  className="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  placeholder="Type to search surgeons..."
-                />
-                {showSurgeonDropdown && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                    {surgeons
-                      .filter(surgeon => {
-                        const searchLower = (surgeonSearch || '').toLowerCase()
-                        const fullName = `${surgeon.first_name} ${surgeon.surname}`.toLowerCase()
-                        const reverseName = `${surgeon.surname} ${surgeon.first_name}`.toLowerCase()
-                        return fullName.includes(searchLower) || reverseName.includes(searchLower)
-                      })
-                      .map((surgeon) => (
-                        <div
-                          key={surgeon._id}
-                          onClick={() => {
-                            const surgeonName = `${surgeon.first_name} ${surgeon.surname}`
-                            updateField('team', 'primary_surgeon', surgeonName)
-                            setSurgeonSearch('')
-                            setShowSurgeonDropdown(false)
-                          }}
-                          className="px-3 py-2 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0"
-                        >
-                          <div className="font-medium text-gray-900">
-                            {surgeon.surname}, {surgeon.first_name}
-                          </div>
-                          {surgeon.gmc_number && (
-                            <div className="text-xs text-gray-500">GMC: {surgeon.gmc_number}</div>
-                          )}
-                        </div>
-                      ))}
-                    {surgeons.filter(surgeon => {
-                      const searchLower = (surgeonSearch || '').toLowerCase()
-                      const fullName = `${surgeon.first_name} ${surgeon.surname}`.toLowerCase()
-                      const reverseName = `${surgeon.surname} ${surgeon.first_name}`.toLowerCase()
-                      return fullName.includes(searchLower) || reverseName.includes(searchLower)
-                    }).length === 0 && (
-                      <div className="px-3 py-2 text-sm text-gray-500">No surgeons found</div>
-                    )}
-                  </div>
-                )}
-              </div>
+              <SurgeonSearch
+                value={formData.team.primary_surgeon}
+                onChange={(name) => updateField('team', 'primary_surgeon', name)}
+                label="Primary Surgeon"
+                required
+                placeholder="Type to search surgeons..."
+              />
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">

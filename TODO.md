@@ -16,6 +16,28 @@
 
 ## High Priority
 
+### NBOCA COSD Compliance (NEW - Critical for Bowel Cancer)
+- [ ] **Phase 1: Critical Fields** (see directives/bowel_cancer_nboca_cosd_mapping.md)
+  - ✅ NHS Number (already in patient model with validation)
+  - ✅ Postcode (already in demographics)
+  - ✅ Ethnicity (already in demographics)
+  - [ ] Add ICD-10 diagnosis code to bowel cancer data
+  - [ ] Add TNM version field (v7/v8) to staging
+  - [ ] Add date of diagnosis to bowel cancer data
+  - [ ] Add OPCS-4 procedure codes to surgery
+  - [ ] Add ASA score to surgical classification
+  - [ ] Add circumferential resection margin (CRM) to pathology
+- [ ] **Phase 2: Process Metrics**
+  - [ ] Add referral source tracking to episodes
+  - [ ] Add provider organisation identifiers
+  - [ ] Add MDT meeting type classification
+  - [ ] Add CNS involvement indicator
+- [ ] **Data Export & Quality**
+  - [ ] Create COSD XML export endpoint
+  - [ ] Add data completeness checker
+  - [ ] Implement NBOCA submission validator
+  - [ ] Build data quality dashboard for COSD fields
+
 ### Episode Management
 - ✅ Build complete Episode CRUD interface in frontend
 - ✅ Add episode creation form with all fields from Surgery model
@@ -32,13 +54,16 @@
 - ✅ Build readmission tracking reports
 - ✅ Add surgeon performance analytics (aggregated)
 - [ ] Export reports to PDF/Excel
+- [ ] Add NBOCA-specific reports (30-day mortality, anastomotic leak rates)
 
 ### Data Validation & Quality
 - ✅ Add comprehensive form validation on frontend
 - ✅ Implement date range validation (surgery dates, follow-up dates)
 - [ ] Add BMI calculation from height/weight
-- [ ] Validate ASA score ranges
-- [ ] Add diagnosis code lookup/validation
+- [ ] Validate ASA score ranges (1-5)
+- [ ] Add ICD-10 code lookup/validation
+- [ ] Add OPCS-4 code lookup/validation
+- [ ] Validate COSD mandatory fields
 
 ## Medium Priority
 
@@ -64,6 +89,7 @@
 - [ ] Create data backup strategy
 - [ ] Implement session timeout handling
 - [ ] Add HTTPS/SSL configuration guide
+- [ ] **Implement database encryption at rest (MongoDB encryption)**
 
 ## Low Priority
 

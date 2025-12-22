@@ -4,10 +4,18 @@ import { PageHeader } from '../components/PageHeader'
 import { Card } from '../components/Card'
 import { Button } from '../components/Button'
 import { EpisodeForm } from '../components/EpisodeForm'
+import { CancerEpisodeForm } from '../components/CancerEpisodeForm'
 import { EpisodeDetailModal } from '../components/EpisodeDetailModal'
+import { CancerEpisodeDetailModal } from '../components/CancerEpisodeDetailModal'
 import { ToastContainer } from '../components/Toast'
 import { apiService } from '../services/api'
 import api from '../services/api'
+import { formatDate, formatStatus, formatCancerType, formatSurgeon } from '../utils/formatters'
+
+const capitalize = (str: string) => {
+  if (!str) return ''
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
+}
 
 interface Episode {
   surgery_id: string
@@ -32,10 +40,15 @@ export function EpisodesPage() {
   const { patientId } = useParams<{ patientId: string }>()
   const navigate = useNavigate()
   const [episodes, setEpisodes] = useState<Episode[]>([])
+  const [cancerEpisodes, setCancerEpisodes] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
+  const [showCancerModal, setShowCancerModal] = useState(false)
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [selectedEpisode, setSelectedEpisode] = useState<Episode | null>(null)
+  const [showCancerDetailModal, setShowCancerDetailModal] = useState(false)
+  const [selectedCancerEpisode, setSelectedCancerEpisode] = useState<any>(null)
+  const [editingCancerEpisode, setEditingCancerEpisode] = useState<any>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [toasts, setToasts] = useState<Array<{ id: string; message: string; type: 'success' | 'error' | 'info' | 'warning' }>>([])
   const [patientInfo, setPatientInfo] = useState<any>(null)
@@ -90,8 +103,30 @@ export function EpisodesPage() {
       if (startDateFilter) params.start_date = startDateFilter
       if (endDateFilter) params.end_date = endDateFilter
 
+      // Load legacy surgery episodes
       const response = await apiService.episodes.list(params)
       setEpisodes(response.data)
+
+      // Load new cancer episodes from V2 API
+      const cancerParams = new URLSearchParams()
+      if (patientId) cancerParams.append('patient_id', patientId)
+      if (surgeonFilter) cancerParams.append('lead_clinician', surgeonFilter)
+      if (startDateFilter) cancerParams.append('start_date', startDateFilter)
+      if (endDateFilter) cancerParams.append('end_date', endDateFilter)
+
+      const cancerResponse = await fetch(
+        `http://localhost:8000/api/v2/episodes/?${cancerParams.toString()}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      )
+      
+      if (cancerResponse.ok) {
+        const cancerData = await cancerResponse.json()
+        setCancerEpisodes(cancerData)
+      }
     } catch (error) {
       console.error('Failed to load episodes:', error)
     } finally {
@@ -130,6 +165,56 @@ export function EpisodesPage() {
     }
   }
 
+  const handleCreateCancerEpisode = async (data: any) => {
+    try {
+      console.log('Creating cancer episode with data:', data)
+      
+      const response = await fetch('http://localhost:8000/api/v2/episodes/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify(data)
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        console.error('Server error:', error)
+        
+        // Handle different error formats
+        let errorMessage = 'Failed to create cancer episode'
+        
+        if (typeof error.detail === 'string') {
+          errorMessage = error.detail
+        } else if (Array.isArray(error.detail)) {
+          // Pydantic validation errors
+          errorMessage = error.detail.map((err: any) => 
+            `${err.loc?.join('.') || 'Field'}: ${err.msg}`
+          ).join('\n')
+        } else if (error.detail && typeof error.detail === 'object') {
+          errorMessage = JSON.stringify(error.detail, null, 2)
+        }
+        
+        throw new Error(errorMessage)
+      }
+
+      setShowCancerModal(false)
+      loadEpisodes()
+      showToast('Cancer episode created successfully', 'success')
+    } catch (error: any) {
+      console.error('Failed to create cancer episode:', error)
+      const errorMessage = error.message || 'Failed to create cancer episode'
+      
+      // For multi-line errors, show an alert instead of toast
+      if (errorMessage.includes('\n')) {
+        alert(`Failed to create cancer episode:\n\n${errorMessage}`)
+      } else {
+        showToast(errorMessage, 'error')
+      }
+    }
+  }
+
   const handleEdit = async (data: any) => {
     if (!selectedEpisode) return
     
@@ -142,6 +227,34 @@ export function EpisodesPage() {
     } catch (error: any) {
       console.error('Failed to update episode:', error)
       showToast(error.response?.data?.detail || 'Failed to update episode', 'error')
+    }
+  }
+
+  const handleEditCancerEpisode = async (data: any) => {
+    if (!editingCancerEpisode) return
+    
+    try {
+      const response = await fetch(`http://localhost:8000/api/v2/episodes/${editingCancerEpisode.episode_id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify(data)
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.detail || 'Failed to update cancer episode')
+      }
+
+      setEditingCancerEpisode(null)
+      setShowCancerModal(false)
+      loadEpisodes()
+      showToast('Cancer episode updated successfully', 'success')
+    } catch (error: any) {
+      console.error('Failed to update cancer episode:', error)
+      showToast(error.message || 'Failed to update cancer episode', 'error')
     }
   }
 
@@ -170,18 +283,6 @@ export function EpisodesPage() {
       )
     })
   }, [episodes, searchTerm])
-
-  const formatDate = useCallback((dateStr: string) => {
-    try {
-      return new Date(dateStr).toLocaleDateString('en-GB', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric'
-      })
-    } catch {
-      return dateStr
-    }
-  }, [])
 
   const getUrgencyColor = (urgency: string) => {
     switch (urgency) {
@@ -218,12 +319,9 @@ export function EpisodesPage() {
               )}
               <Button 
                 variant="primary"
-                onClick={() => {
-                  setSelectedEpisode(null)
-                  setShowModal(true)
-                }}
+                onClick={() => setShowCancerModal(true)}
               >
-                + Record Surgery
+                + Cancer Episode
               </Button>
             </div>
           }
@@ -410,28 +508,17 @@ export function EpisodesPage() {
           <div className="flex items-center justify-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
           </div>
-        ) : filteredEpisodes.length === 0 ? (
+        ) : filteredEpisodes.length === 0 && cancerEpisodes.length === 0 ? (
           <div className="text-center py-12">
             <svg className="mx-auto w-16 h-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
             <h3 className="text-lg font-medium text-gray-900 mb-2">No Episode Records</h3>
-            <p className="text-gray-500 mb-4">
+            <p className="text-gray-500">
               {searchTerm || urgencyFilter || surgeonFilter || startDateFilter || endDateFilter
                 ? 'No episodes match your search criteria'
-                : 'Begin tracking surgical outcomes by recording your first surgery'}
+                : 'No episodes recorded yet'}
             </p>
-            {!searchTerm && !urgencyFilter && !surgeonFilter && !startDateFilter && !endDateFilter && (
-              <Button 
-                variant="primary"
-                onClick={() => {
-                  setSelectedEpisode(null)
-                  setShowModal(true)
-                }}
-              >
-                Record Your First Surgery
-              </Button>
-            )}
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -439,7 +526,10 @@ export function EpisodesPage() {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Surgery ID
+                    Episode ID
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Type
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Patient ID
@@ -448,13 +538,10 @@ export function EpisodesPage() {
                     Date
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Procedure
+                    Clinician
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Surgeon
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Urgency
+                    Status
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
@@ -462,10 +549,71 @@ export function EpisodesPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
+                {/* Cancer Episodes */}
+                {cancerEpisodes.map((episode) => (
+                  <tr 
+                    key={episode.episode_id} 
+                    onClick={() => {
+                      setSelectedCancerEpisode(episode)
+                      setShowCancerDetailModal(true)
+                    }}
+                    className="hover:bg-gray-50 bg-green-50 cursor-pointer"
+                  >
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
+                      {episode.episode_id}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                        {formatCancerType(episode.cancer_type)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {episode.patient_id}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {formatDate(episode.referral_date)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {formatSurgeon(episode.lead_clinician)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                        episode.episode_status === 'active' ? 'bg-blue-100 text-blue-800' :
+                        episode.episode_status === 'completed' ? 'bg-gray-100 text-gray-800' :
+                        'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {formatStatus(episode.episode_status)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setEditingCancerEpisode(episode)
+                            setShowCancerModal(true)
+                          }}
+                          className="text-blue-600 hover:text-blue-900"
+                          title="Edit episode"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>                      </div>
+                    </td>
+                  </tr>
+                ))}
+                
+                {/* Legacy Surgery Episodes */}
                 {filteredEpisodes.map((episode) => (
                   <tr key={episode.surgery_id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
                       {episode.surgery_id}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                        Surgery
+                      </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {episode.patient_id}
@@ -473,15 +621,12 @@ export function EpisodesPage() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {formatDate(episode.perioperative_timeline.surgery_date)}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-900 max-w-xs truncate">
-                      {episode.procedure.primary_procedure}
-                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {episode.team.primary_surgeon}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getUrgencyColor(episode.classification.urgency)}`}>
-                        {episode.classification.urgency}
+                        {capitalize(episode.classification.urgency)}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -567,6 +712,30 @@ export function EpisodesPage() {
             setShowDetailModal(false)
             setShowModal(true)
           }}
+        />
+      )}
+
+      {/* Cancer Episode Detail Modal */}
+      {showCancerDetailModal && selectedCancerEpisode && (
+        <CancerEpisodeDetailModal
+          episode={selectedCancerEpisode}
+          onClose={() => {
+            setShowCancerDetailModal(false)
+            setSelectedCancerEpisode(null)
+          }}
+        />
+      )}
+
+      {/* Cancer Episode Modal */}
+      {showCancerModal && (
+        <CancerEpisodeForm
+          onSubmit={editingCancerEpisode ? handleEditCancerEpisode : handleCreateCancerEpisode}
+          onCancel={() => {
+            setShowCancerModal(false)
+            setEditingCancerEpisode(null)
+          }}
+          mode={editingCancerEpisode ? 'edit' : 'create'}
+          initialData={editingCancerEpisode || (patientId ? { patient_id: patientId } : undefined)}
         />
       )}
       </div>

@@ -22,7 +22,12 @@ class Settings(BaseSettings):
     secret_key: str = "your-secret-key-change-in-production-min-32-characters-long"
     
     # CORS settings
-    cors_origins: list = ["http://localhost:3000", "http://localhost:3001", "http://localhost:5173"]
+    cors_origins: list = [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:5173",
+        "http://surg-db.vps:3000"
+    ]
     
     class Config:
         env_file = "../.env"  # .env is in parent directory
