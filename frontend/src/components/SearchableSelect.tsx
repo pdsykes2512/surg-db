@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 interface SearchableSelectProps<T> {
   value: string
@@ -36,6 +36,18 @@ export function SearchableSelect<T>({
   const [searchTerm, setSearchTerm] = useState('')
   const [showDropdown, setShowDropdown] = useState(false)
 
+  // Sync searchTerm with value prop when it changes
+  useEffect(() => {
+    if (value) {
+      const selectedOption = options.find(opt => getOptionValue(opt) === value)
+      if (selectedOption) {
+        setSearchTerm(getOptionLabel(selectedOption))
+      }
+    } else {
+      setSearchTerm('')
+    }
+  }, [value, options, getOptionValue, getOptionLabel])
+
   // Default filter function
   const defaultFilter = (option: T, search: string) => {
     return getOptionLabel(option).toLowerCase().includes(search.toLowerCase())
@@ -48,8 +60,9 @@ export function SearchableSelect<T>({
 
   const handleSelect = (option: T) => {
     const val = getOptionValue(option)
+    const label = getOptionLabel(option)
     onChange(val)
-    setSearchTerm(getOptionLabel(option))
+    setSearchTerm(label)
     setShowDropdown(false)
   }
 
@@ -59,16 +72,6 @@ export function SearchableSelect<T>({
   )
 
   const render = renderOption || defaultRender
-
-  // Find the display value for the current selection
-  const getDisplayValue = () => {
-    if (searchTerm) return searchTerm
-    if (!value) return ''
-    
-    // Find the option that matches the current value
-    const selectedOption = options.find(opt => getOptionValue(opt) === value)
-    return selectedOption ? getOptionLabel(selectedOption) : value
-  }
 
   return (
     <div className={className}>
@@ -80,13 +83,31 @@ export function SearchableSelect<T>({
       <div className="relative">
         <input
           type="text"
-          value={getDisplayValue()}
+          value={searchTerm}
           onChange={(e) => {
-            setSearchTerm(e.target.value)
+            const newValue = e.target.value
+            setSearchTerm(newValue)
+            // Clear the selection if user clears the input
+            if (newValue === '') {
+              onChange('')
+            }
             setShowDropdown(true)
           }}
           onFocus={() => setShowDropdown(true)}
-          onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
+          onBlur={() => {
+            setTimeout(() => {
+              setShowDropdown(false)
+              // Reset searchTerm to show selected value label when blurred
+              if (value) {
+                const selectedOption = options.find(opt => getOptionValue(opt) === value)
+                if (selectedOption) {
+                  setSearchTerm(getOptionLabel(selectedOption))
+                }
+              } else {
+                setSearchTerm('')
+              }
+            }, 200)
+          }}
           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
           placeholder={placeholder}
           disabled={disabled}
