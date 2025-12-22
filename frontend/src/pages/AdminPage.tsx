@@ -18,11 +18,24 @@ interface User {
   created_at: string
 }
 
+interface Surgeon {
+  _id: string
+  first_name: string
+  surname: string
+  gmc_number?: string
+  created_at: string
+  updated_at: string
+}
+
 export function AdminPage() {
   const { token } = useAuth()
+  const [activeTab, setActiveTab] = useState<'users' | 'surgeons'>('users')
   const [users, setUsers] = useState<User[]>([])
+  const [surgeons, setSurgeons] = useState<Surgeon[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
+  const [showSurgeonForm, setShowSurgeonForm] = useState(false)
+  const [editingSurgeon, setEditingSurgeon] = useState<Surgeon | null>(null)
   const [showPasswordModal, setShowPasswordModal] = useState(false)
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
   const [newPassword, setNewPassword] = useState('')
@@ -35,10 +48,16 @@ export function AdminPage() {
     department: '',
     job_title: ''
   })
+  const [surgeonFormData, setSurgeonFormData] = useState({
+    first_name: '',
+    surname: '',
+    gmc_number: ''
+  })
   const [error, setError] = useState('')
 
   useEffect(() => {
     fetchUsers()
+    fetchSurgeons()
   }, [])
 
   const fetchUsers = async () => {
@@ -51,6 +70,17 @@ export function AdminPage() {
       setError('Failed to fetch users')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchSurgeons = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/api/admin/surgeons`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      setSurgeons(response.data)
+    } catch (err) {
+      setError('Failed to fetch surgeons')
     }
   }
 
@@ -136,6 +166,55 @@ export function AdminPage() {
     }
   }
 
+  const handleSurgeonSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+
+    try {
+      if (editingSurgeon) {
+        await axios.put(
+          `${API_URL}/api/admin/surgeons/${editingSurgeon._id}`,
+          surgeonFormData,
+          { headers: { Authorization: `Bearer ${token}` } }
+        )
+      } else {
+        await axios.post(`${API_URL}/api/admin/surgeons`, surgeonFormData, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+      }
+      setShowSurgeonForm(false)
+      setEditingSurgeon(null)
+      setSurgeonFormData({ first_name: '', surname: '', gmc_number: '' })
+      fetchSurgeons()
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Failed to save surgeon')
+    }
+  }
+
+  const deleteSurgeon = async (surgeonId: string) => {
+    if (!confirm('Are you sure you want to delete this surgeon?')) return
+
+    try {
+      await axios.delete(`${API_URL}/api/admin/surgeons/${surgeonId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      fetchSurgeons()
+    } catch (err) {
+      setError('Failed to delete surgeon')
+    }
+  }
+
+  const openEditSurgeon = (surgeon: Surgeon) => {
+    setEditingSurgeon(surgeon)
+    setSurgeonFormData({
+      first_name: surgeon.first_name,
+      surname: surgeon.surname,
+      gmc_number: surgeon.gmc_number || ''
+    })
+    setShowSurgeonForm(true)
+    setError('')
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -147,25 +226,55 @@ export function AdminPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="User Management"
-        subtitle="Manage system users, roles, and permissions"
+        title="Administration"
+        subtitle="Manage system users, surgeons, and settings"
         icon={
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
           </svg>
         }
-        action={
-          <Button onClick={() => setShowForm(!showForm)} variant="primary">
-            {showForm ? 'Cancel' : '+ Create User'}
-          </Button>
-        }
       />
+
+      {/* Tab Navigation */}
+      <div className="border-b border-gray-200">
+        <nav className="-mb-px flex space-x-8">
+          <button
+            onClick={() => setActiveTab('users')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'users'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            Users
+          </button>
+          <button
+            onClick={() => setActiveTab('surgeons')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'surgeons'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            Surgeons
+          </button>
+        </nav>
+      </div>
 
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
           {error}
         </div>
       )}
+
+      {/* Users Tab */}
+      {activeTab === 'users' && (
+        <>
+          <div className="flex justify-end">
+            <Button onClick={() => setShowForm(!showForm)} variant="primary">
+              {showForm ? 'Cancel' : '+ Create User'}
+            </Button>
+          </div>
 
       {showForm && (
         <Card>
@@ -353,6 +462,146 @@ export function AdminPage() {
           </table>
         </div>
       </Card>
+        </>
+      )}
+
+      {/* Surgeons Tab */}
+      {activeTab === 'surgeons' && (
+        <>
+          <div className="flex justify-end">
+            <Button 
+              onClick={() => {
+                setEditingSurgeon(null)
+                setSurgeonFormData({ first_name: '', surname: '', gmc_number: '' })
+                setShowSurgeonForm(!showSurgeonForm)
+                setError('')
+              }} 
+              variant="primary"
+            >
+              {showSurgeonForm ? 'Cancel' : '+ Add Surgeon'}
+            </Button>
+          </div>
+
+          {showSurgeonForm && (
+            <Card>
+              <div className="border-b border-gray-200 pb-4 mb-4">
+                <h3 className="text-lg font-medium text-gray-900">
+                  {editingSurgeon ? 'Edit Surgeon' : 'Add New Surgeon'}
+                </h3>
+              </div>
+              <form onSubmit={handleSurgeonSubmit} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      First Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={surgeonFormData.first_name}
+                      onChange={(e) => setSurgeonFormData({ ...surgeonFormData, first_name: e.target.value })}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="John"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Surname <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={surgeonFormData.surname}
+                      onChange={(e) => setSurgeonFormData({ ...surgeonFormData, surname: e.target.value })}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Smith"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      GMC Number
+                    </label>
+                    <input
+                      type="text"
+                      value={surgeonFormData.gmc_number}
+                      onChange={(e) => setSurgeonFormData({ ...surgeonFormData, gmc_number: e.target.value })}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="1234567"
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end">
+                  <Button type="submit" variant="success">
+                    {editingSurgeon ? 'Update Surgeon' : 'Add Surgeon'}
+                  </Button>
+                </div>
+              </form>
+            </Card>
+          )}
+
+          <Card padding="none">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Surname
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      First Name
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      GMC Number
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {surgeons.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="px-6 py-8 text-center text-sm text-gray-500">
+                        No surgeons found
+                      </td>
+                    </tr>
+                  ) : (
+                    surgeons.map((surgeon) => (
+                      <tr key={surgeon._id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {surgeon.surname}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {surgeon.first_name}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {surgeon.gmc_number || '—'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                          <Button
+                            onClick={() => openEditSurgeon(surgeon)}
+                            variant="outline"
+                            size="small"
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            onClick={() => deleteSurgeon(surgeon._id)}
+                            variant="danger"
+                            size="small"
+                          >
+                            Delete
+                          </Button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </>
+      )}
 
       {/* Password Change Modal */}
       {showPasswordModal && (

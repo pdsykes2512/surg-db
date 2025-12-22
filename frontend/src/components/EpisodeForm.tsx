@@ -28,6 +28,7 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
   const [patientSearch, setPatientSearch] = useState('')
   const [showPatientDropdown, setShowPatientDropdown] = useState(false)
   const [patients, setPatients] = useState<any[]>([])
+  const [surgeons, setSurgeons] = useState<any[]>([])
 
   // Fetch patients list
   useEffect(() => {
@@ -47,6 +48,26 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
       }
     }
     fetchPatients()
+  }, [])
+
+  // Fetch surgeons list
+  useEffect(() => {
+    const fetchSurgeons = async () => {
+      try {
+        const response = await fetch('http://localhost:8000/api/admin/surgeons', {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        })
+        if (response.ok) {
+          const data = await response.json()
+          setSurgeons(data)
+        }
+      } catch (error) {
+        console.error('Error fetching surgeons:', error)
+      }
+    }
+    fetchSurgeons()
   }, [])
 
   // Track and retrieve procedure usage frequency
@@ -136,7 +157,8 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
     perioperative_timeline: {
       admission_date: '',
       surgery_date: '',
-      surgery_start_time: '',
+      induction_time: '',
+      knife_to_skin_time: '',
       surgery_end_time: '',
       anesthesia_duration_minutes: null,
       operation_duration_minutes: null,
@@ -185,13 +207,92 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
   }, [])
 
   const updateField = (section: string, field: string, value: any) => {
-    setFormData((prev: any) => ({
-      ...prev,
-      [section]: {
-        ...prev[section],
-        [field]: value
+    setFormData((prev: any) => {
+      const updated = {
+        ...prev,
+        [section]: {
+          ...prev[section],
+          [field]: value
+        }
       }
-    }))
+      
+      // Auto-combine time-only inputs with surgery_date for storage
+      if (section === 'perioperative_timeline' && (field === 'induction_time' || field === 'knife_to_skin_time')) {
+        const surgeryDate = updated.perioperative_timeline.surgery_date
+        if (surgeryDate && value) {
+          // If value is just a time (HH:MM), combine with surgery date for storage
+          if (!value.includes('T') && value.match(/^\d{2}:\d{2}/)) {
+            value = `${surgeryDate}T${value}`
+          }
+          updated.perioperative_timeline[field] = value
+        }
+      }
+      
+      // Auto-update time fields when surgery_date changes
+      if (section === 'perioperative_timeline' && field === 'surgery_date' && value) {
+        // Update induction_time date if it has a time component
+        if (updated.perioperative_timeline.induction_time) {
+          const timeMatch = updated.perioperative_timeline.induction_time.match(/T(.+)$/)
+          if (timeMatch) {
+            updated.perioperative_timeline.induction_time = `${value}T${timeMatch[1]}`
+          }
+        }
+        // Update knife_to_skin_time date if it has a time component
+        if (updated.perioperative_timeline.knife_to_skin_time) {
+          const timeMatch = updated.perioperative_timeline.knife_to_skin_time.match(/T(.+)$/)
+          if (timeMatch) {
+            updated.perioperative_timeline.knife_to_skin_time = `${value}T${timeMatch[1]}`
+          }
+        }
+        // Update surgery_end_time date if it already has a value
+        if (updated.perioperative_timeline.surgery_end_time) {
+          const timeMatch = updated.perioperative_timeline.surgery_end_time.match(/T(.+)$/)
+          if (timeMatch) {
+            updated.perioperative_timeline.surgery_end_time = `${value}T${timeMatch[1]}`
+          }
+        }
+      }
+      
+      // Auto-calculate durations when time fields change
+      if (section === 'perioperative_timeline') {
+        const timeline = updated.perioperative_timeline
+        
+        // Calculate anesthesia duration (induction to surgery end)
+        if (timeline.induction_time && timeline.surgery_end_time) {
+          const inductionDateTime = new Date(timeline.induction_time)
+          const endDateTime = new Date(timeline.surgery_end_time)
+          
+          const diffMinutes = Math.round((endDateTime.getTime() - inductionDateTime.getTime()) / 60000)
+          if (diffMinutes >= 0) {
+            updated.perioperative_timeline.anesthesia_duration_minutes = diffMinutes
+          }
+        }
+        
+        // Calculate operation duration (knife to skin to surgery end)
+        if (timeline.knife_to_skin_time && timeline.surgery_end_time) {
+          const knifeDateTime = new Date(timeline.knife_to_skin_time)
+          const endDateTime = new Date(timeline.surgery_end_time)
+          
+          const diffMinutes = Math.round((endDateTime.getTime() - knifeDateTime.getTime()) / 60000)
+          if (diffMinutes >= 0) {
+            updated.perioperative_timeline.operation_duration_minutes = diffMinutes
+          }
+        }
+        
+        // Calculate length of stay (admission to discharge in days)
+        if (timeline.admission_date && timeline.discharge_date) {
+          const admissionDate = new Date(timeline.admission_date)
+          const dischargeDate = new Date(timeline.discharge_date)
+          
+          const diffDays = Math.round((dischargeDate.getTime() - admissionDate.getTime()) / (1000 * 60 * 60 * 24))
+          if (diffDays >= 0) {
+            updated.perioperative_timeline.length_of_stay_days = diffDays
+          }
+        }
+      }
+      
+      return updated
+    })
   }
 
   const updateSimpleField = (field: string, value: any) => {
@@ -1051,7 +1152,7 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
                 Admission Date <span className="text-red-500">*</span>
               </label>
               <input
-                type="datetime-local"
+                type="date"
                 required
                 value={formData.perioperative_timeline.admission_date}
                 onChange={(e) => updateField('perioperative_timeline', 'admission_date', e.target.value)}
@@ -1064,7 +1165,7 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
                 Surgery Date <span className="text-red-500">*</span>
               </label>
               <input
-                type="datetime-local"
+                type="date"
                 required
                 value={formData.perioperative_timeline.surgery_date}
                 onChange={(e) => updateField('perioperative_timeline', 'surgery_date', e.target.value)}
@@ -1074,14 +1175,28 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Surgery Start Time
+                Induction Time
               </label>
               <input
-                type="datetime-local"
-                value={formData.perioperative_timeline.surgery_start_time}
-                onChange={(e) => updateField('perioperative_timeline', 'surgery_start_time', e.target.value)}
+                type="time"
+                value={formData.perioperative_timeline.induction_time ? formData.perioperative_timeline.induction_time.split('T')[1] || '' : ''}
+                onChange={(e) => updateField('perioperative_timeline', 'induction_time', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               />
+              <p className="mt-1 text-xs text-gray-500">When anaesthesia begins (automatically uses surgery date)</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Knife to Skin
+              </label>
+              <input
+                type="time"
+                value={formData.perioperative_timeline.knife_to_skin_time ? formData.perioperative_timeline.knife_to_skin_time.split('T')[1] || '' : ''}
+                onChange={(e) => updateField('perioperative_timeline', 'knife_to_skin_time', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+              <p className="mt-1 text-xs text-gray-500">When surgery incision begins (automatically uses surgery date)</p>
             </div>
 
             <div>
@@ -1090,8 +1205,21 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
               </label>
               <input
                 type="datetime-local"
-                value={formData.perioperative_timeline.surgery_end_time}
+                value={formData.perioperative_timeline.surgery_end_time || (formData.perioperative_timeline.surgery_date ? `${formData.perioperative_timeline.surgery_date}T` : '')}
                 onChange={(e) => updateField('perioperative_timeline', 'surgery_end_time', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+              <p className="mt-1 text-xs text-gray-500">Date and time when surgery ends</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Discharge Date
+              </label>
+              <input
+                type="date"
+                value={formData.perioperative_timeline.discharge_date}
+                onChange={(e) => updateField('perioperative_timeline', 'discharge_date', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -1102,38 +1230,26 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
               </label>
               <input
                 type="number"
-                min="0"
                 value={formData.perioperative_timeline.operation_duration_minutes || ''}
-                onChange={(e) => updateField('perioperative_timeline', 'operation_duration_minutes', e.target.value ? parseInt(e.target.value) : null)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                placeholder="Duration in minutes"
+                readOnly
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700"
+                placeholder="Auto-calculated"
               />
+              <p className="mt-1 text-xs text-gray-500">Calculated from knife to skin to end time</p>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Anesthesia Duration (minutes)
+                Anaesthesia Duration (minutes)
               </label>
               <input
                 type="number"
-                min="0"
                 value={formData.perioperative_timeline.anesthesia_duration_minutes || ''}
-                onChange={(e) => updateField('perioperative_timeline', 'anesthesia_duration_minutes', e.target.value ? parseInt(e.target.value) : null)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                placeholder="Duration in minutes"
+                readOnly
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700"
+                placeholder="Auto-calculated"
               />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Discharge Date
-              </label>
-              <input
-                type="datetime-local"
-                value={formData.perioperative_timeline.discharge_date}
-                onChange={(e) => updateField('perioperative_timeline', 'discharge_date', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              />
+              <p className="mt-1 text-xs text-gray-500">Calculated from induction to end time</p>
             </div>
 
             <div>
@@ -1144,10 +1260,11 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
                 type="number"
                 min="0"
                 value={formData.perioperative_timeline.length_of_stay_days || ''}
-                onChange={(e) => updateField('perioperative_timeline', 'length_of_stay_days', e.target.value ? parseInt(e.target.value) : null)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                placeholder="Days"
+                readOnly
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700"
+                placeholder="Auto-calculated"
               />
+              <p className="mt-1 text-xs text-gray-500">Calculated from admission to discharge date</p>
             </div>
           </div>
         </div>
@@ -1164,14 +1281,19 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Primary Surgeon <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="text"
+                <select
                   required
                   value={formData.team.primary_surgeon}
                   onChange={(e) => updateField('team', 'primary_surgeon', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  placeholder="Surgeon name"
-                />
+                >
+                  <option value="">Select a surgeon...</option>
+                  {surgeons.map((surgeon) => (
+                    <option key={surgeon._id} value={`${surgeon.first_name} ${surgeon.surname}`}>
+                      {surgeon.surname}, {surgeon.first_name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div>
