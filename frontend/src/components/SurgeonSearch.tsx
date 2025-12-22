@@ -89,9 +89,10 @@ export function SurgeonSearch({
       <div className="relative">
         <input
           type="text"
-          value={searchTerm || value}
+          value={searchTerm}
           onChange={(e) => {
             setSearchTerm(e.target.value)
+            onChange(e.target.value)
             setShowDropdown(true)
           }}
           onFocus={() => setShowDropdown(true)}
