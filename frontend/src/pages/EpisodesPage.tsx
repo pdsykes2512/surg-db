@@ -426,12 +426,11 @@ export function EpisodesPage() {
             </div>
           </div>
 
-          {(urgencyFilter || startDateFilter || endDateFilter) && (
+          {(startDateFilter || endDateFilter) && (
             <div className="flex justify-end">
               <Button
                 variant="secondary"
                 onClick={() => {
-                  setUrgencyFilter('')
                   setStartDateFilter('')
                   setEndDateFilter('')
                 }}
@@ -456,7 +455,7 @@ export function EpisodesPage() {
             </svg>
             <h3 className="text-lg font-medium text-gray-900 mb-2">No Episode Records</h3>
             <p className="text-gray-500">
-              {searchTerm || urgencyFilter || startDateFilter || endDateFilter
+              {searchTerm || startDateFilter || endDateFilter
                 ? 'No episodes match your search criteria'
                 : 'No episodes recorded yet'}
             </p>
