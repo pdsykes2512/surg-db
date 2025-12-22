@@ -35,7 +35,7 @@ function App() {
           }
         />
         <Route
-          path="/episodes"
+          path="/episodes/:patientId"
           element={
             <ProtectedRoute requiredRoles={['data_entry', 'surgeon', 'admin']}>
               <Layout>
@@ -45,7 +45,7 @@ function App() {
           }
         />
         <Route
-          path="/episodes/:patientId"
+          path="/episodes"
           element={
             <ProtectedRoute requiredRoles={['data_entry', 'surgeon', 'admin']}>
               <Layout>
