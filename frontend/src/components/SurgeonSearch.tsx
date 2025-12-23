@@ -60,13 +60,13 @@ export function SurgeonSearch({
     }
     fetchSurgeons()
   }, [consultantsOnly])
- and role
+
+  // Filter surgeons based on subspecialty and role
   const filteredSurgeons = surgeons.filter((s) => {
     const matchesSubspecialty = !subspecialtyFilter || 
       (s.subspecialty_leads && s.subspecialty_leads.includes(subspecialtyFilter))
     const matchesRole = !roleFilter || s.role === roleFilter
-    return matchesSubspecialty && matchesRole s.subspecialty_leads.includes(subspecialtyFilter))
-    return matchesSubspecialty
+    return matchesSubspecialty && matchesRole
   })
 
   // Convert surgeons to options format
