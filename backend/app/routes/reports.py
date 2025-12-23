@@ -21,6 +21,7 @@ router = APIRouter(prefix="/api/reports", tags=["reports"])
 async def get_summary_report() -> Dict[str, Any]:
     """Get overall outcome statistics from surgical treatments in separate collection"""
     treatments_collection = await get_treatments_collection()
+    episodes_collection = await get_episodes_collection()
     
     # Query treatments collection directly (no unwinding needed)
     pipeline = [
@@ -34,6 +35,22 @@ async def get_summary_report() -> Dict[str, Any]:
                 "avg_duration": [
                     {"$match": {"operation_duration_minutes": {"$exists": True, "$ne": None}}},
                     {"$group": {"_id": None, "avg": {"$avg": "$operation_duration_minutes"}}}
+                ],
+                "complications": [
+                    {"$match": {"clavien_dindo_grade": {"$exists": True, "$ne": None}}},
+                    {"$count": "count"}
+                ],
+                "readmissions": [
+                    {"$match": {"readmission_30d": True}},
+                    {"$count": "count"}
+                ],
+                "return_theatre": [
+                    {"$match": {"return_to_theatre": True}},
+                    {"$count": "count"}
+                ],
+                "avg_los": [
+                    {"$match": {"length_of_stay": {"$exists": True, "$ne": None}}},
+                    {"$group": {"_id": None, "avg": {"$avg": "$length_of_stay"}}}
                 ]
             }
         }
@@ -48,8 +65,25 @@ async def get_summary_report() -> Dict[str, Any]:
     stats = result[0]
     total_surgeries = stats["total"][0]["count"] if stats["total"] else 0
     
-    # Temporarily return zeros for metrics not yet captured in flat structure
-    # These will be populated once proper surgical treatment data structure is used
+    # Calculate rates
+    complications_count = stats["complications"][0]["count"] if stats["complications"] else 0
+    readmissions_count = stats["readmissions"][0]["count"] if stats["readmissions"] else 0
+    return_theatre_count = stats["return_theatre"][0]["count"] if stats["return_theatre"] else 0
+    
+    complication_rate = complications_count / total_surgeries if total_surgeries > 0 else 0
+    readmission_rate = readmissions_count / total_surgeries if total_surgeries > 0 else 0
+    return_to_theatre_rate = return_theatre_count / total_surgeries if total_surgeries > 0 else 0
+    
+    # Get mortality from episodes (death within 30 days of treatment)
+    mortality_count = await episodes_collection.count_documents({
+        "outcome.patient_status": "deceased",
+        "outcome.date_of_death": {"$exists": True, "$ne": None}
+    })
+    mortality_rate = mortality_count / total_surgeries if total_surgeries > 0 else 0
+    
+    # Escalation rate (ICU escalation) - would need to be added to treatment model
+    escalation_rate = 0  # Placeholder until we add this field
+    
     urgency_breakdown = {item["_id"] if item["_id"] else "unknown": item["count"] for item in stats["urgency"]}
     # Ensure all urgencies are present
     for urgency in ["elective", "emergency", "urgent"]:
@@ -57,16 +91,17 @@ async def get_summary_report() -> Dict[str, Any]:
             urgency_breakdown[urgency] = 0
     
     avg_duration = round(stats["avg_duration"][0]["avg"], 2) if stats["avg_duration"] and stats["avg_duration"][0] else 0
+    avg_los = round(stats["avg_los"][0]["avg"], 2) if stats["avg_los"] and stats["avg_los"][0] else 0
     
     return {
         "total_surgeries": total_surgeries,
         "avg_operation_duration_minutes": avg_duration,
-        "complication_rate": 0,  # Not yet captured in simplified structure
-        "readmission_rate": 0,  # Not yet captured in simplified structure
-        "mortality_rate": 0,  # Not yet captured in simplified structure
-        "return_to_theatre_rate": 0,  # Not yet captured in simplified structure
-        "escalation_rate": 0,  # Not yet captured in simplified structure
-        "avg_length_of_stay_days": 0,  # Can be calculated from admission/discharge dates
+        "complication_rate": complication_rate,
+        "readmission_rate": readmission_rate,
+        "mortality_rate": mortality_rate,
+        "return_to_theatre_rate": return_to_theatre_rate,
+        "escalation_rate": escalation_rate,
+        "avg_length_of_stay_days": avg_los,
         "urgency_breakdown": urgency_breakdown,
         "generated_at": datetime.utcnow().isoformat()
     }
@@ -137,20 +172,38 @@ async def get_surgeon_performance() -> Dict[str, Any]:
             "_id": "$surgeon",
             "total_surgeries": {"$sum": 1},
             "avg_duration": {"$avg": "$operation_duration_minutes"},
+            "complications": {
+                "$sum": {
+                    "$cond": [{"$and": [{"$ne": ["$clavien_dindo_grade", None]}, {"$ne": ["$clavien_dindo_grade", ""]}]}, 1, 0]
+                }
+            },
+            "readmissions": {
+                "$sum": {"$cond": [{"$eq": ["$readmission_30d", True]}, 1, 0]}
+            },
+            "avg_los": {"$avg": "$length_of_stay"}
         }},
         {"$sort": {"total_surgeries": -1}}
     ]
     
     surgeon_stats = await treatments_collection.aggregate(pipeline).to_list(length=100)
     
-    # Round numeric values and add placeholder zeros for metrics not yet captured
+    # Calculate rates and round numeric values
     for stat in surgeon_stats:
         if stat["avg_duration"]:
             stat["avg_duration"] = round(stat["avg_duration"], 2)
-        # Temporarily return zeros for complex metrics not captured in simplified structure
-        stat["complication_rate"] = 0.0
-        stat["readmission_rate"] = 0.0
-        stat["avg_los"] = 0.0
+        if stat["avg_los"]:
+            stat["avg_los"] = round(stat["avg_los"], 2)
+        else:
+            stat["avg_los"] = 0.0
+        
+        # Calculate complication and readmission rates
+        total = stat["total_surgeries"]
+        stat["complication_rate"] = stat["complications"] / total if total > 0 else 0.0
+        stat["readmission_rate"] = stat["readmissions"] / total if total > 0 else 0.0
+        
+        # Remove intermediate counts (keep only rates)
+        del stat["complications"]
+        del stat["readmissions"]
     
     return {
         "surgeons": surgeon_stats,
