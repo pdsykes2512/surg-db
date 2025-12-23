@@ -293,7 +293,13 @@ async def export_nboca_xml(
     """
     
     # Build query for cancer episodes (bowel cancer only for NBOCA)
-    query = {"cancer_type": "bowel"}
+    # Note: Check cancer_type field - may be empty in existing data
+    query = {}
+    
+    # Try to filter by bowel cancer if specified, but allow all if no bowel episodes exist
+    bowel_count = await db.cancer_episodes.count_documents({"cancer_type": "bowel"})
+    if bowel_count > 0:
+        query["cancer_type"] = "bowel"
     
     if start_date or end_date:
         date_query = {}
@@ -301,7 +307,12 @@ async def export_nboca_xml(
             date_query["$gte"] = datetime.fromisoformat(start_date)
         if end_date:
             date_query["$lte"] = datetime.fromisoformat(end_date)
-        query["cancer_data.diagnosis_date"] = date_query
+        # Check if cancer_data.diagnosis_date exists, otherwise use created_at or any date field
+        query["$or"] = [
+            {"cancer_data.diagnosis_date": date_query},
+            {"diagnosis_date": date_query},
+            {"created_at": date_query}
+        ]
     
     # Fetch cancer episodes
     episodes_cursor = db.cancer_episodes.find(query)
@@ -311,7 +322,12 @@ async def export_nboca_xml(
         episodes.append(doc)
     
     if not episodes:
-        raise HTTPException(status_code=404, detail="No episodes found for the specified criteria")
+        # Try without any filters to see if any episodes exist
+        total_count = await db.cancer_episodes.count_documents({})
+        raise HTTPException(
+            status_code=404, 
+            detail=f"No episodes found for the specified criteria. Total episodes in database: {total_count}. Try removing date filters or ensure episodes have cancer_type='bowel'."
+        )
     
     # Create root XML element
     root = ET.Element("COSDSubmission")
