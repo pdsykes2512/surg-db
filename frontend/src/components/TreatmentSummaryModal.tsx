@@ -74,7 +74,7 @@ export function TreatmentSummaryModal({ treatment, onClose, onEdit }: TreatmentS
             />
             <Field label="Treatment Date" value={formatDate(treatment.treatment_date)} />
             <Field label="Surgeon/Oncologist" value={formatSurgeon(treatment.surgeon || treatment.oncologist)} />
-            <Field label="Provider Organisation" value={treatment.provider_organisation} />
+            <Field label="Provider Organisation" value={formatTrustName(treatment.provider_organisation)} />
             <Field label="Institution" value={treatment.institution} />
           </Section>
 
