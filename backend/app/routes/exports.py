@@ -439,11 +439,12 @@ async def export_nboca_xml(
         
         patient["_id"] = str(patient["_id"])
         
-        # Fetch treatments and tumours from separate collections
-        treatments_cursor = db.treatments.find({"episode_id": str(episode["_id"])})
+        # Fetch treatments and tumours from separate collections using episode_id (not _id)
+        episode_id = episode.get("episode_id") or str(episode["_id"])
+        treatments_cursor = db.treatments.find({"episode_id": episode_id})
         treatments = await treatments_cursor.to_list(length=None)
         
-        tumours_cursor = db.tumours.find({"episode_id": str(episode["_id"])})
+        tumours_cursor = db.tumours.find({"episode_id": episode_id})
         tumours = await tumours_cursor.to_list(length=None)
         
         # Create episode record with treatments and tumours
@@ -538,8 +539,9 @@ async def check_data_completeness(
         if cancer_data.get("tnm_staging"):
             completeness["diagnosis"]["tnm_staging"] += 1
         
-        # Fetch treatments from separate collection
-        treatments_cursor = db.treatments.find({"episode_id": str(episode["_id"])})
+        # Fetch treatments from separate collection using episode_id (not _id)
+        episode_id = episode.get("episode_id") or str(episode["_id"])
+        treatments_cursor = db.treatments.find({"episode_id": episode_id})
         treatments = await treatments_cursor.to_list(length=None)
         surgical_treatments = [t for t in treatments if t.get("treatment_type") == "surgery"]
         
@@ -626,7 +628,7 @@ async def validate_nboca_submission(
     
     async for episode in episodes_cursor:
         validation_report["summary"]["total_episodes"] += 1
-        episode_id = str(episode["_id"])
+        episode_id = episode.get("episode_id") or str(episode["_id"])
         patient_id = episode.get("patient_id")
         
         episode_validation = {
@@ -636,7 +638,7 @@ async def validate_nboca_submission(
             "warnings": []
         }
         
-        # Fetch related data
+        # Fetch related data using episode_id (not _id)
         patient = await db.patients.find_one({"record_number": patient_id})
         tumours_cursor = db.tumours.find({"episode_id": episode_id})
         tumours = await tumours_cursor.to_list(length=None)
