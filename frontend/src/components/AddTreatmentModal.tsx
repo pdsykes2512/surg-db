@@ -15,8 +15,17 @@ interface AddTreatmentModalProps {
 
 const generateTreatmentId = (type: string) => {
   const timestamp = Date.now().toString(36)
-  const randomStr = Math.random().toString(36).substring(2, 6)
-  const prefix = type.substring(0, 3).toUpperCase()
+  const randomStr = Math.random().toString(36).substring(2, 8)
+  
+  // Map treatment type to prefix
+  const prefixMap: Record<string, string> = {
+    'surgery': 'SUR',
+    'chemotherapy': 'ONC',
+    'radiotherapy': 'DXT',
+    'immunotherapy': 'IMM'
+  }
+  
+  const prefix = prefixMap[type] || 'TRE'
   return `${prefix}-${timestamp}-${randomStr}`.toUpperCase()
 }
 
@@ -124,7 +133,7 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
       }
     }
     return {
-    treatment_id: generateTreatmentId('surgery'),
+    treatment_id: generateTreatmentId(),
     treatment_type: 'surgery',
     treatment_date: new Date().toISOString().split('T')[0],
     provider_organisation: 'RYR',
