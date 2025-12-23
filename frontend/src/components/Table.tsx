@@ -6,10 +6,14 @@ import { ReactNode } from 'react'
  * Standardized table components with consistent styling across the application.
  * All tables should use these components to maintain uniform appearance.
  * 
- * Standard Row Heights:
- * - Table headers: py-3 (12px vertical padding)
- * - Table cells: py-4 (16px vertical padding)
+ * Standard Styling:
+ * - Table headers: px-6 py-3, uppercase text, gray background
+ * - Table cells: px-6 py-4 whitespace-nowrap text-sm
+ * - Clickable rows: hover:bg-blue-50 cursor-pointer transition-colors
  * - Summary modal fields: py-2 (8px vertical padding)
+ * 
+ * All cells include whitespace-nowrap by default to prevent text wrapping
+ * and maintain consistent row heights. Override with className if needed.
  * 
  * Usage:
  * <Table>
@@ -21,8 +25,8 @@ import { ReactNode } from 'react'
  *   </TableHeader>
  *   <TableBody>
  *     <TableRow onClick={() => {}}>
- *       <TableCell>Data 1</TableCell>
- *       <TableCell>Data 2</TableCell>
+ *       <TableCell className="text-gray-900">Data 1</TableCell>
+ *       <TableCell className="text-gray-500">Data 2</TableCell>
  *     </TableRow>
  *   </TableBody>
  * </Table>
@@ -103,7 +107,7 @@ interface TableCellProps {
 
 export function TableCell({ children, className = '', onClick }: TableCellProps) {
   return (
-    <td className={`px-6 py-4 text-sm ${className}`} onClick={onClick}>
+    <td className={`px-6 py-4 whitespace-nowrap text-sm ${className}`} onClick={onClick}>
       {children}
     </td>
   )
