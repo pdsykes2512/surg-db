@@ -29,13 +29,14 @@ export function HomePage() {
         const patients = patientsRes.data
         const episodes = episodesRes.data
         
-        // Count episodes this month
+        // Count episodes this month (using referral_date for cancer episodes)
         const now = new Date()
         const thisMonthCount = episodes.filter((ep: any) => {
-          if (!ep.perioperative_timeline?.surgery_date) return false
-          const surgeryDate = new Date(ep.perioperative_timeline.surgery_date)
-          return surgeryDate.getMonth() === now.getMonth() && 
-                 surgeryDate.getFullYear() === now.getFullYear()
+          const dateField = ep.referral_date || ep.first_seen_date || ep.perioperative_timeline?.surgery_date
+          if (!dateField) return false
+          const episodeDate = new Date(dateField)
+          return episodeDate.getMonth() === now.getMonth() && 
+                 episodeDate.getFullYear() === now.getFullYear()
         }).length
         
         setStats({
