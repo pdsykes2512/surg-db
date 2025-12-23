@@ -4,8 +4,7 @@ import { AddTreatmentModal } from './AddTreatmentModal'
 import { TumourModal } from './TumourModal'
 import { TumourSummaryModal } from './TumourSummaryModal'
 import { TreatmentSummaryModal } from './TreatmentSummaryModal'
-import { formatFieldValue, formatFieldName, formatDate, formatStatus, formatCancerType, formatTreatmentType, formatSurgeon, capitalize } from '../utils/formatters'
-import { formatTrustName } from '../utils/nhsTrusts'
+import { formatFieldValue, formatFieldName, formatDate, formatStatus, formatCancerType, formatTreatmentType, formatSurgeon, capitalize, formatTreatmentPlan, formatCodedValue, formatAnatomicalSite } from '../utils/formatters'
 
 interface Treatment {
   treatment_id: string
@@ -57,12 +56,40 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
   const [activeTab, setActiveTab] = useState<'overview' | 'tumours' | 'treatments'>('overview')
   const [viewingTumour, setViewingTumour] = useState<any>(null)
   const [viewingTreatment, setViewingTreatment] = useState<Treatment | null>(null)
+  const [providerName, setProviderName] = useState<string>('')
 
   // Delete confirmation states
   const [deleteTumourConfirmation, setDeleteTumourConfirmation] = useState<{ show: boolean; tumour: any | null }>({ show: false, tumour: null })
   const [deleteTumourConfirmText, setDeleteTumourConfirmText] = useState('')
   const [deleteTreatmentConfirmation, setDeleteTreatmentConfirmation] = useState<{ show: boolean; treatment: Treatment | null }>({ show: false, treatment: null })
   const [deleteTreatmentConfirmText, setDeleteTreatmentConfirmText] = useState('')
+
+  // Fetch provider name when episode changes
+  useEffect(() => {
+    const fetchProviderName = async () => {
+      if (episode?.provider_first_seen) {
+        try {
+          const response = await fetch(`http://localhost:8000/api/nhs-providers/${episode.provider_first_seen}`)
+          if (response.ok) {
+            const provider = await response.json()
+            // Format the name with Title Case and NHS capitalized
+            const formatted = provider.name.split(' ').map((word: string) => {
+              if (word.toLowerCase() === 'nhs') return 'NHS'
+              return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+            }).join(' ')
+            setProviderName(formatted)
+          } else {
+            setProviderName(episode.provider_first_seen)
+          }
+        } catch (err) {
+          setProviderName(episode.provider_first_seen)
+        }
+      } else {
+        setProviderName('')
+      }
+    }
+    fetchProviderName()
+  }, [episode])
 
   useEffect(() => {
     if (episode) {
@@ -402,15 +429,24 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
                     <div>
                       <label className="text-sm font-medium text-gray-500">Referral Source</label>
                       <p className="text-sm text-gray-900 mt-1">
-                        {episode.referral_source === '2ww' ? '2 Week Wait' : 
-                         episode.referral_source.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                        {episode.referral_source === '2ww' ? '2 Week Wait' : formatCodedValue(episode.referral_source)}
+                      </p>
+                    </div>
+                  )}
+                  {episode.referral_type && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Referral Type</label>
+                      <p className="text-sm text-gray-900 mt-1">
+                        {formatCodedValue(episode.referral_type)}
                       </p>
                     </div>
                   )}
                   {episode.provider_first_seen && (
                     <div>
                       <label className="text-sm font-medium text-gray-500">Provider First Seen</label>
-                      <p className="text-sm text-gray-900 mt-1">{formatTrustName(episode.provider_first_seen)}</p>
+                      <p className="text-sm text-gray-900 mt-1">
+                        {providerName ? `${providerName} (${episode.provider_first_seen})` : episode.provider_first_seen}
+                      </p>
                     </div>
                   )}
                   {episode.cns_involved && (
@@ -428,20 +464,61 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-500">MDT Discussion</label>
-                    <p className="text-sm text-gray-900 mt-1">{formatDate(episode.mdt_discussion_date)}</p>
+                    <p className="text-sm text-gray-900 mt-1">{formatDate(episode.mdt_discussion_date || episode.mdt_outcome?.mdt_discussion_date)}</p>
                   </div>
+                  {(episode.mdt_meeting_type || episode.mdt_outcome?.mdt_meeting_type) && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">MDT Meeting Type</label>
+                      <p className="text-sm text-gray-900 mt-1">
+                        {formatCodedValue(episode.mdt_meeting_type || episode.mdt_outcome?.mdt_meeting_type)}
+                      </p>
+                    </div>
+                  )}
+                  {(episode.treatment_intent || episode.mdt_outcome?.treatment_intent) && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Treatment Intent</label>
+                      <p className="text-sm text-gray-900 mt-1">
+                        {formatCodedValue(episode.treatment_intent || episode.mdt_outcome?.treatment_intent)}
+                      </p>
+                    </div>
+                  )}
+                  {(episode.treatment_plan || episode.mdt_outcome?.treatment_plan) && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Treatment Plan</label>
+                      <p className="text-sm text-gray-900 mt-1">
+                        {formatTreatmentPlan(episode.treatment_plan || episode.mdt_outcome?.treatment_plan)}
+                      </p>
+                    </div>
+                  )}
                   <div>
                     <label className="text-sm font-medium text-gray-500">Performance Status</label>
                     <p className="text-sm text-gray-900 mt-1">
                       {episode.performance_status ? `ECOG ${episode.performance_status}` : 'Not assessed'}
                     </p>
                   </div>
+                  {episode.surgery_performed !== null && episode.surgery_performed !== undefined && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Surgery Performed</label>
+                      <p className="text-sm text-gray-900 mt-1">
+                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                          episode.surgery_performed ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {episode.surgery_performed ? 'Yes' : 'No'}
+                        </span>
+                      </p>
+                    </div>
+                  )}
                   {episode.no_treatment_reason && (
                     <div className="md:col-span-3">
                       <label className="text-sm font-medium text-gray-500">No Treatment Reason</label>
                       <p className="text-sm text-gray-900 mt-1">
                         {episode.no_treatment_reason.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
                       </p>
+                      {episode.no_treatment_reason_detail && (
+                        <p className="text-sm text-gray-600 mt-1 italic">
+                          Detail: {episode.no_treatment_reason_detail}
+                        </p>
+                      )}
                     </div>
                   )}
                   <div className="md:col-span-3">
@@ -480,7 +557,7 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
                               }`}>
                                 {tumour.tumour_type?.replace('_', ' ').toUpperCase() || 'UNKNOWN'}
                               </span>
-                              <span className="text-sm font-medium text-gray-900">{tumour.site ? capitalize(tumour.site) : 'Site not specified'}</span>
+                              <span className="text-sm font-medium text-gray-900">{formatAnatomicalSite(tumour.site)}</span>
                             </div>
                           </div>
                           <div className="grid grid-cols-2 gap-2 text-xs">
@@ -591,7 +668,7 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
                                 {treatment.site && (
                                   <div>
                                     <span className="text-gray-500">Site:</span>
-                                    <span className="ml-1 text-gray-900">{treatment.site}</span>
+                                    <span className="ml-1 text-gray-900">{formatAnatomicalSite(treatment.site)}</span>
                                   </div>
                                 )}
                                 {treatment.total_dose && (
@@ -691,7 +768,7 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {tumour.site?.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                            {formatAnatomicalSite(tumour.site)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             {tumour.icd10_code || '—'}
@@ -814,7 +891,7 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
                             ) : treatment.treatment_type === 'chemotherapy' && treatment.regimen ? (
                               `${treatment.regimen} (Cycle ${treatment.cycle_number || '?'})`
                             ) : treatment.treatment_type === 'radiotherapy' && treatment.site ? (
-                              `${treatment.site} - ${treatment.total_dose || '?'}Gy`
+                              `${formatAnatomicalSite(treatment.site)} - ${treatment.total_dose || '?'}Gy`
                             ) : (
                               treatment.notes || '—'
                             )}
@@ -957,7 +1034,7 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
                     <div className="font-medium text-gray-900">{deleteTumourConfirmation.tumour.tumour_id}</div>
                     
                     <div className="text-gray-500">Site:</div>
-                    <div className="text-gray-900">{deleteTumourConfirmation.tumour.site || 'N/A'}</div>
+                    <div className="text-gray-900">{formatAnatomicalSite(deleteTumourConfirmation.tumour.site)}</div>
                     
                     {deleteTumourConfirmation.tumour.size && (
                       <>

@@ -21,12 +21,14 @@ export function HomePage() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const [patientsRes, episodesRes] = await Promise.all([
-          api.get('/patients/'),
+        const [patientsCountRes, episodesCountRes, episodesRes] = await Promise.all([
+          api.get('/patients/count'),
+          api.get('/episodes/count'),
           api.get('/episodes/')
         ])
         
-        const patients = patientsRes.data
+        const totalPatients = patientsCountRes.data.count
+        const totalEpisodes = episodesCountRes.data.count
         const episodes = episodesRes.data
         
         // Count episodes this month (using referral_date for cancer episodes)
@@ -40,8 +42,8 @@ export function HomePage() {
         }).length
         
         setStats({
-          totalPatients: patients.length,
-          totalEpisodes: episodes.length,
+          totalPatients,
+          totalEpisodes,
           thisMonth: thisMonthCount,
           loading: false
         })

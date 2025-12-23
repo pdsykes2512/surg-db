@@ -1,0 +1,866 @@
+{
+  "reference_note": "NHS Provider (Trust) Codes verified from ODS API - https://directory.spineservices.nhs.uk/STU3/",
+  "last_updated": "2025-12-23 17:27:39",
+  "providers": {
+    "RHU": {
+      "name": "portsmouth hospitals university nhs trust",
+      "type": "nhs trust",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "RHM": {
+      "name": "university hospital southampton nhs foundation trust",
+      "type": "nhs foundation trust",
+      "verified": false
+    },
+    "R1H": {
+      "name": "guy's and st thomas' nhs foundation trust",
+      "type": "nhs foundation trust",
+      "verified": false
+    },
+    "RJ7": {
+      "name": "st george's university hospitals nhs foundation trust",
+      "type": "nhs foundation trust",
+      "verified": false
+    },
+    "RTH": {
+      "name": "oxford university hospitals nhs foundation trust",
+      "type": "nhs foundation trust",
+      "verified": false
+    },
+    "697E0": {
+      "name": "portsmouth pathology service",
+      "type": "pathology lab",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "813": {
+      "name": "portsmouth city council",
+      "type": "local authority",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "813AA": {
+      "name": "portsmouth city council public health",
+      "type": "local authority site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "8K751": {
+      "name": "portsmouth diocesan council for social responsibility",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "A91155": {
+      "name": "portsmouth medical centre",
+      "type": "prescribing cost centre",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "A91222": {
+      "name": "portsmouth combined medical centre",
+      "type": "other prescribing cost centre",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "AR7": {
+      "name": "portsmouth primary care alliance ltd",
+      "type": "independent sector healthcare provider",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "AR701": {
+      "name": "portsmouth primary care alliance ltd - havant rd",
+      "type": "independent sector h/c provider site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "B8T1W": {
+      "name": "portsmouth and south eastern hampshire",
+      "type": "independent sector h/c provider site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "C36Q": {
+      "name": "portsmouth elder care limited",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "EE116581": {
+      "name": "portsmouth high school gdst",
+      "type": "school",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "FQG76": {
+      "name": "portsmouth pharmacy",
+      "type": "pharmacy",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "L7P6U": {
+      "name": "portsmouth cdc",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "NT9C2": {
+      "name": "portsmouth pet/ct centre",
+      "type": "independent sector h/c provider site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "NTPP3": {
+      "name": "portsmouth adult community ophthalmology assessment (smtc)",
+      "type": "independent sector h/c provider site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "NWA01": {
+      "name": "portsmouth technopole (echotech ltd)",
+      "type": "independent sector h/c provider site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "Q6D4A": {
+      "name": "portsmouth artificial eye service",
+      "type": "independent sector h/c provider site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "R1CDP": {
+      "name": "portsmouth academy for girls",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "R1C84": {
+      "name": "portsmouth college",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "R1C97": {
+      "name": "portsmouth civic offices",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "R1CAF": {
+      "name": "portsmouth foyer",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "RTHC7": {
+      "name": "portsmouth renal",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "RXX4H": {
+      "name": "portsmouth disability forum",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "RXX4F": {
+      "name": "portsmouth drug interventions programme",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "RYE14": {
+      "name": "portsmouth pts",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "TP3Y2": {
+      "name": "portsmouth n h extra",
+      "type": "optical site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "TP8MV": {
+      "name": "portsmouth north end specsavers limited",
+      "type": "optical site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "U19124": {
+      "name": "portsmouth north pcn",
+      "type": "primary care network",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "U72114": {
+      "name": "portsmouth south coast pcn",
+      "type": "primary care network",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "U7M3M": {
+      "name": "portsmouth research hub - azd2816 covid19 trials",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "VN1Q9": {
+      "name": "portsmouth shared lives service",
+      "type": "social care site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "WYE": {
+      "name": "portsmouth magistrates court",
+      "type": "non residential institution",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "X6Z2U": {
+      "name": "portsmouth research hub",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "Y05178": {
+      "name": "portsmouth primary care alliance ltd",
+      "type": "other prescribing cost centre",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "C5V7O": {
+      "name": "portsmouth college",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "C6W0B": {
+      "name": "portsmouth foyer",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "H0Z0G": {
+      "name": "portsmouth civic offices",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "Y1J5K": {
+      "name": "portsmouth academy for girls",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "Y08675": {
+      "name": "portsmouth continence service",
+      "type": "prescribing cost centre",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "694X0": {
+      "name": "southampton general hospital laboratory",
+      "type": "pathology lab",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "814": {
+      "name": "southampton city council",
+      "type": "local authority",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "8AH17": {
+      "name": "southampton counselling & therapy centre",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "8AH26": {
+      "name": "southampton care association",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "8DN07": {
+      "name": "southampton council for community services",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "8FT43": {
+      "name": "southampton counselling limited",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "8JE96": {
+      "name": "southampton centre for independent living continuing care",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "8KD75": {
+      "name": "southampton anaesthetists services ltd",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "AR4": {
+      "name": "southampton primary care limited",
+      "type": "independent sector healthcare provider",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "AR401": {
+      "name": "southampton primary care",
+      "type": "independent sector h/c provider site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "EE133878": {
+      "name": "southampton solent university",
+      "type": "school",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "EE140649": {
+      "name": "southampton hospital school",
+      "type": "school",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "J82081": {
+      "name": "southampton sea city partnership",
+      "type": "prescribing cost centre",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "M0Y8X": {
+      "name": "southampton university hospital - nihr clinical research facility - janssen covid19 trials",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "N6J6J": {
+      "name": "southampton (west hampshire) magistrates' court",
+      "type": "non residential institution",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "NV513": {
+      "name": "southampton",
+      "type": "independent sector h/c provider site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "NT9A5": {
+      "name": "southampton pet/ct centre",
+      "type": "independent sector h/c provider site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "NTPLH": {
+      "name": "southampton community vasectomy service - aldermoor surgery (care uk)",
+      "type": "independent sector h/c provider site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "NV1F2": {
+      "name": "southampton general hospital",
+      "type": "independent sector h/c provider site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "O6U7V": {
+      "name": "southampton logistics & pharmacy unit",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "R1C40": {
+      "name": "southampton general hospital",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "R1C86": {
+      "name": "southampton university health centre",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "R1CGX": {
+      "name": "southampton civic offices",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "R1CHJ": {
+      "name": "southampton city council",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "R1CJR": {
+      "name": "southampton central library",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "R1CM2": {
+      "name": "southampton city college",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "RHM01": {
+      "name": "southampton general hospital",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "RHU35": {
+      "name": "southampton general hospital",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "RWV61": {
+      "name": "southampton adrc",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "T146L": {
+      "name": "southampton centre (nhs blood & transplant)",
+      "type": "special health authority site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "U08561": {
+      "name": "southampton living well partnership pcn",
+      "type": "primary care network",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "U53997": {
+      "name": "southampton woolston & townhill pcn",
+      "type": "primary care network",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "U18986": {
+      "name": "southampton central pcn",
+      "type": "primary care network",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "U47004": {
+      "name": "southampton west pcn",
+      "type": "primary care network",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "U97340": {
+      "name": "southampton bitterne pcn",
+      "type": "primary care network",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "U91385": {
+      "name": "southampton north pcn",
+      "type": "primary care network",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "V13005": {
+      "name": "southampton orthodontic centre l",
+      "type": "general dental practice",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "VM8WX": {
+      "name": "southampton manor care home",
+      "type": "social care site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "VN03W": {
+      "name": "southampton",
+      "type": "social care site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "VN23T": {
+      "name": "southampton reablement service",
+      "type": "social care site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "VN23V": {
+      "name": "southampton city council shared lives scheme",
+      "type": "social care site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "VNEPR": {
+      "name": "southampton",
+      "type": "social care site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "VNQC4": {
+      "name": "southampton manor care home",
+      "type": "social care site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "WAR": {
+      "name": "southampton combined court centre",
+      "type": "non residential institution",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "WJP": {
+      "name": "southampton police custody suite",
+      "type": "non residential institution",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "X2605": {
+      "name": "southampton - strawberry fields",
+      "type": "executive agency site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "Y04672": {
+      "name": "southampton minor injuries unit",
+      "type": "other prescribing cost centre",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "Y05074": {
+      "name": "southampton primary care hubs",
+      "type": "other prescribing cost centre",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "Y05817": {
+      "name": "southampton drug & alcohol services",
+      "type": "prescribing cost centre",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "U18494": {
+      "name": "southampton sea city pcn",
+      "type": "primary care network",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "00NAJ": {
+      "name": "south tyneside district hospital",
+      "type": "clinical commissioning group site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "00YDF": {
+      "name": "southlink block 1",
+      "type": "clinical commissioning group site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "01WDD": {
+      "name": "south reddish medical centre",
+      "type": "clinical commissioning group site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "02ADM": {
+      "name": "south trafford health and well being centre",
+      "type": "clinical commissioning group site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "03NPF": {
+      "name": "southey green medical centre",
+      "type": "clinical commissioning group site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "06QCD": {
+      "name": "south woodham ferrers clinic",
+      "type": "clinical commissioning group site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "0AEAF": {
+      "name": "southgate house",
+      "type": "commissioning support unit site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "0AEAL": {
+      "name": "south east quality observatory",
+      "type": "commissioning support unit site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "0DF0L": {
+      "name": "southgate house",
+      "type": "commissioning support unit site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "109": {
+      "name": "south tyneside council",
+      "type": "local authority",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "109AA": {
+      "name": "south tyneside council (rolling mill road)",
+      "type": "local authority site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "11XCG": {
+      "name": "south petherton hospital",
+      "type": "clinical commissioning group site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "11XCM": {
+      "name": "south somerset offices",
+      "type": "clinical commissioning group site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "12AAQ": {
+      "name": "southmead hospital",
+      "type": "clinical commissioning group site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "14F": {
+      "name": "south west commissioning hub",
+      "type": "clinical commissioning group",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "14G": {
+      "name": "south east commissioning hub",
+      "type": "clinical commissioning group",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "14H": {
+      "name": "south central commissioning hub",
+      "type": "clinical commissioning group",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "14T": {
+      "name": "south west - h&j commissioning hub",
+      "type": "clinical commissioning group",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "15CAA": {
+      "name": "south plaza",
+      "type": "clinical commissioning group site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "15CAH": {
+      "name": "south bristol healthy living centre",
+      "type": "clinical commissioning group site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "15CAK": {
+      "name": "south bristol community hospital",
+      "type": "clinical commissioning group site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "295": {
+      "name": "south cambridgeshire district council",
+      "type": "local authority",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "296": {
+      "name": "south derbyshire district council",
+      "type": "local authority",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "297": {
+      "name": "south hams district council",
+      "type": "local authority",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "298": {
+      "name": "south holland district council",
+      "type": "local authority",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "299": {
+      "name": "south kesteven district council",
+      "type": "local authority",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "314": {
+      "name": "south norfolk district council",
+      "type": "local authority",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "328": {
+      "name": "south ribble borough council",
+      "type": "local authority",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "330": {
+      "name": "south staffordshire council",
+      "type": "local authority",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "383": {
+      "name": "south oxfordshire district council",
+      "type": "local authority",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "503HG": {
+      "name": "south park surgery",
+      "type": "local authority site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "5EM18": {
+      "name": "southglade access centre and sure start childrens centre",
+      "type": "primary care trust site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "5M211": {
+      "name": "south wrekin community mental health team",
+      "type": "primary care trust site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "5M213": {
+      "name": "south shropshire community mental health team",
+      "type": "primary care trust site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "5M238": {
+      "name": "south east shropshire community mental health team",
+      "type": "primary care trust site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "5M239": {
+      "name": "south shrewsbury cmht & joint community learning disabilities team",
+      "type": "primary care trust site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "5MK11": {
+      "name": "south wrekin community mental health team",
+      "type": "primary care trust site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "5MK13": {
+      "name": "south shropshire community mental health team",
+      "type": "primary care trust site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "5MK38": {
+      "name": "south east shropshire community mental health team",
+      "type": "primary care trust site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "5MK39": {
+      "name": "south shrewsbury cmht & joint community learning disabilities team",
+      "type": "primary care trust site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "5N4PF": {
+      "name": "southey green medical centre",
+      "type": "primary care trust site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "5NL93": {
+      "name": "south liverpool nhs treatment centre",
+      "type": "primary care trust site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "5P666": {
+      "name": "southlands hospital",
+      "type": "primary care trust site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "5P686": {
+      "name": "southgate house",
+      "type": "primary care trust site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "5QJ04": {
+      "name": "southmead hospital",
+      "type": "primary care trust site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "5QJ19": {
+      "name": "south bristol intermediate care centre",
+      "type": "primary care trust site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "5QJ20": {
+      "name": "south bristol healthy living centre",
+      "type": "primary care trust site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "5QJ36": {
+      "name": "southmead health centre",
+      "type": "primary care trust site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "5QJ77": {
+      "name": "south bristol community hospital",
+      "type": "primary care trust site",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    },
+    "621": {
+      "name": "southend-on-sea city council",
+      "type": "local authority",
+      "verified": true,
+      "last_verified": "2025-12-23"
+    }
+  }
+}

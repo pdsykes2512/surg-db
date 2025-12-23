@@ -41,64 +41,107 @@ async def create_patient(patient: PatientCreate):
     return Patient(**created_patient)
 
 
+@router.get("/count")
+async def count_patients():
+    """Get total count of patients"""
+    collection = await get_patients_collection()
+    total = await collection.count_documents({})
+    return {"count": total}
+
+
 @router.get("/", response_model=List[Patient])
-async def list_patients(skip: int = 0, limit: int = 100):
-    """List all patients with pagination"""
+async def list_patients(skip: int = 0, limit: int = 100, search: Optional[str] = None):
+    """List all patients with pagination and optional search, sorted by most recent episode referral date"""
     collection = await get_patients_collection()
     episodes_collection = await get_episodes_collection()
     
-    # Fetch patients
-    cursor = collection.find().skip(skip).limit(limit)
-    patients = await cursor.to_list(length=limit)
+    # Build query with search filter if provided
+    query = {}
+    if search:
+        # Search across patient_id, mrn, and nhs_number (case-insensitive, remove spaces)
+        search_pattern = {"$regex": search.replace(" ", ""), "$options": "i"}
+        query = {
+            "$or": [
+                {"patient_id": search_pattern},
+                {"mrn": search_pattern},
+                {"nhs_number": search_pattern}
+            ]
+        }
     
-    # Get all record numbers
-    record_numbers = [p["record_number"] for p in patients]
+    # Use aggregation to join with episodes and get most recent referral date
+    pipeline = [
+        {"$match": query},
+        # Lookup episodes for each patient
+        {
+            "$lookup": {
+                "from": "episodes",
+                "localField": "patient_id",
+                "foreignField": "patient_id",
+                "as": "episodes"
+            }
+        },
+        # Add fields for episode count and most recent referral date
+        {
+            "$addFields": {
+                "episode_count": {"$size": "$episodes"},
+                "most_recent_referral": {
+                    "$max": {
+                        "$map": {
+                            "input": "$episodes",
+                            "as": "ep",
+                            "in": {"$toDate": "$$ep.referral_date"}
+                        }
+                    }
+                }
+            }
+        },
+        # Sort by most recent referral date (nulls last), then by patient_id
+        {"$sort": {"most_recent_referral": -1, "patient_id": 1}},
+        # Remove the episodes array from output
+        {"$project": {"episodes": 0}},
+        # Pagination
+        {"$skip": skip},
+        {"$limit": limit}
+    ]
     
-    # Single aggregation to count episodes for all patients
-    episode_counts = {}
-    if record_numbers:
-        pipeline = [
-            {"$match": {"patient_id": {"$in": record_numbers}}},
-            {"$group": {"_id": "$patient_id", "count": {"$sum": 1}}}
-        ]
-        async for doc in episodes_collection.aggregate(pipeline):
-            episode_counts[doc["_id"]] = doc["count"]
+    patients = await collection.aggregate(pipeline).to_list(length=None)
     
-    # Convert ObjectId to string and add episode count
+    # Convert ObjectId to string
     for patient in patients:
         patient["_id"] = str(patient["_id"])
-        patient["episode_count"] = episode_counts.get(patient["record_number"], 0)
+        # Remove most_recent_referral from output (only used for sorting)
+        patient.pop("most_recent_referral", None)
     
     return [Patient(**patient) for patient in patients]
 
 
-@router.get("/{record_number}", response_model=Patient)
-async def get_patient(record_number: str):
-    """Get a specific patient by record_number"""
+@router.get("/{patient_id}", response_model=Patient)
+async def get_patient(patient_id: str):
+    """Get a specific patient by patient_id"""
     collection = await get_patients_collection()
     
-    patient = await collection.find_one({"record_number": record_number})
+    patient = await collection.find_one({"patient_id": patient_id})
     if not patient:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Patient {record_number} not found"
+            detail=f"Patient {patient_id} not found"
         )
     
     patient["_id"] = str(patient["_id"])
     return Patient(**patient)
 
 
-@router.put("/{record_number}", response_model=Patient)
-async def update_patient(record_number: str, patient_update: PatientUpdate):
+@router.put("/{patient_id}", response_model=Patient)
+async def update_patient(patient_id: str, patient_update: PatientUpdate):
     """Update a patient"""
     collection = await get_patients_collection()
     
     # Check if patient exists
-    existing = await collection.find_one({"record_number": record_number})
+    existing = await collection.find_one({"patient_id": patient_id})
     if not existing:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Patient {record_number} not found"
+            detail=f"Patient {patient_id} not found"
         )
     
     # Update only provided fields
@@ -107,27 +150,27 @@ async def update_patient(record_number: str, patient_update: PatientUpdate):
         update_data["updated_at"] = datetime.utcnow()
         update_data["updated_by"] = "system"  # TODO: Replace with actual user from auth
         await collection.update_one(
-            {"record_number": record_number},
+            {"patient_id": patient_id},
             {"$set": update_data}
         )
     
     # Return updated patient
-    updated_patient = await collection.find_one({"record_number": record_number})
+    updated_patient = await collection.find_one({"patient_id": patient_id})
     updated_patient["_id"] = str(updated_patient["_id"])
     return Patient(**updated_patient)
 
 
-@router.delete("/{record_number}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_patient(record_number: str):
+@router.delete("/{patient_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_patient(patient_id: str):
     """Delete a patient"""
     collection = await get_patients_collection()
     
-    result = await collection.delete_one({"record_number": record_number})
+    result = await collection.delete_one({"patient_id": patient_id})
     
     if result.deleted_count == 0:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Patient {record_number} not found"
+            detail=f"Patient {patient_id} not found"
         )
     
     return None

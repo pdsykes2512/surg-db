@@ -1,4 +1,4 @@
-import { capitalize } from '../utils/formatters'
+import { capitalize, formatAnatomicalSite } from '../utils/formatters'
 import { Button } from './Button'
 
 interface TumourSummaryModalProps {
@@ -80,7 +80,7 @@ export function TumourSummaryModal({ tumour, onClose, onEdit }: TumourSummaryMod
             />
             <Field 
               label="Site" 
-              value={tumour.site?.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
+              value={formatAnatomicalSite(tumour.site)}
             />
             <Field label="ICD-10 Code" value={tumour.icd10_code} />
             <Field label="SNOMED Morphology" value={tumour.snomed_morphology} />

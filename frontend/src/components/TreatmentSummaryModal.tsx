@@ -165,7 +165,7 @@ export function TreatmentSummaryModal({ treatment, onClose, onEdit }: TreatmentS
           {/* Radiotherapy Specific */}
           {treatment.treatment_type === 'radiotherapy' && (
             <Section title="Radiotherapy Details">
-              <Field label="Site" value={treatment.site?.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())} />
+              <Field label="Site" value={formatAnatomicalSite(treatment.site)} />
               <Field label="Intent" value={treatment.intent?.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())} />
               <Field label="Technique" value={treatment.technique?.toUpperCase()} />
               <Field label="Total Dose" value={treatment.total_dose ? `${treatment.total_dose} Gy` : undefined} />

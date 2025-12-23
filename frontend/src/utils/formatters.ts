@@ -40,11 +40,64 @@ export const snakeToTitle = (str: string): string => {
 }
 
 /**
+ * Format coded values for display (universal formatter)
+ * Handles: lowercase, snake_case, UPPERCASE, mixed case
+ * Examples:
+ *   'colorectal' -> 'Colorectal'
+ *   'upper_gi' -> 'Upper Gi'
+ *   'COLORECTAL_MDT' -> 'Colorectal Mdt'
+ *   'surgery' -> 'Surgery'
+ */
+export const formatCodedValue = (value: string | undefined | null): string => {
+  if (!value) return ''
+  
+  // If it contains underscore, convert snake_case to Title Case
+  if (value.includes('_')) {
+    return snakeToTitle(value)
+  }
+  
+  // Otherwise, just capitalize first letter
+  return capitalize(value)
+}
+
+/**
  * Format field names for display (snake_case to Title Case)
  */
 export const formatFieldName = (field: string): string => {
   if (!field) return ''
   return snakeToTitle(field)
+}
+
+/**
+ * Format anatomical site for display
+ * Maps site values to readable format without ICD-10 codes
+ */
+export const formatAnatomicalSite = (site: string | undefined | null): string => {
+  if (!site) return '-'
+  
+  const siteMap: Record<string, string> = {
+    'caecum': 'Caecum',
+    'appendix': 'Appendix',
+    'ascending_colon': 'Ascending Colon',
+    'hepatic_flexure': 'Hepatic Flexure',
+    'transverse_colon': 'Transverse Colon',
+    'splenic_flexure': 'Splenic Flexure',
+    'descending_colon': 'Descending Colon',
+    'sigmoid_colon': 'Sigmoid Colon',
+    'rectosigmoid_junction': 'Rectosigmoid Junction',
+    'rectum': 'Rectum',
+    'colon_unspecified': 'Colon Unspecified',
+    // Metastatic sites
+    'liver': 'Liver',
+    'lung': 'Lung',
+    'peritoneum': 'Peritoneum',
+    'lymph_node': 'Lymph Node',
+    'bone': 'Bone',
+    'brain': 'Brain',
+    'other': 'Other'
+  }
+  
+  return siteMap[site.toLowerCase()] || snakeToTitle(site)
 }
 
 /**
@@ -208,4 +261,16 @@ export const formatSurgeon = (name: string): string => {
   // If it's already formatted (contains a space), return as-is
   // Otherwise, return the single name (surname)
   return name.trim()
+}
+
+/**
+ * Format treatment plan for display (Title Case)
+ */
+export const formatTreatmentPlan = (plan: string | undefined | null): string => {
+  if (!plan) return ''
+  // Convert to title case: 'surgery' -> 'Surgery', 'chemotherapy' -> 'Chemotherapy'
+  return plan
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ')
 }

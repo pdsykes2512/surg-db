@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '../components/PageHeader'
 import { Card } from '../components/Card'
@@ -8,7 +8,8 @@ import { formatDate } from '../utils/formatters';
 
 interface Patient {
   _id: string;
-  record_number: string;
+  patient_id: string;
+  mrn?: string;
   nhs_number: string;
   episode_count?: number;
   demographics: {
@@ -77,10 +78,11 @@ export function PatientsPage() {
     },
   });
 
-  const loadPatients = useCallback(async () => {
+  const loadPatients = useCallback(async (search?: string) => {
     try {
       setLoading(true);
-      const response = await api.get('/patients');
+      const params = search ? { search } : {};
+      const response = await api.get('/patients', { params });
       setPatients(response.data);
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to load patients');
@@ -92,6 +94,15 @@ export function PatientsPage() {
   useEffect(() => {
     loadPatients();
   }, [loadPatients]);
+
+  // Debounce search to avoid too many API calls
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      loadPatients(searchTerm);
+    }, 300); // Wait 300ms after user stops typing
+    
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm, loadPatients]);
 
   const handleInputChange = (field: string, value: any) => {
     const keys = field.split('.');
@@ -236,16 +247,8 @@ export function PatientsPage() {
     setError('');
   };
 
-  // Filter patients based on search term (memoized for performance)
-  const filteredPatients = useMemo(() => {
-    return patients.filter(patient => {
-      if (!searchTerm) return true;
-      const search = searchTerm.toLowerCase().replace(/\s/g, '');
-      const recordNumber = patient.record_number.toLowerCase().replace(/\s/g, '');
-      const nhsNumber = patient.nhs_number.toLowerCase().replace(/\s/g, '');
-      return recordNumber.includes(search) || nhsNumber.includes(search);
-    });
-  }, [patients, searchTerm]);
+  // No need for local filtering - backend handles search
+  const filteredPatients = patients;
 
   return (
     <div className="space-y-6">
@@ -521,46 +524,49 @@ export function PatientsPage() {
         </Card>
       )}
 
+      {/* Search */}
+      <Card>
+        <div className="space-y-4">
+          <div className="flex items-center space-x-4">
+            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <h3 className="text-lg font-semibold text-gray-900">Search</h3>
+          </div>
+          
+          <div>
+            <input
+              type="text"
+              placeholder="Search by Patient ID, MRN, or NHS Number..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full h-10 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+
+          {searchTerm && (
+            <div className="flex justify-end">
+              <Button
+                variant="secondary"
+                onClick={() => setSearchTerm('')}
+              >
+                Clear Search
+              </Button>
+            </div>
+          )}
+        </div>
+      </Card>
+
       {/* Patient List */}
       <Card>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold">Patient List</h2>
           {patients.length > 0 && (
             <div className="text-sm text-gray-500">
-              Showing {filteredPatients.length} of {patients.length} patients
+              Showing {filteredPatients.length} {filteredPatients.length === 1 ? 'patient' : 'patients'}
             </div>
           )}
         </div>
-        
-        {/* Search Box */}
-        {patients.length > 0 && (
-          <div className="mb-4">
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
-              <input
-                type="text"
-                placeholder="Search by Record Number or NHS Number..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-              {searchTerm && (
-                <button
-                  onClick={() => setSearchTerm('')}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
-                >
-                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              )}
-            </div>
-          </div>
-        )}
         
         {loading && !showForm && <p className="text-gray-500">Loading...</p>}
         {!loading && patients.length === 0 && (
@@ -590,7 +596,10 @@ export function PatientsPage() {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Record Number
+                    Patient ID
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    MRN
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     NHS Number
@@ -610,12 +619,15 @@ export function PatientsPage() {
                 {filteredPatients.map((patient) => (
                   <tr 
                     key={patient._id} 
-                    onClick={() => navigate(`/episodes/${patient.record_number}`)}
+                    onClick={() => navigate(`/episodes/${patient.patient_id}`)}
                     className="hover:bg-blue-50 cursor-pointer transition-colors"
                     title="Click to view episodes for this patient"
                   >
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {patient.record_number}
+                      {patient.patient_id}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {patient.mrn || '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {patient.nhs_number}

@@ -104,10 +104,19 @@ async def create_episode(episode: EpisodeCreate):
         )
 
 
+@router.get("/count")
+async def count_episodes():
+    """Get total count of episodes"""
+    collection = await get_episodes_collection()
+    total = await collection.count_documents({})
+    return {"count": total}
+
+
 @router.get("/")
 async def list_episodes(
     skip: int = 0,
     limit: int = 100,
+    search: Optional[str] = Query(None, description="Search by episode ID, MRN, cancer type, or clinician"),
     patient_id: Optional[str] = Query(None, description="Filter by patient MRN"),
     condition_type: Optional[ConditionType] = Query(None, description="Filter by condition type"),
     cancer_type: Optional[CancerType] = Query(None, description="Filter by cancer type"),
@@ -119,9 +128,36 @@ async def list_episodes(
 ):
     """List all episodes with pagination and filters"""
     collection = await get_episodes_collection()
+    patients_collection = await get_patients_collection()
     
     # Build query filters
     query = {}
+    
+    # Search filter - search across multiple fields including MRN
+    if search:
+        search_pattern = {"$regex": search.replace(" ", ""), "$options": "i"}
+        
+        # First, find patients matching the MRN search
+        matching_patients = await patients_collection.find(
+            {"mrn": search_pattern},
+            {"patient_id": 1}
+        ).to_list(length=None)
+        matching_patient_ids = [p["patient_id"] for p in matching_patients]
+        
+        # Build OR query including patient_id matches from MRN search
+        or_conditions = [
+            {"episode_id": search_pattern},
+            {"cancer_type": search_pattern},
+            {"lead_clinician": search_pattern}
+        ]
+        
+        # Add patient_id matches from MRN search
+        if matching_patient_ids:
+            or_conditions.append({"patient_id": {"$in": matching_patient_ids}})
+        
+        query["$or"] = or_conditions
+    
+    # Other filters
     if patient_id:
         query["patient_id"] = patient_id
     if condition_type:
@@ -148,9 +184,18 @@ async def list_episodes(
     cursor = collection.find(query).sort(sort_field, -1).skip(skip).limit(limit)
     episodes = await cursor.to_list(length=limit)
     
-    # Convert ObjectIds to strings
+    # Get patient collection to fetch MRN
+    patients_collection = await get_patients_collection()
+    
+    # Convert ObjectIds to strings and add patient MRN
     for episode in episodes:
         episode["_id"] = str(episode["_id"])
+        
+        # Fetch patient MRN
+        if "patient_id" in episode:
+            patient = await patients_collection.find_one({"patient_id": episode["patient_id"]})
+            if patient:
+                episode["patient_mrn"] = patient.get("mrn", None)
     
     # Return raw dicts without Pydantic validation to support flexible episode structure
     return episodes
@@ -171,13 +216,15 @@ async def get_episode(episode_id: str):
             detail=f"Episode {episode_id} not found"
         )
     
-    # Fetch treatments from separate collection using episode_id field (e.g., EPI-9012345678-01)
-    treatments_cursor = treatments_collection.find({"episode_id": episode["episode_id"]})
-    treatments = await treatments_cursor.to_list(length=None)
+    # Fetch treatments using treatment_ids array
+    treatment_ids = episode.get("treatment_ids", [])
+    treatments_cursor = treatments_collection.find({"treatment_id": {"$in": treatment_ids}}) if treatment_ids else []
+    treatments = await treatments_cursor.to_list(length=None) if treatment_ids else []
     
-    # Fetch tumours from separate collection using episode_id field
-    tumours_cursor = tumours_collection.find({"episode_id": episode["episode_id"]})
-    tumours = await tumours_cursor.to_list(length=None)
+    # Fetch tumours using tumour_ids array
+    tumour_ids = episode.get("tumour_ids", [])
+    tumours_cursor = tumours_collection.find({"tumour_id": {"$in": tumour_ids}}) if tumour_ids else []
+    tumours = await tumours_cursor.to_list(length=None) if tumour_ids else []
     
     # Build a map of all clinicians for efficient lookup
     all_clinicians = await clinicians_collection.find({}).to_list(length=None)
@@ -192,13 +239,13 @@ async def get_episode(episode_id: str):
     
     # Convert ObjectIds to strings
     episode["_id"] = str(episode["_id"])
+    
     for treatment in treatments:
         treatment["_id"] = str(treatment["_id"])
         
         # Resolve clinician names for surgeon and anaesthetist fields
         if "surgeon" in treatment and treatment["surgeon"]:
             surgeon_id = treatment["surgeon"]
-            # If it's an ObjectId or a key in our map, resolve it
             treatment["surgeon_name"] = clinician_map.get(surgeon_id, surgeon_id)
         
         if "anaesthetist" in treatment and treatment["anaesthetist"]:

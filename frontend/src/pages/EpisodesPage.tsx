@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { PageHeader } from '../components/PageHeader'
 import { Card } from '../components/Card'
@@ -15,6 +15,15 @@ const capitalize = (str: string) => {
   if (!str) return ''
   return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
 }
+
+const formatNHSNumber = (nhsNumber: string | undefined) => {
+  if (!nhsNumber) return '-';
+  const digits = nhsNumber.replace(/\D/g, '');
+  if (digits.length === 10) {
+    return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`;
+  }
+  return nhsNumber;
+};
 
 export function EpisodesPage() {
   const { patientId } = useParams<{ patientId: string }>()
@@ -57,6 +66,9 @@ export function EpisodesPage() {
       if (patientId) {
         params.patient_id = patientId
       }
+      if (searchTerm) {
+        params.search = searchTerm
+      }
       if (startDateFilter) params.start_date = startDateFilter
       if (endDateFilter) params.end_date = endDateFilter
 
@@ -73,7 +85,7 @@ export function EpisodesPage() {
     } finally {
       setLoading(false)
     }
-  }, [patientId, startDateFilter, endDateFilter])
+  }, [patientId, searchTerm, startDateFilter, endDateFilter])
 
   const loadPatientInfo = useCallback(async () => {
     if (!patientId) return
@@ -92,6 +104,15 @@ export function EpisodesPage() {
       loadPatientInfo()
     }
   }, [loadEpisodes, patientId, loadPatientInfo])
+
+  // Debounce search to avoid too many API calls
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      loadEpisodes()
+    }, 300) // Wait 300ms after user stops typing
+    
+    return () => clearTimeout(timeoutId)
+  }, [searchTerm, loadEpisodes])
 
   // Handle opening edit modal from navigation state
   useEffect(() => {
@@ -207,23 +228,8 @@ export function EpisodesPage() {
     }
   }
 
-  const filteredEpisodes = useMemo(() => {
-    return episodes.filter(episode => {
-      // Search term filter
-      if (searchTerm) {
-        const search = searchTerm.toLowerCase()
-        const matchesSearch = (
-          episode.episode_id?.toLowerCase().includes(search) ||
-          episode.patient_id?.toLowerCase().includes(search) ||
-          episode.lead_clinician?.toLowerCase().includes(search) ||
-          episode.cancer_type?.toLowerCase().includes(search)
-        )
-        if (!matchesSearch) return false
-      }
-
-      return true
-    })
-  }, [episodes, searchTerm])
+  // No need for local filtering - backend handles search
+  const filteredEpisodes = episodes
 
   const getUrgencyColor = (urgency: string) => {
     switch (urgency) {
@@ -241,7 +247,7 @@ export function EpisodesPage() {
         <PageHeader
           title={patientId ? `Episodes for Patient ${patientId}` : 'Episode Records'}
           subtitle={patientInfo 
-            ? `${patientInfo.demographics?.gender || ''} | DOB: ${formatDate(patientInfo.demographics?.date_of_birth)} | NHS: ${patientInfo.nhs_number || ''}`
+            ? `${patientInfo.demographics?.gender || ''} | DOB: ${formatDate(patientInfo.demographics?.date_of_birth)} | NHS: ${formatNHSNumber(patientInfo.nhs_number)}`
             : 'Track cancer episodes and patient outcomes'}
           icon={
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -281,7 +287,7 @@ export function EpisodesPage() {
                 </div>
                 <div>
                   <span className="text-gray-500">NHS Number:</span>
-                  <p className="font-medium text-gray-900">{patientInfo.nhs_number}</p>
+                  <p className="font-medium text-gray-900">{formatNHSNumber(patientInfo.nhs_number)}</p>
                 </div>
                 <div>
                   <span className="text-gray-500">Date of Birth:</span>
@@ -383,10 +389,7 @@ export function EpisodesPage() {
                     Episode ID
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Type
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Patient ID
+                    MRN
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Date
@@ -395,7 +398,7 @@ export function EpisodesPage() {
                     Clinician
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
+                    Type
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
@@ -415,13 +418,8 @@ export function EpisodesPage() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {episode.episode_id}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                        {formatCancerType(episode.cancer_type)}
-                      </span>
-                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {episode.patient_id}
+                      {episode.patient_mrn || episode.patient_id}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {formatDate(episode.referral_date)}
@@ -430,12 +428,8 @@ export function EpisodesPage() {
                       {formatSurgeon(episode.lead_clinician)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                        episode.episode_status === 'active' ? 'bg-blue-100 text-blue-800' :
-                        episode.episode_status === 'completed' ? 'bg-gray-100 text-gray-800' :
-                        'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {formatStatus(episode.episode_status)}
+                      <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                        {formatCancerType(episode.cancer_type)}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">

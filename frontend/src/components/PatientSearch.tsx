@@ -30,6 +30,15 @@ export function PatientSearch({
   const [showDropdown, setShowDropdown] = useState(false)
   const [loading, setLoading] = useState(false)
 
+  const formatNHSNumber = (nhsNumber: string | undefined) => {
+    if (!nhsNumber) return '-';
+    const digits = nhsNumber.replace(/\D/g, '');
+    if (digits.length === 10) {
+      return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`;
+    }
+    return nhsNumber;
+  };
+
   // Fetch patients on mount
   useEffect(() => {
     const fetchPatients = async () => {
@@ -96,7 +105,7 @@ export function PatientSearch({
                 className="px-4 py-2 hover:bg-blue-50 cursor-pointer"
               >
                 <div className="font-medium">MRN: {patient.record_number}</div>
-                <div className="text-xs text-gray-500">NHS: {patient.nhs_number}</div>
+                <div className="text-xs text-gray-500">NHS: {formatNHSNumber(patient.nhs_number)}</div>
               </div>
             ))}
           </div>

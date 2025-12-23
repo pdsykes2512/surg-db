@@ -6,7 +6,7 @@
 mkdir -p ~/.tmp
 
 # Change to backend directory
-cd /root/backend
+cd /root/surg-db/backend
 
 # Start uvicorn with output redirected to ~/.tmp
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 > ~/.tmp/backend.log 2>&1 &

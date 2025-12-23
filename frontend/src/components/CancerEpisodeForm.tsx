@@ -4,10 +4,10 @@ import { DateInput } from './DateInput'
 import { PatientSearch } from './PatientSearch'
 import { SurgeonSearch } from './SurgeonSearch'
 import { SearchableSelect } from './SearchableSelect'
+import { NHSProviderSelect } from './NHSProviderSelect'
 import { TumourModal } from './TumourModal'
 import { AddTreatmentModal } from './AddTreatmentModal'
-import { formatSurgeon, formatCancerType } from '../utils/formatters'
-import { NHS_TRUST_OPTIONS } from '../utils/nhsTrusts'
+import { formatSurgeon, formatCancerType, formatAnatomicalSite } from '../utils/formatters'
 
 interface CancerEpisodeFormProps {
   onSubmit: (data: any) => void
@@ -42,12 +42,25 @@ export function CancerEpisodeForm({ onSubmit, onCancel, initialData, mode = 'cre
         return dateStr.split('T')[0] // Extract YYYY-MM-DD from ISO datetime
       }
       
+      // Flatten mdt_outcome object for form fields
+      const mdtOutcome = initialData.mdt_outcome || {}
+      
       return {
         ...initialData,
         referral_date: formatDateForInput(initialData.referral_date),
         first_seen_date: formatDateForInput(initialData.first_seen_date),
-        mdt_discussion_date: formatDateForInput(initialData.mdt_discussion_date),
+        mdt_discussion_date: formatDateForInput(mdtOutcome.mdt_discussion_date || initialData.mdt_discussion_date),
+        mdt_meeting_type: mdtOutcome.mdt_meeting_type || initialData.mdt_meeting_type || '',
+        treatment_intent: mdtOutcome.treatment_intent || '',
+        treatment_plan: mdtOutcome.treatment_plan || '',
         cancer_data: initialData.cancer_data || {}, // Ensure cancer_data is always an object
+        surgery_performed: initialData.surgery_performed ?? null,
+        no_treatment_reason: initialData.no_treatment_reason || '',
+        no_treatment_reason_detail: initialData.no_treatment_reason_detail || '',
+        referral_type: initialData.referral_type || '',
+        referral_source: initialData.referral_source || '',
+        provider_first_seen: initialData.provider_first_seen || '',
+        performance_status: initialData.performance_status?.toString() || '',
       }
     }
     
@@ -57,14 +70,19 @@ export function CancerEpisodeForm({ onSubmit, onCancel, initialData, mode = 'cre
       condition_type: 'cancer',
       cancer_type: '',
       referral_date: new Date().toISOString().split('T')[0],
+      referral_type: '',
       referral_source: '',
       provider_first_seen: '',
       cns_involved: '',
       first_seen_date: '',
       mdt_discussion_date: '',
       mdt_meeting_type: '',
+      treatment_intent: '',
+      treatment_plan: '',
       performance_status: '',
+      surgery_performed: null,
       no_treatment_reason: '',
+      no_treatment_reason_detail: '',
       lead_clinician: '',
       mdt_team: [],
       episode_status: 'active',
@@ -84,12 +102,25 @@ export function CancerEpisodeForm({ onSubmit, onCancel, initialData, mode = 'cre
         return dateStr.split('T')[0]
       }
       
+      // Flatten mdt_outcome object for form fields
+      const mdtOutcome = initialData.mdt_outcome || {}
+      
       setFormData({
         ...initialData,
         referral_date: formatDateForInput(initialData.referral_date),
         first_seen_date: formatDateForInput(initialData.first_seen_date),
-        mdt_discussion_date: formatDateForInput(initialData.mdt_discussion_date),
+        mdt_discussion_date: formatDateForInput(mdtOutcome.mdt_discussion_date || initialData.mdt_discussion_date),
+        mdt_meeting_type: mdtOutcome.mdt_meeting_type || initialData.mdt_meeting_type || '',
+        treatment_intent: mdtOutcome.treatment_intent || '',
+        treatment_plan: mdtOutcome.treatment_plan || '',
         cancer_data: initialData.cancer_data || {},
+        surgery_performed: initialData.surgery_performed ?? null,
+        no_treatment_reason: initialData.no_treatment_reason || '',
+        no_treatment_reason_detail: initialData.no_treatment_reason_detail || '',
+        referral_type: initialData.referral_type || '',
+        referral_source: initialData.referral_source || '',
+        provider_first_seen: initialData.provider_first_seen || '',
+        performance_status: initialData.performance_status?.toString() || '',
       })
     }
   }, [initialData])
@@ -227,6 +258,28 @@ export function CancerEpisodeForm({ onSubmit, onCancel, initialData, mode = 'cre
 
       {/* NBOCA Phase 4: Process Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Referral Type */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Referral Type
+          </label>
+          <SearchableSelect
+            value={formData.referral_type}
+            onChange={(value) => updateFormData('referral_type', value)}
+            options={[
+              { value: '', label: 'Not recorded' },
+              { value: 'Elective', label: 'Elective' },
+              { value: 'Emergency', label: 'Emergency' },
+              { value: 'Internal', label: 'Internal' },
+              { value: 'Screening', label: 'Screening' },
+              { value: 'Other', label: 'Other' }
+            ]}
+            getOptionValue={(opt) => opt.value}
+            getOptionLabel={(opt) => opt.label}
+            placeholder="Select referral type..."
+          />
+        </div>
+
         {/* Referral Source - CR1600 */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -254,15 +307,10 @@ export function CancerEpisodeForm({ onSubmit, onCancel, initialData, mode = 'cre
 
         {/* Provider First Seen - CR1410 */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Provider First Seen
-          </label>
-          <SearchableSelect
+          <NHSProviderSelect
+            label="Provider First Seen"
             value={formData.provider_first_seen}
             onChange={(value) => updateFormData('provider_first_seen', value)}
-            options={NHS_TRUST_OPTIONS}
-            getOptionValue={(opt) => opt.value}
-            getOptionLabel={(opt) => opt.label}
             placeholder="Search NHS Trust..."
           />
           <p className="mt-1 text-xs text-gray-500">NBOCA (CR1410) - NHS Trust where first seen</p>
@@ -331,6 +379,51 @@ export function CancerEpisodeForm({ onSubmit, onCancel, initialData, mode = 'cre
           />
           <p className="mt-1 text-xs text-gray-500">NBOCA (CR3190)</p>
         </div>
+
+        {/* Treatment Intent */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Treatment Intent
+          </label>
+          <SearchableSelect
+            value={formData.treatment_intent}
+            onChange={(value) => updateFormData('treatment_intent', value)}
+            options={[
+              { value: '', label: 'Not recorded' },
+              { value: 'Curative', label: 'Curative' },
+              { value: 'Palliative', label: 'Palliative' },
+              { value: 'No Treatment', label: 'No Treatment' }
+            ]}
+            getOptionValue={(opt) => opt.value}
+            getOptionLabel={(opt) => opt.label}
+            placeholder="Select treatment intent..."
+          />
+        </div>
+
+        {/* Treatment Plan */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Treatment Plan
+          </label>
+          <SearchableSelect
+            value={formData.treatment_plan}
+            onChange={(value) => updateFormData('treatment_plan', value)}
+            options={[
+              { value: '', label: 'Not recorded' },
+              { value: 'Surgery', label: 'Surgery' },
+              { value: 'Chemotherapy', label: 'Chemotherapy' },
+              { value: 'Radiotherapy', label: 'Radiotherapy' },
+              { value: 'Surgery + Chemotherapy', label: 'Surgery + Chemotherapy' },
+              { value: 'Surgery + Radiotherapy', label: 'Surgery + Radiotherapy' },
+              { value: 'Chemotherapy + Radiotherapy', label: 'Chemotherapy + Radiotherapy' },
+              { value: 'Surgery + Chemotherapy + Radiotherapy', label: 'Surgery + Chemotherapy + Radiotherapy' },
+              { value: 'Palliative Care', label: 'Palliative Care' }
+            ]}
+            getOptionValue={(opt) => opt.value}
+            getOptionLabel={(opt) => opt.label}
+            placeholder="Select treatment plan..."
+          />
+        </div>
       </div>
 
       {/* Performance Status (ECOG) - NBOCA CR0510 */}
@@ -357,6 +450,25 @@ export function CancerEpisodeForm({ onSubmit, onCancel, initialData, mode = 'cre
         <p className="mt-1 text-xs text-gray-500">NBOCA (CR0510) - Patient fitness assessment</p>
       </div>
 
+      {/* Surgery Performed */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Surgery Performed
+        </label>
+        <SearchableSelect
+          value={formData.surgery_performed === null ? '' : formData.surgery_performed ? 'yes' : 'no'}
+          onChange={(value) => updateFormData('surgery_performed', value === 'yes' ? true : value === 'no' ? false : null)}
+          options={[
+            { value: '', label: 'Not recorded' },
+            { value: 'yes', label: 'Yes' },
+            { value: 'no', label: 'No' }
+          ]}
+          getOptionValue={(opt) => opt.value}
+          getOptionLabel={(opt) => opt.label}
+          placeholder="Select..."
+        />
+      </div>
+
       {/* No Treatment Reason - NBOCA CR0490 */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -381,6 +493,22 @@ export function CancerEpisodeForm({ onSubmit, onCancel, initialData, mode = 'cre
         />
         <p className="mt-1 text-xs text-gray-500">NBOCA (CR0490) - Required if cancer treatment not provided</p>
       </div>
+
+      {/* No Treatment Reason Detail */}
+      {formData.no_treatment_reason && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            No Treatment Reason Detail
+          </label>
+          <textarea
+            value={formData.no_treatment_reason_detail || ''}
+            onChange={(e) => updateFormData('no_treatment_reason_detail', e.target.value)}
+            rows={3}
+            className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            placeholder="Additional details about why treatment was not provided..."
+          />
+        </div>
+      )}
 
       {/* Lead Clinician - filtered by subspecialty */}
       <SurgeonSearch
@@ -812,7 +940,7 @@ export function CancerEpisodeForm({ onSubmit, onCancel, initialData, mode = 'cre
               </p>
               {formData.tumours.map((tumour: any, index: number) => (
                 <div key={index} className="text-sm text-green-700 mt-1">
-                  • {tumour.site} ({tumour.tumour_type})
+                  • {formatAnatomicalSite(tumour.site)} ({tumour.tumour_type})
                 </div>
               ))}
             </div>
