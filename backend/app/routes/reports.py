@@ -174,7 +174,14 @@ async def get_surgeon_performance() -> Dict[str, Any]:
             "avg_duration": {"$avg": "$operation_duration_minutes"},
             "complications": {
                 "$sum": {
-                    "$cond": [{"$and": [{"$ne": ["$clavien_dindo_grade", None]}, {"$ne": ["$clavien_dindo_grade", ""]}]}, 1, 0]
+                    "$cond": [
+                        {"$and": [
+                            {"$ne": [{"$ifNull": ["$clavien_dindo_grade", None]}, None]},
+                            {"$ne": [{"$ifNull": ["$clavien_dindo_grade", ""]}, ""]}
+                        ]}, 
+                        1, 
+                        0
+                    ]
                 }
             },
             "readmissions": {
