@@ -293,11 +293,11 @@ async def export_nboca_xml(
     """
     
     # Build query for cancer episodes (bowel cancer only for NBOCA)
-    # Note: Check cancer_type field - may be empty in existing data
-    query = {}
+    # Note: Episodes are stored in 'episodes' collection with condition_type='cancer'
+    query = {"condition_type": "cancer"}
     
-    # Try to filter by bowel cancer if specified, but allow all if no bowel episodes exist
-    bowel_count = await db.cancer_episodes.count_documents({"cancer_type": "bowel"})
+    # Try to filter by bowel cancer if specified, but allow all cancer episodes if no bowel episodes exist
+    bowel_count = await db.episodes.count_documents({"condition_type": "cancer", "cancer_type": "bowel"})
     if bowel_count > 0:
         query["cancer_type"] = "bowel"
     
@@ -307,32 +307,34 @@ async def export_nboca_xml(
             date_query["$gte"] = datetime.fromisoformat(start_date)
         if end_date:
             date_query["$lte"] = datetime.fromisoformat(end_date)
-        # Check if cancer_data.diagnosis_date exists, otherwise use created_at or any date field
+        # Check multiple possible date fields
         query["$or"] = [
             {"cancer_data.diagnosis_date": date_query},
             {"diagnosis_date": date_query},
+            {"first_seen_date": date_query},
             {"created_at": date_query}
         ]
     
     # Fetch cancer episodes
-    episodes_cursor = db.cancer_episodes.find(query)
+    episodes_cursor = db.episodes.find(query)
     episodes = []
     async for doc in episodes_cursor:
         doc["_id"] = str(doc["_id"])
         episodes.append(doc)
     
     if not episodes:
-        # Try without any filters to see if any episodes exist
-        total_count = await db.cancer_episodes.count_documents({})
-        if total_count == 0:
+        # Try without any filters to see if any cancer episodes exist
+        total_cancer_count = await db.episodes.count_documents({"condition_type": "cancer"})
+        total_count = await db.episodes.count_documents({})
+        if total_cancer_count == 0:
             raise HTTPException(
                 status_code=404, 
-                detail="No cancer episodes found in database. Please create cancer episodes using the Episodes page before exporting."
+                detail=f"No cancer episodes found in database (found {total_count} total episodes). Please create cancer episodes using the Episodes page before exporting."
             )
         else:
             raise HTTPException(
                 status_code=404, 
-                detail=f"No episodes match the specified criteria. Total episodes in database: {total_count}. Try clearing date filters or check that episodes have cancer_type='bowel'."
+                detail=f"No cancer episodes match the specified criteria. Total cancer episodes in database: {total_cancer_count}. Try clearing date filters or check that episodes have cancer_type='bowel'."
             )
     
     # Create root XML element
@@ -398,7 +400,7 @@ async def check_data_completeness(
     """
     
     # Fetch all bowel cancer episodes
-    episodes_cursor = db.cancer_episodes.find({"cancer_type": "bowel"})
+    episodes_cursor = db.episodes.find({"condition_type": "cancer", "cancer_type": "bowel"})
     episodes = []
     async for doc in episodes_cursor:
         episodes.append(doc)
