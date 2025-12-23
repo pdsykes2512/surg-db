@@ -783,27 +783,45 @@ export function AdminPage() {
 
             <div className="space-y-6">
               {/* Date Range Filter */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Start Date (Diagnosis Date)
-                  </label>
-                  <input
-                    type="date"
-                    id="export-start-date"
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-sm font-medium text-gray-900">Date Range Filter (Optional)</h4>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      (document.getElementById('export-start-date') as HTMLInputElement).value = '';
+                      (document.getElementById('export-end-date') as HTMLInputElement).value = ''
+                    }}
+                    className="text-xs text-blue-600 hover:text-blue-800"
+                  >
+                    Clear Dates
+                  </button>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    End Date (Diagnosis Date)
-                  </label>
-                  <input
-                    type="date"
-                    id="export-end-date"
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Start Date (Diagnosis Date)
+                    </label>
+                    <input
+                      type="date"
+                      id="export-start-date"
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      End Date (Diagnosis Date)
+                    </label>
+                    <input
+                      type="date"
+                      id="export-end-date"
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
                 </div>
+                <p className="text-xs text-gray-600 mt-2">
+                  Leave dates empty to export all cancer episodes
+                </p>
               </div>
 
               {/* Export Actions */}
@@ -840,7 +858,8 @@ export function AdminPage() {
                       setError('')
                     } catch (err: any) {
                       if (err.response?.status === 404) {
-                        setError('No episodes found for the specified date range')
+                        const detail = err.response?.data?.detail || 'No episodes found'
+                        setError(detail + '\n\nTip: Clear the date filters and try again to export all episodes.')
                       } else {
                         setError('Failed to generate export: ' + (err.response?.data?.detail || err.message))
                       }
