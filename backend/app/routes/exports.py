@@ -369,14 +369,11 @@ async def export_nboca_xml(
         
         patient["_id"] = str(patient["_id"])
         
-        # Fetch treatments for this episode
-        treatments_cursor = db.treatments.find({"episode_id": episode["_id"]})
-        treatments = []
-        async for t in treatments_cursor:
-            t["_id"] = str(t["_id"])
-            treatments.append(t)
+        # Treatments and tumours are embedded in the episode document
+        treatments = episode.get("treatments", [])
+        tumours = episode.get("tumours", [])
         
-        # Create episode record
+        # Create episode record with treatments and tumours
         record = create_episode_xml(episode, patient, treatments)
         records.append(record)
     
@@ -468,8 +465,8 @@ async def check_data_completeness(
         if cancer_data.get("tnm_staging"):
             completeness["diagnosis"]["tnm_staging"] += 1
         
-        # Check surgery-specific fields
-        treatments = await db.treatments.find({"episode_id": str(episode["_id"])}).to_list(None)
+        # Treatments are embedded in episode document
+        treatments = episode.get("treatments", [])
         surgical_treatments = [t for t in treatments if t.get("treatment_type") == "surgery"]
         
         if surgical_treatments:
