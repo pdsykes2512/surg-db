@@ -113,6 +113,7 @@ export function ReportsPage() {
     }
   }
 
+  // For data quality: higher is better
   const getCompletenessColor = (percentage: number) => {
     if (percentage >= 90) return 'text-green-600 bg-green-100'
     if (percentage >= 70) return 'text-yellow-600 bg-yellow-100'
@@ -125,6 +126,23 @@ export function ReportsPage() {
     if (percentage >= 70) return 'bg-yellow-500'
     if (percentage >= 50) return 'bg-orange-500'
     return 'bg-red-500'
+  }
+
+  // For outcomes: lower is better (inverse of data quality)
+  const getOutcomeColor = (rate: number) => {
+    const percentage = rate * 100
+    if (percentage <= 5) return 'text-green-600 bg-green-100'
+    if (percentage <= 10) return 'text-yellow-600 bg-yellow-100'
+    if (percentage <= 20) return 'text-orange-600 bg-orange-100'
+    return 'text-red-600 bg-red-100'
+  }
+
+  const getOutcomeTextColor = (rate: number) => {
+    const percentage = rate * 100
+    if (percentage <= 5) return 'text-green-600'
+    if (percentage <= 10) return 'text-yellow-600'
+    if (percentage <= 20) return 'text-orange-600'
+    return 'text-red-600'
   }
 
   return (
@@ -176,35 +194,35 @@ export function ReportsPage() {
 
             <Card className="p-6">
               <h3 className="text-sm font-medium text-gray-500">Complication Rate</h3>
-              <p className="mt-2 text-3xl font-bold text-gray-900">
+              <p className={`mt-2 text-3xl font-bold rounded-lg px-3 py-1 inline-block ${getOutcomeColor(summary.complication_rate)}`}>
                 {(summary.complication_rate * 100).toFixed(1)}%
               </p>
             </Card>
 
             <Card className="p-6">
               <h3 className="text-sm font-medium text-gray-500">Readmission Rate</h3>
-              <p className="mt-2 text-3xl font-bold text-gray-900">
+              <p className={`mt-2 text-3xl font-bold rounded-lg px-3 py-1 inline-block ${getOutcomeColor(summary.readmission_rate)}`}>
                 {(summary.readmission_rate * 100).toFixed(1)}%
               </p>
             </Card>
 
             <Card className="p-6">
               <h3 className="text-sm font-medium text-gray-500">Mortality Rate</h3>
-              <p className="mt-2 text-3xl font-bold text-gray-900">
+              <p className={`mt-2 text-3xl font-bold rounded-lg px-3 py-1 inline-block ${getOutcomeColor(summary.mortality_rate)}`}>
                 {(summary.mortality_rate * 100).toFixed(1)}%
               </p>
             </Card>
 
             <Card className="p-6">
               <h3 className="text-sm font-medium text-gray-500">Return to Theatre</h3>
-              <p className="mt-2 text-3xl font-bold text-gray-900">
+              <p className={`mt-2 text-3xl font-bold rounded-lg px-3 py-1 inline-block ${getOutcomeColor(summary.return_to_theatre_rate)}`}>
                 {(summary.return_to_theatre_rate * 100).toFixed(1)}%
               </p>
             </Card>
 
             <Card className="p-6">
               <h3 className="text-sm font-medium text-gray-500">ICU Escalation</h3>
-              <p className="mt-2 text-3xl font-bold text-gray-900">
+              <p className={`mt-2 text-3xl font-bold rounded-lg px-3 py-1 inline-block ${getOutcomeColor(summary.escalation_rate)}`}>
                 {(summary.escalation_rate * 100).toFixed(1)}%
               </p>
             </Card>
@@ -269,11 +287,15 @@ export function ReportsPage() {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {surgeon.total_surgeries}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {(surgeon.complication_rate * 100).toFixed(1)}%
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`text-sm font-semibold px-2 py-1 rounded ${getOutcomeColor(surgeon.complication_rate)}`}>
+                            {(surgeon.complication_rate * 100).toFixed(1)}%
+                          </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {(surgeon.readmission_rate * 100).toFixed(1)}%
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`text-sm font-semibold px-2 py-1 rounded ${getOutcomeColor(surgeon.readmission_rate)}`}>
+                            {(surgeon.readmission_rate * 100).toFixed(1)}%
+                          </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {surgeon.avg_duration?.toFixed(0) || 'N/A'}
