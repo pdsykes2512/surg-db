@@ -576,6 +576,7 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
                     setFormData({ ...formData, surgeon: name })
                   }}
                   label="Primary Surgeon"
+                  roleFilter="surgeon"
                   required
                   placeholder="Type to search surgeons..."
                 />

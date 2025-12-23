@@ -12,7 +12,7 @@ from ..auth import get_current_user, require_admin
 router = APIRouter(prefix="/api/admin/clinicians", tags=["Admin - Clinician Management"])
 
 
-@router.get("", response_model=List[Clinician])
+@router.get("")
 async def list_clinicians(
     skip: int = 0,
     limit: int = 1000,
@@ -29,12 +29,12 @@ async def list_clinicians(
     clinicians = []
     async for doc in cursor:
         doc["_id"] = str(doc["_id"])
-        clinicians.append(Clinician(**doc))
+        clinicians.append(doc)
     
     return clinicians
 
 
-@router.post("", response_model=Clinician, status_code=status.HTTP_201_CREATED)
+@router.post("", status_code=status.HTTP_201_CREATED)
 async def create_clinician(
     clinician_data: ClinicianCreate,
     current_user: User = Depends(require_admin),
@@ -61,10 +61,10 @@ async def create_clinician(
     result = await db.clinicians.insert_one(clinician_dict)
     clinician_dict["_id"] = str(result.inserted_id)
     
-    return Clinician(**clinician_dict)
+    return clinician_dict
 
 
-@router.put("/{clinician_id}", response_model=Clinician)
+@router.put("/{clinician_id}")
 async def update_clinician(
     clinician_id: str,
     clinician_data: ClinicianUpdate,
@@ -102,7 +102,7 @@ async def update_clinician(
         )
     
     result["_id"] = str(result["_id"])
-    return Clinician(**result)
+    return result
 
 
 @router.delete("/{clinician_id}", status_code=status.HTTP_204_NO_CONTENT)

@@ -104,7 +104,7 @@ async def create_episode(episode: EpisodeCreate):
         )
 
 
-@router.get("/", response_model=List[Episode])
+@router.get("/")
 async def list_episodes(
     skip: int = 0,
     limit: int = 100,
@@ -152,10 +152,11 @@ async def list_episodes(
     for episode in episodes:
         episode["_id"] = str(episode["_id"])
     
-    return [Episode(**episode) for episode in episodes]
+    # Return raw dicts without Pydantic validation to support flexible episode structure
+    return episodes
 
 
-@router.get("/{episode_id}", response_model=Episode)
+@router.get("/{episode_id}")
 async def get_episode(episode_id: str):
     """Get a specific episode by ID (includes treatments and tumours from separate collections)"""
     episodes_collection = await get_episodes_collection()
@@ -169,12 +170,12 @@ async def get_episode(episode_id: str):
             detail=f"Episode {episode_id} not found"
         )
     
-    # Fetch treatments from separate collection
-    treatments_cursor = treatments_collection.find({"episode_id": str(episode["_id"])})
+    # Fetch treatments from separate collection using episode_id field (e.g., EPI-9012345678-01)
+    treatments_cursor = treatments_collection.find({"episode_id": episode["episode_id"]})
     treatments = await treatments_cursor.to_list(length=None)
     
-    # Fetch tumours from separate collection
-    tumours_cursor = tumours_collection.find({"episode_id": str(episode["_id"])})
+    # Fetch tumours from separate collection using episode_id field
+    tumours_cursor = tumours_collection.find({"episode_id": episode["episode_id"]})
     tumours = await tumours_cursor.to_list(length=None)
     
     # Convert ObjectIds to strings
@@ -184,15 +185,16 @@ async def get_episode(episode_id: str):
     for tumour in tumours:
         tumour["_id"] = str(tumour["_id"])
     
-    # Include treatments and tumours in response for backward compatibility
+    # Include treatments and tumours in response
     episode["treatments"] = treatments
     episode["tumours"] = tumours
     
-    return Episode(**episode)
+    # Return raw dict without Pydantic validation to support flexible episode structure
+    return episode
 
 
-@router.put("/{episode_id}", response_model=Episode)
-async def update_episode(episode_id: str, update_data: EpisodeUpdate):
+@router.put("/{episode_id}")
+async def update_episode(episode_id: str, update_data: dict):
     """Update an existing episode"""
     try:
         collection = await get_episodes_collection()
@@ -205,8 +207,11 @@ async def update_episode(episode_id: str, update_data: EpisodeUpdate):
                 detail=f"Episode {episode_id} not found"
             )
         
-        # Build update document (only include non-None fields)
-        update_dict = {k: v for k, v in update_data.model_dump().items() if v is not None}
+        # Remove fields that shouldn't be updated
+        fields_to_remove = ['_id', 'episode_id', 'patient_id', 'created_at', 'created_by', 'treatments', 'tumours']
+        update_dict = {k: v for k, v in update_data.items() if k not in fields_to_remove and v is not None}
+        
+        # Set last_modified_at timestamp
         update_dict['last_modified_at'] = datetime.utcnow()
         
         # Update episode
@@ -218,12 +223,19 @@ async def update_episode(episode_id: str, update_data: EpisodeUpdate):
         # Retrieve and return updated episode
         updated_episode = await collection.find_one({"episode_id": episode_id})
         updated_episode["_id"] = str(updated_episode["_id"])
-        return Episode(**updated_episode)
+        
+        # Return raw dict without Pydantic validation to support flexible episode structure
+        return updated_episode
     except HTTPException:
         raise
     except Exception as e:
         import traceback
         print(f"Error updating episode: {str(e)}")
+        print(traceback.format_exc())
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update episode: {str(e)}"
+        )
         print(traceback.format_exc())
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -310,10 +322,10 @@ async def update_treatment_in_episode(episode_id: str, treatment_id: str, treatm
                 detail=f"Episode {episode_id} not found"
             )
         
-        # Find treatment in separate collection
+        # Find treatment in separate collection using episode_id field (EPI-NHSNUMBER-##)
         existing_treatment = await treatments_collection.find_one({
             "treatment_id": treatment_id,
-            "episode_id": str(episode["_id"])
+            "episode_id": episode["episode_id"]
         })
         
         if not existing_treatment:
@@ -322,10 +334,12 @@ async def update_treatment_in_episode(episode_id: str, treatment_id: str, treatm
                 detail=f"Treatment {treatment_id} not found in episode {episode_id}"
             )
         
-        # Update treatment
+        # Update treatment (remove _id if present as it's immutable)
+        if '_id' in treatment:
+            del treatment['_id']
         treatment['last_modified_at'] = datetime.utcnow()
         await treatments_collection.update_one(
-            {"treatment_id": treatment_id, "episode_id": str(episode["_id"])},
+            {"treatment_id": treatment_id, "episode_id": episode["episode_id"]},
             {"$set": treatment}
         )
         
@@ -338,7 +352,7 @@ async def update_treatment_in_episode(episode_id: str, treatment_id: str, treatm
         # Return updated treatment
         updated_treatment = await treatments_collection.find_one({
             "treatment_id": treatment_id,
-            "episode_id": str(episode["_id"])
+            "episode_id": episode["episode_id"]
         })
         if updated_treatment:
             updated_treatment["_id"] = str(updated_treatment["_id"])
@@ -522,10 +536,10 @@ async def update_tumour_in_episode(episode_id: str, tumour_id: str, tumour: dict
                 detail=f"Episode {episode_id} not found"
             )
         
-        # Find tumour in separate collection
+        # Find tumour in separate collection using episode_id field (EPI-NHSNUMBER-##)
         existing_tumour = await tumours_collection.find_one({
             "tumour_id": tumour_id,
-            "episode_id": str(episode["_id"])
+            "episode_id": episode["episode_id"]
         })
         
         if not existing_tumour:
@@ -534,10 +548,12 @@ async def update_tumour_in_episode(episode_id: str, tumour_id: str, tumour: dict
                 detail=f"Tumour {tumour_id} not found in episode {episode_id}"
             )
         
-        # Update tumour
+        # Update tumour (remove _id if present as it's immutable)
+        if '_id' in tumour:
+            del tumour['_id']
         tumour['last_modified_at'] = datetime.utcnow()
         await tumours_collection.update_one(
-            {"tumour_id": tumour_id, "episode_id": str(episode["_id"])},
+            {"tumour_id": tumour_id, "episode_id": episode["episode_id"]},
             {"$set": tumour}
         )
         
@@ -550,7 +566,7 @@ async def update_tumour_in_episode(episode_id: str, tumour_id: str, tumour: dict
         # Return updated tumour
         updated_tumour = await tumours_collection.find_one({
             "tumour_id": tumour_id,
-            "episode_id": str(episode["_id"])
+            "episode_id": episode["episode_id"]
         })
         if updated_tumour:
             updated_tumour["_id"] = str(updated_tumour["_id"])

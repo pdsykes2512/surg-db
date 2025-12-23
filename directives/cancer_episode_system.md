@@ -63,9 +63,9 @@ An episode represents a patient's contact with the hospital for a specific condi
 - `GET /api/v2/episodes/stats/overview` - Statistics
 - `GET /api/v2/episodes/patient/{id}/timeline` - Patient timeline
 
-### Legacy Endpoints (Surgery-based)
-- Original `/api/episodes` endpoints remain for backward compatibility
-- Will be deprecated once migration is complete
+### Legacy Endpoints
+Previously there were legacy surgery-based endpoints. These have been fully migrated to the episode-based system.
+All functionality is now handled through the v2 episode endpoints above.
 
 ## Database Schema
 
@@ -121,10 +121,6 @@ An episode represents a patient's contact with the hospital for a specific condi
 - Longitudinal tumour tracking
 - Better COSD data export alignment
 
-#### surgeries (legacy)
-- Preserved for historical data
-- Can be migrated to episodes using `migrate_surgeries_to_episodes.py`
-
 ### Database Indexes
 
 **episodes collection:**
@@ -157,13 +153,7 @@ An episode represents a patient's contact with the hospital for a specific condi
    - When to use: First-time setup or after database reset
    - Command: `python execution/init_episodes_collection.py`
 
-2. **migrate_surgeries_to_episodes.py**
-   - Purpose: Convert existing surgery records to episode format
-   - When to use: One-time migration from old to new system
-   - Command: `python execution/migrate_surgeries_to_episodes.py`
-   - Note: Preserves original surgery records
-
-3. **migrate_to_separate_collections.py**
+2. **migrate_to_separate_collections.py**
    - Purpose: Move treatments and tumours from embedded arrays to separate collections
    - When to use: Database restructuring (completed 2024-12-23)
    - Command: `python execution/migrate_to_separate_collections.py`
@@ -174,6 +164,11 @@ An episode represents a patient's contact with the hospital for a specific condi
      * Creates indexes for optimal query performance
      * Idempotent - safe to rerun
    - Status: **COMPLETED** - All episodes migrated to separate collections structure
+
+3. **create_sample_data.py**
+   - Purpose: Generate realistic test data for development
+   - Creates: Patients, episodes, treatments, tumours with proper relationships
+   - Command: `python execution/create_sample_data.py`
 
 ### Startup Scripts
 - `start_backend.sh` - Start FastAPI backend

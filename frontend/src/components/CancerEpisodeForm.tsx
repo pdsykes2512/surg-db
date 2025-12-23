@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from './Button'
 import { DateInput } from './DateInput'
 import { PatientSearch } from './PatientSearch'
@@ -47,6 +47,7 @@ export function CancerEpisodeForm({ onSubmit, onCancel, initialData, mode = 'cre
         referral_date: formatDateForInput(initialData.referral_date),
         first_seen_date: formatDateForInput(initialData.first_seen_date),
         mdt_discussion_date: formatDateForInput(initialData.mdt_discussion_date),
+        cancer_data: initialData.cancer_data || {}, // Ensure cancer_data is always an object
       }
     }
     
@@ -74,6 +75,24 @@ export function CancerEpisodeForm({ onSubmit, onCancel, initialData, mode = 'cre
       tumours: []
     }
   })
+
+  // Update form data when initialData changes (for edit mode)
+  useEffect(() => {
+    if (initialData) {
+      const formatDateForInput = (dateStr: string | null | undefined) => {
+        if (!dateStr) return ''
+        return dateStr.split('T')[0]
+      }
+      
+      setFormData({
+        ...initialData,
+        referral_date: formatDateForInput(initialData.referral_date),
+        first_seen_date: formatDateForInput(initialData.first_seen_date),
+        mdt_discussion_date: formatDateForInput(initialData.mdt_discussion_date),
+        cancer_data: initialData.cancer_data || {},
+      })
+    }
+  }, [initialData])
 
   const updateFormData = (field: string, value: any) => {
     setFormData((prev: any) => ({ ...prev, [field]: value }))

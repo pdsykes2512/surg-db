@@ -110,7 +110,8 @@ SAMPLE_PATIENTS = [
     }
 ]
 
-CANCER_TYPES = ['colorectal', 'gastric', 'pancreatic', 'hepatobiliary']
+# Use cancer types that match the Episode model CancerType enum
+CANCER_TYPES = ['bowel', 'kidney', 'breast_primary', 'oesophageal', 'ovarian', 'prostate']
 COLORECTAL_SITES = ['caecum', 'ascending_colon', 'transverse_colon', 'sigmoid_colon', 'rectum']
 URGENCY_TYPES = ['elective', 'urgent', 'emergency']
 APPROACH_TYPES = ['laparoscopic', 'open', 'robotic', 'converted']
@@ -223,8 +224,8 @@ async def create_sample_data():
         # Get existing episode count for this patient
         existing_episodes = await episodes_col.count_documents({"patient_id": patient_id})
         
-        # Create 1-2 episodes per patient
-        num_episodes = random.randint(1, 2)
+        # Create 2-3 episodes per patient to get ~6-9 total episodes
+        num_episodes = random.randint(2, 3)
         
         for ep_idx in range(num_episodes):
             episode_id = generate_episode_id(nhs_number, existing_episodes + ep_idx)
@@ -235,20 +236,22 @@ async def create_sample_data():
                 continue
             
             cancer_type = random.choice(CANCER_TYPES)
-            diagnosis_date = datetime.now() - timedelta(days=random.randint(30, 365))
+            referral_date = datetime.now() - timedelta(days=random.randint(30, 365))
             
             episode = {
                 "episode_id": episode_id,
                 "patient_id": patient_id,
+                "condition_type": "cancer",  # Required for frontend filtering
                 "cancer_type": cancer_type,
-                "diagnosis_date": diagnosis_date.strftime("%Y-%m-%d"),
-                "mdt_date": (diagnosis_date + timedelta(days=7)).strftime("%Y-%m-%d"),
-                "mdt_outcome": "surgery",
-                "intent": "curative",
-                "status": "active",
+                "referral_date": referral_date.strftime("%Y-%m-%d"),
+                "first_seen_date": (referral_date + timedelta(days=3)).strftime("%Y-%m-%d"),
+                "mdt_discussion_date": (referral_date + timedelta(days=7)).strftime("%Y-%m-%d"),
+                "lead_clinician": "Mr James Wilson",  # Required field in model
+                "episode_status": "active",
                 "created_at": datetime.utcnow(),
                 "created_by": "system",
-                "updated_at": datetime.utcnow()
+                "last_modified_at": datetime.utcnow(),
+                "last_modified_by": "system"
             }
             
             await episodes_col.insert_one(episode)
@@ -272,8 +275,8 @@ async def create_sample_data():
                     "tumour_id": tumour_id,
                     "episode_id": episode_id,
                     "tumour_type": "primary" if tum_idx == 0 else "metastasis",
-                    "site": random.choice(COLORECTAL_SITES) if cancer_type == 'colorectal' else 'liver',
-                    "diagnosis_date": diagnosis_date.strftime("%Y-%m-%d"),
+                    "site": random.choice(COLORECTAL_SITES) if cancer_type == 'bowel' else 'liver',
+                    "primary_diagnosis_date": referral_date.strftime("%Y-%m-%d"),
                     "tnm_version": "8",
                     "clinical_t": t_stage,
                     "clinical_n": n_stage,
@@ -319,7 +322,7 @@ async def create_sample_data():
                 if await treatments_col.find_one({"treatment_id": treatment_id}):
                     continue
                 
-                treatment_date = diagnosis_date + timedelta(days=random.randint(14, 60))
+                treatment_date = referral_date + timedelta(days=random.randint(14, 60))
                 
                 treatment = {
                     "treatment_id": treatment_id,
