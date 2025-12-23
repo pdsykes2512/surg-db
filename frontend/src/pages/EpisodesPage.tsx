@@ -483,7 +483,7 @@ export function EpisodesPage() {
                     }}
                     className="hover:bg-blue-50 cursor-pointer transition-colors"
                   >
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {episode.episode_id}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -536,7 +536,7 @@ export function EpisodesPage() {
                       setShowModal(true)
                     }}
                   >
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {episode.surgery_id}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
