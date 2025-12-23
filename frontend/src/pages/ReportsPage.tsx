@@ -128,6 +128,20 @@ export function ReportsPage() {
     return 'bg-red-500'
   }
 
+  const getCompletenessCardColor = (percentage: number) => {
+    if (percentage >= 90) return 'bg-green-50 border-green-200'
+    if (percentage >= 70) return 'bg-yellow-50 border-yellow-200'
+    if (percentage >= 50) return 'bg-orange-50 border-orange-200'
+    return 'bg-red-50 border-red-200'
+  }
+
+  const getCompletenessTextColor = (percentage: number) => {
+    if (percentage >= 90) return 'text-green-600'
+    if (percentage >= 70) return 'text-yellow-600'
+    if (percentage >= 50) return 'text-orange-600'
+    return 'text-red-600'
+  }
+
   // For outcomes: lower is better (inverse of data quality)
   const getOutcomeColor = (rate: number) => {
     const percentage = rate * 100
@@ -361,9 +375,9 @@ export function ReportsPage() {
               <p className="mt-2 text-3xl font-bold text-gray-900">{dataQuality.total_treatments}</p>
             </Card>
 
-            <Card className="p-6">
-              <h3 className="text-sm font-medium text-gray-500">Overall Completeness</h3>
-              <p className={`mt-2 text-3xl font-bold rounded-lg px-3 py-1 inline-block ${getCompletenessColor(dataQuality.overall_completeness)}`}>
+            <Card className={`p-6 border-2 ${getCompletenessCardColor(dataQuality.overall_completeness)}`}>
+              <h3 className="text-sm font-medium text-gray-600">Overall Completeness</h3>
+              <p className={`mt-2 text-3xl font-bold ${getCompletenessTextColor(dataQuality.overall_completeness)}`}>
                 {dataQuality.overall_completeness.toFixed(1)}%
               </p>
             </Card>
@@ -372,16 +386,16 @@ export function ReportsPage() {
           {/* Category Breakdown */}
           <Card className="p-6">
             <h3 className="text-lg font-semibold mb-6">Data Completeness by Category</h3>
-            <div className="space-y-6">
+            <div className="space-y-4">
               {dataQuality.categories.map((category) => (
-                <div key={category.name} className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <h4 className="text-sm font-medium text-gray-700">{category.name}</h4>
-                    <span className={`text-sm font-semibold px-2 py-1 rounded ${getCompletenessColor(category.avg_completeness)}`}>
+                <div key={category.name} className={`p-4 rounded-lg border-2 ${getCompletenessCardColor(category.avg_completeness)}`}>
+                  <div className="flex justify-between items-center mb-3">
+                    <h4 className="text-base font-semibold text-gray-700">{category.name}</h4>
+                    <span className={`text-lg font-bold ${getCompletenessTextColor(category.avg_completeness)}`}>
                       {category.avg_completeness.toFixed(1)}%
                     </span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2.5">
+                  <div className="w-full bg-gray-200 rounded-full h-2.5 mb-2">
                     <div
                       className={`h-2.5 rounded-full ${getCompletenessBarColor(category.avg_completeness)}`}
                       style={{ width: `${category.avg_completeness}%` }}
