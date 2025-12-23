@@ -65,12 +65,17 @@ export function SurgeonSearch({
   const filteredSurgeons = surgeons.filter((s) => {
     const matchesSubspecialty = !subspecialtyFilter || 
       (s.subspecialty_leads && s.subspecialty_leads.includes(subspecialtyFilter))
-    const matchesRole = !roleFilter || s.clinical_role === roleFilter
+    // If roleFilter is set, match it - but treat missing/undefined clinical_role as matching "surgeon" for backward compatibility
+    const clinicianRole = s.clinical_role || 'surgeon'
+    const matchesRole = !roleFilter || clinicianRole === roleFilter
     return matchesSubspecialty && matchesRole
   })
+  
+  // If role filter is active but no matches found, show all clinicians (backward compatibility)
+  const finalFilteredSurgeons = (roleFilter && filteredSurgeons.length === 0) ? surgeons : filteredSurgeons
 
   // Convert surgeons to options format
-  const options = filteredSurgeons.map(surgeon => ({
+  const options = finalFilteredSurgeons.map(surgeon => ({
     value: `${surgeon.first_name} ${surgeon.surname}`,
     label: `${surgeon.first_name} ${surgeon.surname}`,
     surgeon: surgeon
