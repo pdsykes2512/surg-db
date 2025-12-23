@@ -2,10 +2,10 @@
 Report generation API routes
 """
 from fastapi import APIRouter, HTTPException, status, Query
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from datetime import datetime, timedelta
 
-from ..database import get_surgeries_collection
+from ..database import Database
 
 
 router = APIRouter(prefix="/api/reports", tags=["reports"])
@@ -13,239 +13,129 @@ router = APIRouter(prefix="/api/reports", tags=["reports"])
 
 @router.get("/summary")
 async def get_summary_report() -> Dict[str, Any]:
-    """Get overall outcome statistics"""
-    collection = await get_surgeries_collection()
+    """Get overall cancer episode statistics"""
+    db = Database.get_database()
+    episodes_collection = db.episodes
+    treatments_collection = db.treatments
     
-    # Use single aggregation pipeline to get all stats in one query for efficiency
-    pipeline = [
-        {
-            "$facet": {
-                "total": [{"$count": "count"}],
-                "complications": [
-                    {"$match": {"postoperative_events.complications": {"$exists": True, "$ne": []}}},
-                    {"$count": "count"}
-                ],
-                "readmissions": [
-                    {"$match": {"outcomes.readmission_30day": True}},
-                    {"$count": "count"}
-                ],
-                "mortality": [
-                    {"$match": {"outcomes.mortality_30day": True}},
-                    {"$count": "count"}
-                ],
-                "return_to_theatre": [
-                    {"$match": {"postoperative_events.return_to_theatre.occurred": True}},
-                    {"$count": "count"}
-                ],
-                "escalation": [
-                    {"$match": {"postoperative_events.escalation_of_care.occurred": True}},
-                    {"$count": "count"}
-                ],
-                "avg_los": [
-                    {"$match": {"perioperative_timeline.length_of_stay_days": {"$exists": True, "$ne": None}}},
-                    {"$group": {"_id": None, "avg": {"$avg": "$perioperative_timeline.length_of_stay_days"}}}
-                ],
-                "urgency": [
-                    {"$group": {"_id": "$classification.urgency", "count": {"$sum": 1}}}
-                ]
-            }
-        }
+    # Get total episodes
+    total_episodes = await episodes_collection.count_documents({"condition_type": "cancer"})
+    
+    # Get episodes with treatments
+    episodes_with_treatments = await treatments_collection.count_documents({})
+    
+    # Get cancer type breakdown
+    cancer_pipeline = [
+        {"$match": {"condition_type": "cancer"}},
+        {"$group": {"_id": "$cancer_type", "count": {"$sum": 1}}}
     ]
+    cancer_breakdown = await episodes_collection.aggregate(cancer_pipeline).to_list(length=100)
+    cancer_types = {item["_id"]: item["count"] for item in cancer_breakdown if item["_id"]}
     
-    result = await collection.aggregate(pipeline).to_list(length=1)
-    if not result:
-        return {"total_surgeries": 0, "complication_rate": 0, "readmission_rate": 0, "mortality_rate": 0, 
-                "return_to_theatre_rate": 0, "escalation_rate": 0, "avg_length_of_stay_days": 0, 
-                "urgency_breakdown": {}, "generated_at": datetime.utcnow().isoformat()}
-    
-    stats = result[0]
-    total_surgeries = stats["total"][0]["count"] if stats["total"] else 0
-    
-    surgeries_with_complications = stats["complications"][0]["count"] if stats["complications"] else 0
-    complication_rate = (surgeries_with_complications / total_surgeries * 100) if total_surgeries > 0 else 0
-    
-    readmissions = stats["readmissions"][0]["count"] if stats["readmissions"] else 0
-    readmission_rate = (readmissions / total_surgeries * 100) if total_surgeries > 0 else 0
-    
-    mortality_count = stats["mortality"][0]["count"] if stats["mortality"] else 0
-    mortality_rate = (mortality_count / total_surgeries * 100) if total_surgeries > 0 else 0
-    
-    return_to_theatre = stats["return_to_theatre"][0]["count"] if stats["return_to_theatre"] else 0
-    return_to_theatre_rate = (return_to_theatre / total_surgeries * 100) if total_surgeries > 0 else 0
-    
-    escalation_of_care = stats["escalation"][0]["count"] if stats["escalation"] else 0
-    escalation_rate = (escalation_of_care / total_surgeries * 100) if total_surgeries > 0 else 0
-    
-    avg_length_of_stay = round(stats["avg_los"][0]["avg"], 2) if stats["avg_los"] and stats["avg_los"][0] else 0
-    
-    urgency_breakdown = {item["_id"]: item["count"] for item in stats["urgency"] if item["_id"]}
-    # Ensure all urgencies are present
-    for urgency in ["elective", "emergency", "urgent"]:
-        if urgency not in urgency_breakdown:
-            urgency_breakdown[urgency] = 0
+    # Get status breakdown
+    status_pipeline = [
+        {"$match": {"condition_type": "cancer"}},
+        {"$group": {"_id": "$episode_status", "count": {"$sum": 1}}}
+    ]
+    status_breakdown = await episodes_collection.aggregate(status_pipeline).to_list(length=100)
+    statuses = {item["_id"]: item["count"] for item in status_breakdown if item["_id"]}
     
     return {
-        "total_surgeries": total_surgeries,
-        "complication_rate": round(complication_rate, 2),
-        "readmission_rate": round(readmission_rate, 2),
-        "mortality_rate": round(mortality_rate, 2),
-        "return_to_theatre_rate": round(return_to_theatre_rate, 2),
-        "escalation_rate": round(escalation_rate, 2),
-        "avg_length_of_stay_days": avg_length_of_stay,
-        "urgency_breakdown": urgency_breakdown,
-        "generated_at": datetime.utcnow().isoformat()
-    }
-
-
-@router.get("/complications")
-async def get_complications_report() -> Dict[str, Any]:
-    """Get detailed complication analysis"""
-    collection = await get_surgeries_collection()
-    
-    # Unwind complications array and group by type
-    pipeline = [
-        {"$match": {"postoperative_events.complications": {"$exists": True, "$ne": []}}},
-        {"$unwind": "$postoperative_events.complications"},
-        {"$group": {
-            "_id": "$postoperative_events.complications.type",
-            "count": {"$sum": 1},
-            "clavien_dindo_breakdown": {
-                "$push": "$postoperative_events.complications.clavien_dindo_grade"
-            }
-        }},
-        {"$sort": {"count": -1}}
-    ]
-    
-    complication_types = await collection.aggregate(pipeline).to_list(length=100)
-    
-    # Count Clavien-Dindo grades
-    for comp in complication_types:
-        grade_counts = {}
-        for grade in comp["clavien_dindo_breakdown"]:
-            if grade:  # Handle None values
-                grade_counts[grade] = grade_counts.get(grade, 0) + 1
-        comp["clavien_dindo_breakdown"] = grade_counts
-    
-    return {
-        "complications_by_type": complication_types,
-        "generated_at": datetime.utcnow().isoformat()
-    }
-
-
-@router.get("/trends")
-async def get_trends_report(
-    days: int = Query(30, description="Number of days to analyze", ge=1, le=365)
-) -> Dict[str, Any]:
-    """Get trends over specified time period"""
-    collection = await get_surgeries_collection()
-    
-    start_date = datetime.utcnow() - timedelta(days=days)
-    
-    # Surgeries by date
-    pipeline = [
-        {"$match": {"perioperative_timeline.surgery_date": {"$gte": start_date}}},
-        {"$group": {
-            "_id": {"$dateToString": {"format": "%Y-%m-%d", "date": "$perioperative_timeline.surgery_date"}},
-            "count": {"$sum": 1},
-            "with_complications": {
-                "$sum": {
-                    "$cond": [
-                        {"$gt": [{"$size": {"$ifNull": ["$postoperative_events.complications", []]}}, 0]},
-                        1,
-                        0
-                    ]
-                }
-            },
-            "return_to_theatre": {
-                "$sum": {"$cond": ["$postoperative_events.return_to_theatre.occurred", 1, 0]}
-            },
-            "escalation_of_care": {
-                "$sum": {"$cond": ["$postoperative_events.escalation_of_care.occurred", 1, 0]}
-            }
-        }},
-        {"$sort": {"_id": 1}}
-    ]
-    
-    daily_trends = await collection.aggregate(pipeline).to_list(length=days)
-    
-    return {
-        "period_days": days,
-        "start_date": start_date.isoformat(),
-        "end_date": datetime.utcnow().isoformat(),
-        "daily_trends": daily_trends,
+        "total_episodes": total_episodes,
+        "episodes_with_treatments": episodes_with_treatments,
+        "cancer_type_breakdown": cancer_types,
+        "status_breakdown": statuses,
         "generated_at": datetime.utcnow().isoformat()
     }
 
 
 @router.get("/surgeon-performance")
 async def get_surgeon_performance() -> Dict[str, Any]:
-    """Get surgeon-specific performance metrics"""
-    collection = await get_surgeries_collection()
+    """Get clinician-specific performance metrics"""
+    db = Database.get_database()
+    episodes_collection = db.episodes
     
     pipeline = [
+        {"$match": {"condition_type": "cancer"}},
         {"$group": {
-            "_id": "$team.primary_surgeon",
-            "total_surgeries": {"$sum": 1},
-            "surgeries_with_complications": {
-                "$sum": {
-                    "$cond": [
-                        {"$gt": [{"$size": {"$ifNull": ["$postoperative_events.complications", []]}}, 0]},
-                        1,
-                        0
-                    ]
-                }
-            },
-            "return_to_theatre_count": {
-                "$sum": {"$cond": ["$postoperative_events.return_to_theatre.occurred", 1, 0]}
-            },
-            "icu_admissions": {
-                "$sum": {"$cond": ["$postoperative_events.escalation_of_care.occurred", 1, 0]}
-            },
-            "readmissions": {
-                "$sum": {"$cond": ["$outcomes.readmission_30day", 1, 0]}
-            },
-            "mortality_30day": {
-                "$sum": {"$cond": ["$outcomes.mortality_30day", 1, 0]}
-            },
-            "avg_duration": {"$avg": "$perioperative_timeline.operation_duration_minutes"},
-            "avg_los": {"$avg": "$perioperative_timeline.length_of_stay_days"}
+            "_id": "$lead_clinician",
+            "total_episodes": {"$sum": 1},
+            "cancer_types": {"$addToSet": "$cancer_type"}
         }},
-        {"$addFields": {
-            "complication_rate": {
-                "$multiply": [
-                    {"$divide": ["$surgeries_with_complications", "$total_surgeries"]},
-                    100
-                ]
-            },
-            "readmission_rate": {
-                "$multiply": [
-                    {"$divide": ["$readmissions", "$total_surgeries"]},
-                    100
-                ]
-            },
-            "mortality_rate": {
-                "$multiply": [
-                    {"$divide": ["$mortality_30day", "$total_surgeries"]},
-                    100
-                ]
-            }
-        }},
-        {"$sort": {"total_surgeries": -1}}
+        {"$sort": {"total_episodes": -1}}
     ]
     
-    surgeon_stats = await collection.aggregate(pipeline).to_list(length=100)
-    
-    # Round numeric values
-    for stat in surgeon_stats:
-        stat["complication_rate"] = round(stat["complication_rate"], 2)
-        stat["readmission_rate"] = round(stat["readmission_rate"], 2)
-        stat["mortality_rate"] = round(stat["mortality_rate"], 2)
-        if stat["avg_duration"]:
-            stat["avg_duration"] = round(stat["avg_duration"], 2)
-        if stat["avg_los"]:
-            stat["avg_los"] = round(stat["avg_los"], 2)
+    clinician_stats = await episodes_collection.aggregate(pipeline).to_list(length=100)
     
     return {
-        "surgeon_performance": surgeon_stats,
+        "surgeons": clinician_stats,
         "generated_at": datetime.utcnow().isoformat()
     }
+
+
+@router.get("/data-quality")
+async def get_data_quality_report() -> Dict[str, Any]:
+    """Get data completeness and quality metrics"""
+    db = Database.get_database()
+    episodes_collection = db.episodes
+    treatments_collection = db.treatments
+    tumours_collection = db.tumours
+    
+    # Get all episodes
+    all_episodes = await episodes_collection.find({"condition_type": "cancer"}).to_list(length=None)
+    total_episodes = len(all_episodes)
+    
+    # Get all treatments and tumours
+    total_treatments = await treatments_collection.count_documents({})
+    total_tumours = await tumours_collection.count_documents({})
+    
+    # Define required and optional fields for episodes
+    episode_fields = {
+        "Core": [
+            "episode_id", "patient_id", "cancer_type", "lead_clinician", 
+            "referral_date", "episode_status"
+        ],
+        "Referral": [
+            "referral_source", "provider_first_seen", "first_seen_date"
+        ],
+        "MDT": [
+            "mdt_discussion_date", "mdt_meeting_type", "mdt_team"
+        ],
+        "Clinical": [
+            "performance_status", "cns_involved"
+        ]
+    }
+    
+    # Calculate completeness
+    categories = []
+    for category_name, fields in episode_fields.items():
+        field_stats = []
+        for field in fields:
+            complete_count = sum(1 for ep in all_episodes if ep.get(field))
+            field_stats.append({
+                "field": field,
+                "complete_count": complete_count,
+                "total_count": total_episodes,
+                "completeness": round((complete_count / total_episodes * 100) if total_episodes > 0 else 0, 2),
+                "missing_count": total_episodes - complete_count
+            })
+        
+        avg_completeness = sum(f["completeness"] for f in field_stats) / len(field_stats) if field_stats else 0
+        categories.append({
+            "name": category_name,
+            "total_fields": len(fields),
+            "avg_completeness": round(avg_completeness, 2),
+            "fields": field_stats
+        })
+    
+    overall_completeness = sum(c["avg_completeness"] for c in categories) / len(categories) if categories else 0
+    
+    return {
+        "total_episodes": total_episodes,
+        "total_treatments": total_treatments,
+        "total_tumours": total_tumours,
+        "overall_completeness": round(overall_completeness, 2),
+        "categories": categories,
+        "generated_at": datetime.utcnow().isoformat()
+    }
+
