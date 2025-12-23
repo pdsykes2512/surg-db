@@ -8,7 +8,7 @@ interface Surgeon {
   gmc_number?: string
   is_consultant: boolean
   subspecialty_leads?: string[]
-  role?: string
+  clinical_role?: string
 }
 
 interface SurgeonSearchProps {
@@ -65,7 +65,7 @@ export function SurgeonSearch({
   const filteredSurgeons = surgeons.filter((s) => {
     const matchesSubspecialty = !subspecialtyFilter || 
       (s.subspecialty_leads && s.subspecialty_leads.includes(subspecialtyFilter))
-    const matchesRole = !roleFilter || s.role === roleFilter
+    const matchesRole = !roleFilter || s.clinical_role === roleFilter
     return matchesSubspecialty && matchesRole
   })
 
