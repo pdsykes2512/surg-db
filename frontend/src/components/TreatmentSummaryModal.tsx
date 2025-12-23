@@ -35,9 +35,19 @@ export function TreatmentSummaryModal({ treatment, onClose, onEdit }: TreatmentS
   const Field = ({ label, value }: { label: string, value: any }) => {
     if (!value && value !== 0 && value !== false) return null
     return (
-      <div className="grid grid-cols-3 gap-4 py-2">
-        <dt className="text-sm font-medium text-gray-500">{label}</dt>
+      <div className="grid grid-cols-3 gap-4 py-1.5 border-b border-gray-100 last:border-0">
+        <dt className="text-xs font-medium text-gray-500">{label}</dt>
         <dd className="text-sm text-gray-900 col-span-2">{value}</dd>
+      </div>
+    )
+  }
+
+  const CompactField = ({ label, value }: { label: string, value: any }) => {
+    if (!value && value !== 0 && value !== false) return null
+    return (
+      <div className="flex items-center gap-2">
+        <dt className="text-xs font-medium text-gray-500 whitespace-nowrap">{label}:</dt>
+        <dd className="text-sm text-gray-900">{value}</dd>
       </div>
     )
   }
@@ -85,39 +95,51 @@ export function TreatmentSummaryModal({ treatment, onClose, onEdit }: TreatmentS
               <Section title="Surgical Details">
                 <Field label="Procedure Name" value={treatment.procedure_name} />
                 <Field label="OPCS-4 Code" value={treatment.opcs4_code} />
-                <Field label="Approach" value={treatment.approach?.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())} />
-                <Field label="Urgency" value={treatment.urgency?.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())} />
-                <Field label="Complexity" value={treatment.complexity?.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())} />
-                <Field label="ASA Score" value={treatment.asa_score ? `ASA ${treatment.asa_score}` : undefined} />
-                <Field label="Anaesthetist" value={treatment.anaesthetist} />
-                <Field label="Anesthesia Type" value={treatment.anesthesia_type?.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())} />
-                <Field label="Anastomosis" value={treatment.anastomosis !== undefined ? (treatment.anastomosis ? 'Yes' : 'No') : undefined} />
-                <Field label="Stoma Created" value={treatment.stoma_created !== undefined ? (treatment.stoma_created ? 'Yes' : 'No') : undefined} />
-                {treatment.stoma_created && (
-                  <Field label="Stoma Type" value={treatment.stoma_type?.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())} />
+                <div className="grid grid-cols-3 gap-4 py-1.5 border-b border-gray-100">
+                  <CompactField label="Approach" value={treatment.approach?.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())} />
+                  <CompactField label="Urgency" value={treatment.urgency?.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())} />
+                  <CompactField label="Complexity" value={treatment.complexity?.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())} />
+                </div>
+                <div className="grid grid-cols-2 gap-4 py-1.5 border-b border-gray-100">
+                  <CompactField label="ASA Score" value={treatment.asa_score ? `ASA ${treatment.asa_score}` : undefined} />
+                  <CompactField label="Anesthesia" value={treatment.anesthesia_type?.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())} />
+                </div>
+              </Section>
+
+              <Section title="Surgical Team">
+                <Field label="Primary Surgeon" value={formatSurgeon(treatment.surgeon)} />
+                {treatment.assistant_surgeons?.length > 0 && (
+                  <Field label="Assistant Surgeons" value={treatment.assistant_surgeons.join(', ')} />
                 )}
-                <Field label="Emergency" value={treatment.emergency !== undefined ? (treatment.emergency ? 'Yes' : 'No') : undefined} />
+                <Field label="Anaesthetist" value={treatment.anaesthetist} />
               </Section>
 
               <Section title="Timeline & Duration">
-                <Field label="Admission Date" value={formatDate(treatment.admission_date)} />
-                <Field label="Discharge Date" value={formatDate(treatment.discharge_date)} />
-                <Field label="Operation Duration" value={treatment.operation_duration_minutes ? `${treatment.operation_duration_minutes} minutes` : undefined} />
-                <Field label="Operating Time" value={treatment.operating_time ? `${treatment.operating_time} minutes` : undefined} />
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <CompactField label="Admission" value={formatDate(treatment.admission_date)} />
+                    <CompactField label="Surgery" value={formatDate(treatment.treatment_date)} />
+                    <CompactField label="Discharge" value={formatDate(treatment.discharge_date)} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <CompactField label="Operation Duration" value={treatment.operation_duration_minutes ? `${treatment.operation_duration_minutes} min` : undefined} />
+                    <CompactField label="Anaesthesia Duration" value={treatment.anesthesia_duration_minutes ? `${treatment.anesthesia_duration_minutes} min` : undefined} />
+                    <CompactField label="Length of Stay" value={treatment.length_of_stay ? `${treatment.length_of_stay} days` : undefined} />
+                  </div>
+                </div>
               </Section>
 
               <Section title="Intraoperative Details">
-                <Field label="Blood Loss" value={treatment.blood_loss_ml ? `${treatment.blood_loss_ml} ml` : treatment.blood_loss ? `${treatment.blood_loss} ml` : undefined} />
-                <Field label="Transfusion Required" value={treatment.transfusion_required !== undefined ? (treatment.transfusion_required ? 'Yes' : 'No') : undefined} />
-                {treatment.transfusion_required && (
-                  <Field label="Units Transfused" value={treatment.units_transfused} />
-                )}
-                <Field label="Drains Placed" value={treatment.drains_placed !== undefined ? (treatment.drains_placed ? 'Yes' : 'No') : undefined} />
-                {treatment.drain_types?.length > 0 && (
-                  <Field 
-                    label="Drain Types" 
-                    value={treatment.drain_types.join(', ')}
-                  />
+                <div className="grid grid-cols-2 gap-4 py-1.5 border-b border-gray-100">
+                  <CompactField label="Blood Loss" value={treatment.blood_loss_ml ? `${treatment.blood_loss_ml} ml` : undefined} />
+                  <CompactField label="Transfusion" value={treatment.transfusion_required ? (treatment.units_transfused ? `Yes (${treatment.units_transfused} units)` : 'Yes') : 'No'} />
+                </div>
+                <div className="grid grid-cols-2 gap-4 py-1.5 border-b border-gray-100">
+                  <CompactField label="Drains" value={treatment.drains_placed ? (treatment.drain_types?.length > 0 ? `Yes (${treatment.drain_types.join(', ')})` : 'Yes') : 'No'} />
+                  <CompactField label="Stoma" value={treatment.stoma_created ? (treatment.stoma_type ? `Yes (${treatment.stoma_type})` : 'Yes') : treatment.stoma_created === false ? 'No' : undefined} />
+                </div>
+                {treatment.specimens_sent?.length > 0 && (
+                  <Field label="Specimens Sent" value={treatment.specimens_sent.join(', ')} />
                 )}
                 {treatment.findings && (
                   <Field label="Operative Findings" value={treatment.findings} />
