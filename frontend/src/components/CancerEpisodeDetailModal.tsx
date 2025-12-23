@@ -451,166 +451,169 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
                 </div>
               </div>
 
-              {/* Tumour Summary */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-lg font-semibold text-gray-900">Tumour Summary</h3>
-                  <button
-                    onClick={() => setActiveTab('tumours')}
-                    className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-                  >
-                    View Details →
-                  </button>
-                </div>
-                {tumours.length === 0 ? (
-                  <p className="text-sm text-gray-500 italic">No tumours recorded</p>
-                ) : (
-                  <div className="space-y-3">
-                    {tumours.map((tumour: any) => (
-                      <div key={tumour.tumour_id} className="bg-white rounded-md p-3 border border-gray-200">
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex items-center space-x-2">
-                            <span className={`px-2 py-1 text-xs font-semibold rounded ${
-                              tumour.tumour_type === 'primary' ? 'bg-red-100 text-red-800' :
-                              tumour.tumour_type === 'metastasis' ? 'bg-orange-100 text-orange-800' :
-                              tumour.tumour_type === 'recurrence' ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-gray-100 text-gray-800'
-                            }`}>
-                              {tumour.tumour_type?.replace('_', ' ').toUpperCase() || 'UNKNOWN'}
-                            </span>
-                            <span className="text-sm font-medium text-gray-900">{tumour.site || 'Site not specified'}</span>
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-                          {tumour.laterality && (
-                            <div>
-                              <span className="text-gray-500">Laterality:</span>
-                              <span className="ml-1 text-gray-900">{capitalize(tumour.laterality)}</span>
-                            </div>
-                          )}
-                          {tumour.size && (
-                            <div>
-                              <span className="text-gray-500">Size:</span>
-                              <span className="ml-1 text-gray-900">{tumour.size}mm</span>
-                            </div>
-                          )}
-                          {tumour.tnm_clinical && (
-                            <div>
-                              <span className="text-gray-500">cTNM:</span>
-                              <span className="ml-1 text-gray-900 font-mono">{tumour.tnm_clinical}</span>
-                            </div>
-                          )}
-                          {tumour.tnm_pathological && (
-                            <div>
-                              <span className="text-gray-500">pTNM:</span>
-                              <span className="ml-1 text-gray-900 font-mono">{tumour.tnm_pathological}</span>
-                            </div>
-                          )}
-                          {tumour.grade && (
-                            <div>
-                              <span className="text-gray-500">Grade:</span>
-                              <span className="ml-1 text-gray-900">{tumour.grade}</span>
-                            </div>
-                          )}
-                          {tumour.stage && (
-                            <div>
-                              <span className="text-gray-500">Stage:</span>
-                              <span className="ml-1 text-gray-900">{tumour.stage}</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
+              {/* Tumour and Treatment Summaries Side by Side */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Tumour Summary */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-lg font-semibold text-gray-900">Tumour Summary</h3>
+                    <button
+                      onClick={() => setActiveTab('tumours')}
+                      className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                    >
+                      View Details →
+                    </button>
                   </div>
-                )}
-              </div>
-
-              {/* Treatment Summary */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-lg font-semibold text-gray-900">Treatment Summary</h3>
-                  <button
-                    onClick={() => setActiveTab('treatments')}
-                    className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-                  >
-                    View Details →
-                  </button>
-                </div>
-                {treatments.length === 0 ? (
-                  <p className="text-sm text-gray-500 italic">No treatments recorded</p>
-                ) : (
-                  <div className="space-y-3">
-                    {treatments.map((treatment: Treatment) => (
-                      <div key={treatment.treatment_id} className="bg-white rounded-md p-3 border border-gray-200">
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex items-center space-x-2">
-                            <span className={`px-2 py-1 text-xs font-semibold rounded ${getTreatmentTypeColor(treatment.treatment_type)}`}>
-                              {formatTreatmentType(treatment.treatment_type)}
-                            </span>
-                            {treatment.treatment_date && (
-                              <span className="text-sm text-gray-600">{formatDate(treatment.treatment_date)}</span>
+                  {tumours.length === 0 ? (
+                    <p className="text-sm text-gray-500 italic">No tumours recorded</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {tumours.map((tumour: any) => (
+                        <div key={tumour.tumour_id} className="bg-white rounded-md p-3 border border-gray-200">
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex items-center space-x-2">
+                              <span className={`px-2 py-1 text-xs font-semibold rounded ${
+                                tumour.tumour_type === 'primary' ? 'bg-red-100 text-red-800' :
+                                tumour.tumour_type === 'metastasis' ? 'bg-orange-100 text-orange-800' :
+                                tumour.tumour_type === 'recurrence' ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-gray-100 text-gray-800'
+                              }`}>
+                                {tumour.tumour_type?.replace('_', ' ').toUpperCase() || 'UNKNOWN'}
+                              </span>
+                              <span className="text-sm font-medium text-gray-900">{tumour.site || 'Site not specified'}</span>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            {tumour.laterality && (
+                              <div>
+                                <span className="text-gray-500">Laterality:</span>
+                                <span className="ml-1 text-gray-900">{capitalize(tumour.laterality)}</span>
+                              </div>
+                            )}
+                            {tumour.size && (
+                              <div>
+                                <span className="text-gray-500">Size:</span>
+                                <span className="ml-1 text-gray-900">{tumour.size}mm</span>
+                              </div>
+                            )}
+                            {tumour.tnm_clinical && (
+                              <div>
+                                <span className="text-gray-500">cTNM:</span>
+                                <span className="ml-1 text-gray-900 font-mono">{tumour.tnm_clinical}</span>
+                              </div>
+                            )}
+                            {tumour.tnm_pathological && (
+                              <div>
+                                <span className="text-gray-500">pTNM:</span>
+                                <span className="ml-1 text-gray-900 font-mono">{tumour.tnm_pathological}</span>
+                              </div>
+                            )}
+                            {tumour.grade && (
+                              <div>
+                                <span className="text-gray-500">Grade:</span>
+                                <span className="ml-1 text-gray-900">{tumour.grade}</span>
+                              </div>
+                            )}
+                            {tumour.stage && (
+                              <div>
+                                <span className="text-gray-500">Stage:</span>
+                                <span className="ml-1 text-gray-900">{tumour.stage}</span>
+                              </div>
                             )}
                           </div>
                         </div>
-                        <div className="space-y-1 text-xs">
-                          {treatment.treatment_type === 'surgery' && treatment.procedure_name && (
-                            <div>
-                              <span className="text-gray-500">Procedure:</span>
-                              <span className="ml-1 text-gray-900">{treatment.procedure_name}</span>
-                            </div>
-                          )}
-                          {(treatment.treatment_type === 'surgery' || treatment.treatment_type === 'endoscopy') && (
-                            <>
-                              {(treatment.surgeon_name || treatment.surgeon) && (
-                                <div>
-                                  <span className="text-gray-500">Surgeon:</span>
-                                  <span className="ml-1 text-gray-900">{treatment.surgeon_name || formatSurgeon(treatment.surgeon)}</span>
-                                </div>
-                              )}
-                              {treatment.anaesthetist_name && (
-                                <div>
-                                  <span className="text-gray-500">Anaesthetist:</span>
-                                  <span className="ml-1 text-gray-900">{treatment.anaesthetist_name}</span>
-                                </div>
-                              )}
-                            </>
-                          )}
-                          {treatment.treatment_type === 'chemotherapy' && treatment.regimen && (
-                            <div>
-                              <span className="text-gray-500">Regimen:</span>
-                              <span className="ml-1 text-gray-900">{treatment.regimen}</span>
-                              {treatment.cycle_number && (
-                                <span className="ml-2 text-gray-500">(Cycle {treatment.cycle_number})</span>
-                              )}
-                            </div>
-                          )}
-                          {treatment.treatment_type === 'radiotherapy' && (
-                            <>
-                              {treatment.site && (
-                                <div>
-                                  <span className="text-gray-500">Site:</span>
-                                  <span className="ml-1 text-gray-900">{treatment.site}</span>
-                                </div>
-                              )}
-                              {treatment.total_dose && (
-                                <div>
-                                  <span className="text-gray-500">Total Dose:</span>
-                                  <span className="ml-1 text-gray-900">{treatment.total_dose} Gy</span>
-                                </div>
-                              )}
-                            </>
-                          )}
-                          {treatment.oncologist && (
-                            <div>
-                              <span className="text-gray-500">Oncologist:</span>
-                              <span className="ml-1 text-gray-900">{treatment.oncologist}</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Treatment Summary */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-lg font-semibold text-gray-900">Treatment Summary</h3>
+                    <button
+                      onClick={() => setActiveTab('treatments')}
+                      className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                    >
+                      View Details →
+                    </button>
                   </div>
-                )}
+                  {treatments.length === 0 ? (
+                    <p className="text-sm text-gray-500 italic">No treatments recorded</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {treatments.map((treatment: Treatment) => (
+                        <div key={treatment.treatment_id} className="bg-white rounded-md p-3 border border-gray-200">
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex items-center space-x-2">
+                              <span className={`px-2 py-1 text-xs font-semibold rounded ${getTreatmentTypeColor(treatment.treatment_type)}`}>
+                                {formatTreatmentType(treatment.treatment_type)}
+                              </span>
+                              {treatment.treatment_date && (
+                                <span className="text-sm text-gray-600">{formatDate(treatment.treatment_date)}</span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="space-y-1 text-xs">
+                            {treatment.treatment_type === 'surgery' && treatment.procedure_name && (
+                              <div>
+                                <span className="text-gray-500">Procedure:</span>
+                                <span className="ml-1 text-gray-900">{treatment.procedure_name}</span>
+                              </div>
+                            )}
+                            {(treatment.treatment_type === 'surgery' || treatment.treatment_type === 'endoscopy') && (
+                              <>
+                                {(treatment.surgeon_name || treatment.surgeon) && (
+                                  <div>
+                                    <span className="text-gray-500">Surgeon:</span>
+                                    <span className="ml-1 text-gray-900">{treatment.surgeon_name || formatSurgeon(treatment.surgeon)}</span>
+                                  </div>
+                                )}
+                                {treatment.anaesthetist_name && (
+                                  <div>
+                                    <span className="text-gray-500">Anaesthetist:</span>
+                                    <span className="ml-1 text-gray-900">{treatment.anaesthetist_name}</span>
+                                  </div>
+                                )}
+                              </>
+                            )}
+                            {treatment.treatment_type === 'chemotherapy' && treatment.regimen && (
+                              <div>
+                                <span className="text-gray-500">Regimen:</span>
+                                <span className="ml-1 text-gray-900">{treatment.regimen}</span>
+                                {treatment.cycle_number && (
+                                  <span className="ml-2 text-gray-500">(Cycle {treatment.cycle_number})</span>
+                                )}
+                              </div>
+                            )}
+                            {treatment.treatment_type === 'radiotherapy' && (
+                              <>
+                                {treatment.site && (
+                                  <div>
+                                    <span className="text-gray-500">Site:</span>
+                                    <span className="ml-1 text-gray-900">{treatment.site}</span>
+                                  </div>
+                                )}
+                                {treatment.total_dose && (
+                                  <div>
+                                    <span className="text-gray-500">Total Dose:</span>
+                                    <span className="ml-1 text-gray-900">{treatment.total_dose} Gy</span>
+                                  </div>
+                                )}
+                              </>
+                            )}
+                            {treatment.oncologist && (
+                              <div>
+                                <span className="text-gray-500">Oncologist:</span>
+                                <span className="ml-1 text-gray-900">{treatment.oncologist}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}
