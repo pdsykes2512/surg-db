@@ -384,7 +384,6 @@ export function EpisodesPage() {
               <DateInput
                 value={startDateFilter}
                 onChange={(e) => setStartDateFilter(e.target.value)}
-                placeholder="Start Date"
               />
             </div>
 
@@ -392,7 +391,6 @@ export function EpisodesPage() {
               <DateInput
                 value={endDateFilter}
                 onChange={(e) => setEndDateFilter(e.target.value)}
-                placeholder="End Date"
               />
             </div>
           </div>
