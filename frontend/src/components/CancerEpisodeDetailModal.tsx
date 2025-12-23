@@ -515,10 +515,10 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
                       {tumours.map((tumour: any) => (
                         <tr 
                           key={tumour.tumour_id} 
-                          className="hover:bg-gray-50 cursor-pointer"
+                          className="hover:bg-blue-50 cursor-pointer transition-colors"
                           onClick={() => setViewingTumour(tumour)}
                         >
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                             {tumour.tumour_id}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -634,7 +634,7 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
                       {treatments.map((treatment) => (
                         <tr 
                           key={treatment.treatment_id} 
-                          className="hover:bg-gray-50 cursor-pointer"
+                          className="hover:bg-blue-50 cursor-pointer transition-colors"
                           onClick={() => setViewingTreatment(treatment)}
                         >
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
