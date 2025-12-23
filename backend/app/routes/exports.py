@@ -357,8 +357,8 @@ async def export_nboca_xml(
     records = ET.SubElement(root, "Records")
     
     for episode in episodes:
-        # Fetch patient details
-        patient = await db.patients.find_one({"_id": ObjectId(episode["patient_id"])})
+        # Fetch patient details using patient_id (which is the record_number, not ObjectId)
+        patient = await db.patients.find_one({"record_number": episode["patient_id"]})
         if not patient:
             continue
         
@@ -435,8 +435,8 @@ async def check_data_completeness(
     }
     
     for episode in episodes:
-        # Fetch patient
-        patient = await db.patients.find_one({"_id": ObjectId(episode["patient_id"])})
+        # Fetch patient using record_number (patient_id field stores record_number, not ObjectId)
+        patient = await db.patients.find_one({"record_number": episode["patient_id"]})
         if not patient:
             continue
         
