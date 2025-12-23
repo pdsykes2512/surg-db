@@ -480,7 +480,7 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
                               }`}>
                                 {tumour.tumour_type?.replace('_', ' ').toUpperCase() || 'UNKNOWN'}
                               </span>
-                              <span className="text-sm font-medium text-gray-900">{tumour.site || 'Site not specified'}</span>
+                              <span className="text-sm font-medium text-gray-900">{tumour.site ? capitalize(tumour.site) : 'Site not specified'}</span>
                             </div>
                           </div>
                           <div className="grid grid-cols-2 gap-2 text-xs">
