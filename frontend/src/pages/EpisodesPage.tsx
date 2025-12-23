@@ -227,7 +227,7 @@ export function EpisodesPage() {
         <PageHeader
           title={patientId ? `Episodes for Patient ${patientId}` : 'Episode Records'}
           subtitle={patientInfo 
-            ? `${patientInfo.demographics?.gender || ''} | DOB: ${patientInfo.demographics?.date_of_birth || ''} | NHS: ${patientInfo.nhs_number || ''}`
+            ? `${patientInfo.demographics?.gender || ''} | DOB: ${formatDate(patientInfo.demographics?.date_of_birth)} | NHS: ${patientInfo.nhs_number || ''}`
             : 'Track cancer episodes and patient outcomes'}
           icon={
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -271,7 +271,7 @@ export function EpisodesPage() {
                 </div>
                 <div>
                   <span className="text-gray-500">Date of Birth:</span>
-                  <p className="font-medium text-gray-900">{patientInfo.demographics?.date_of_birth}</p>
+                  <p className="font-medium text-gray-900">{formatDate(patientInfo.demographics?.date_of_birth)}</p>
                 </div>
                 <div>
                   <span className="text-gray-500">Gender:</span>
