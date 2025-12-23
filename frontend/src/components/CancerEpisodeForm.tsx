@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Button } from './Button'
+import { DateInput } from './DateInput'
 import { PatientSearch } from './PatientSearch'
 import { SurgeonSearch } from './SurgeonSearch'
 import { SearchableSelect } from './SearchableSelect'
@@ -307,39 +308,22 @@ export function CancerEpisodeForm({ onSubmit, onCancel, initialData, mode = 'cre
 
       {/* Dates */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Referral Date <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="date"
-            value={formData.referral_date}
-            onChange={(e) => updateFormData('referral_date', e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            First Seen Date
-          </label>
-          <input
-            type="date"
-            value={formData.first_seen_date}
-            onChange={(e) => updateFormData('first_seen_date', e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            MDT Discussion Date
-          </label>
-          <input
-            type="date"
-            value={formData.mdt_discussion_date}
-            onChange={(e) => updateFormData('mdt_discussion_date', e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
+        <DateInput
+          label="Referral Date"
+          required
+          value={formData.referral_date}
+          onChange={(e) => updateFormData('referral_date', e.target.value)}
+        />
+        <DateInput
+          label="First Seen Date"
+          value={formData.first_seen_date}
+          onChange={(e) => updateFormData('first_seen_date', e.target.value)}
+        />
+        <DateInput
+          label="MDT Discussion Date"
+          value={formData.mdt_discussion_date}
+          onChange={(e) => updateFormData('mdt_discussion_date', e.target.value)}
+        />
 
         {/* MDT Meeting Type - NBOCA CR3190 */}
         <div>

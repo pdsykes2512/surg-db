@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Button } from './Button'
+import { DateInput } from './DateInput'
 import { SearchableSelect } from './SearchableSelect'
 import { calculateStage, formatStage, getStageColor } from '../utils/cancerStaging'
 
@@ -305,14 +306,10 @@ export function TumourModal({ onSubmit, onCancel, mode = 'create', initialData }
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Diagnosis Date
-                    </label>
-                    <input
-                      type="date"
+                    <DateInput
+                      label="Diagnosis Date"
                       value={formData.diagnosis_date}
                       onChange={(e) => setFormData({ ...formData, diagnosis_date: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                     />
                     <p className="mt-1 text-xs text-gray-500">NBOCA (CR2030)</p>
                   </div>
@@ -470,17 +467,11 @@ export function TumourModal({ onSubmit, onCancel, mode = 'create', initialData }
                       />
                     </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Staging Date
-                      </label>
-                      <input
-                        type="date"
-                        value={formData.clinical_stage_date}
-                        onChange={(e) => setFormData({ ...formData, clinical_stage_date: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
+                    <DateInput
+                      label="Staging Date"
+                      value={formData.clinical_stage_date}
+                      onChange={(e) => setFormData({ ...formData, clinical_stage_date: e.target.value })}
+                    />
                   </div>
                   
                   {/* Calculated Clinical Stage */}
@@ -545,17 +536,11 @@ export function TumourModal({ onSubmit, onCancel, mode = 'create', initialData }
                       />
                     </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Staging Date
-                      </label>
-                      <input
-                        type="date"
-                        value={formData.pathological_stage_date}
-                        onChange={(e) => setFormData({ ...formData, pathological_stage_date: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
+                    <DateInput
+                      label="Staging Date"
+                      value={formData.pathological_stage_date}
+                      onChange={(e) => setFormData({ ...formData, pathological_stage_date: e.target.value })}
+                    />
                   </div>
                   
                   {/* Calculated Pathological Stage */}

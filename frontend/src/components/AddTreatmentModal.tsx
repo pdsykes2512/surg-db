@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Button } from './Button'
+import { DateInput } from './DateInput'
 import { SurgeonSearch } from './SurgeonSearch'
 import { SearchableSelect } from './SearchableSelect'
 
@@ -361,18 +362,12 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Treatment Date *
-              </label>
-              <input
-                type="date"
-                value={formData.treatment_date}
-                onChange={(e) => setFormData({ ...formData, treatment_date: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                required
-              />
-            </div>
+            <DateInput
+              label="Treatment Date"
+              required
+              value={formData.treatment_date}
+              onChange={(e) => setFormData({ ...formData, treatment_date: e.target.value })}
+            />
           </div>
 
           {/* Provider Organisation - NBOCA CR1450 */}
@@ -552,28 +547,16 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
 
               {/* Timeline */}
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Admission Date
-                  </label>
-                  <input
-                    type="date"
-                    value={formData.admission_date}
-                    onChange={(e) => setFormData({ ...formData, admission_date: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Discharge Date
-                  </label>
-                  <input
-                    type="date"
-                    value={formData.discharge_date}
-                    onChange={(e) => setFormData({ ...formData, discharge_date: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
+                <DateInput
+                  label="Admission Date"
+                  value={formData.admission_date}
+                  onChange={(e) => setFormData({ ...formData, admission_date: e.target.value })}
+                />
+                <DateInput
+                  label="Discharge Date"
+                  value={formData.discharge_date}
+                  onChange={(e) => setFormData({ ...formData, discharge_date: e.target.value })}
+                />
               </div>
 
               {/* Intraoperative Details */}

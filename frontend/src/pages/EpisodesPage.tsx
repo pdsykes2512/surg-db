@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { PageHeader } from '../components/PageHeader'
 import { Card } from '../components/Card'
 import { Button } from '../components/Button'
+import { DateInput } from '../components/DateInput'
 import { EpisodeForm } from '../components/EpisodeForm'
 import { CancerEpisodeForm } from '../components/CancerEpisodeForm'
 import { EpisodeDetailModal } from '../components/EpisodeDetailModal'
@@ -379,33 +380,19 @@ export function EpisodesPage() {
               />
             </div>
 
-            <div className="md:col-span-1.5 relative">
-              {!startDateFilter && (
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none text-sm">
-                  Start Date
-                </span>
-              )}
-              <input
-                type="date"
+            <div className="md:col-span-1.5">
+              <DateInput
                 value={startDateFilter}
                 onChange={(e) => setStartDateFilter(e.target.value)}
-                className="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 [&::-webkit-calendar-picker-indicator]:opacity-100"
-                style={!startDateFilter ? { color: 'transparent' } : {}}
+                placeholder="Start Date"
               />
             </div>
 
-            <div className="md:col-span-1.5 relative">
-              {!endDateFilter && (
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none text-sm">
-                  End Date
-                </span>
-              )}
-              <input
-                type="date"
+            <div className="md:col-span-1.5">
+              <DateInput
                 value={endDateFilter}
                 onChange={(e) => setEndDateFilter(e.target.value)}
-                className="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 [&::-webkit-calendar-picker-indicator]:opacity-100"
-                style={!endDateFilter ? { color: 'transparent' } : {}}
+                placeholder="End Date"
               />
             </div>
           </div>
