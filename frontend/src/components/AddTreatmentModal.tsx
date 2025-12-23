@@ -137,7 +137,7 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
         setPatientNhsNumber(patientData.nhs_number)
         
         // Fetch existing treatments for this patient to get count
-        const treatmentsResponse = await fetch(`http://localhost:8000/api/treatments?episode_id=${episodeId}`, {
+        const treatmentsResponse = await fetch(`http://localhost:8000/api/treatments/?episode_id=${episodeId}`, {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         })
         const treatments = await treatmentsResponse.json()

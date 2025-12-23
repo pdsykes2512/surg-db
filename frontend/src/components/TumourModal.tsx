@@ -113,7 +113,7 @@ export function TumourModal({ episodeId, onSubmit, onCancel, mode = 'create', in
         setPatientNhsNumber(patientData.nhs_number)
         
         // Fetch existing tumours for this episode to get count
-        const tumoursResponse = await fetch(`http://localhost:8000/api/tumours?episode_id=${episodeId}`, {
+        const tumoursResponse = await fetch(`http://localhost:8000/api/tumours/?episode_id=${episodeId}`, {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         })
         const tumours = await tumoursResponse.json()

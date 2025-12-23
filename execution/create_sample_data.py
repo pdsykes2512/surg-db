@@ -55,8 +55,8 @@ def generate_tumour_id(nhs_number: str, count: int) -> str:
 # Sample data templates
 SAMPLE_PATIENTS = [
     {
-        "record_number": "MRN001234",
-        "nhs_number": "1234567890",
+        "record_number": "90001234",  # 8 digits
+        "nhs_number": "901 234 5678",  # XXX XXX XXXX format
         "demographics": {
             "title": "Mr",
             "first_name": "John",
@@ -73,8 +73,8 @@ SAMPLE_PATIENTS = [
         }
     },
     {
-        "record_number": "MRN005678",
-        "nhs_number": "2345678901",
+        "record_number": "90005678",  # 8 digits
+        "nhs_number": "902 345 6789",  # XXX XXX XXXX format
         "demographics": {
             "title": "Mrs",
             "first_name": "Sarah",
@@ -91,8 +91,8 @@ SAMPLE_PATIENTS = [
         }
     },
     {
-        "record_number": "MRN009012",
-        "nhs_number": "3456789012",
+        "record_number": "90009012",  # 8 digits
+        "nhs_number": "903 456 7890",  # XXX XXX XXXX format
         "demographics": {
             "title": "Ms",
             "first_name": "Priya",

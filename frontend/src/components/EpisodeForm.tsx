@@ -36,7 +36,7 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
   useEffect(() => {
     const fetchPatients = async () => {
       try {
-        const response = await fetch('http://localhost:8000/api/patients', {
+        const response = await fetch('http://localhost:8000/api/patients/', {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
           }

@@ -35,7 +35,7 @@ export function PatientSearch({
     const fetchPatients = async () => {
       setLoading(true)
       try {
-        const response = await fetch('http://localhost:8000/api/patients', {
+        const response = await fetch('http://localhost:8000/api/patients/', {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         })
         if (response.ok) {

@@ -163,7 +163,7 @@ export function CancerEpisodeForm({ onSubmit, onCancel, initialData, mode = 'cre
           if (patientData?.nhs_number && mode === 'create') {
             try {
               // Fetch existing episodes for this patient to get count
-              const response = await fetch(`http://localhost:8000/api/episodes?patient_id=${mrn}`, {
+              const response = await fetch(`http://localhost:8000/api/episodes/?patient_id=${mrn}`, {
                 headers: {
                   'Authorization': `Bearer ${localStorage.getItem('token')}`
                 }
