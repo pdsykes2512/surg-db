@@ -451,26 +451,6 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
                 </div>
               </div>
 
-              {/* Cancer-Specific Data */}
-              {episode.cancer_data && (
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Cancer Details</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {Object.entries(episode.cancer_data).map(([key, value]) => {
-                      if (typeof value === 'object' || !value) return null
-                      return (
-                        <div key={key}>
-                          <label className="text-sm font-medium text-gray-500">
-                            {formatFieldName(key)}
-                          </label>
-                          <p className="text-sm text-gray-900 mt-1">{formatFieldValue(value)}</p>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
-
               {/* Tumour Summary */}
               <div className="bg-gray-50 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-3">
