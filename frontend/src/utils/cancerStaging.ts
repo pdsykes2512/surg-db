@@ -14,12 +14,25 @@ export function calculateColorectalStage(
   n: string,
   m: string
 ): StageGroup {
-  if (!t || !n || !m) return 'Unknown'
+  if (!t || !n) return 'Unknown'
+  
+  // Normalize stages (remove spaces, make lowercase, add prefix if missing)
+  const normalizeT = (val: string) => {
+    const normalized = val.trim().toLowerCase()
+    return normalized.startsWith('t') ? normalized : `t${normalized}`
+  }
+  const normalizeN = (val: string) => {
+    const normalized = val.trim().toLowerCase()
+    return normalized.startsWith('n') ? normalized : `n${normalized}`
+  }
+  const normalizeM = (val: string) => {
+    const normalized = val.trim().toLowerCase()
+    return normalized.startsWith('m') ? normalized : `m${normalized}`
+  }
 
-  // Normalize stages (remove spaces, make lowercase)
-  const tStage = t.trim().toLowerCase()
-  const nStage = n.trim().toLowerCase()
-  const mStage = m.trim().toLowerCase()
+  const tStage = normalizeT(t)
+  const nStage = normalizeN(n)
+  const mStage = m ? normalizeM(m) : 'm0'
 
   // Unknown/Not assessed
   if (tStage === 'tx' || nStage === 'nx' || mStage === 'mx') {

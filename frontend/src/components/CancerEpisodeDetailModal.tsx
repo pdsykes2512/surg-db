@@ -4,7 +4,8 @@ import { AddTreatmentModal } from './AddTreatmentModal'
 import { TumourModal } from './TumourModal'
 import { TumourSummaryModal } from './TumourSummaryModal'
 import { TreatmentSummaryModal } from './TreatmentSummaryModal'
-import { formatFieldValue, formatFieldName, formatDate, formatStatus, formatCancerType, formatTreatmentType, formatSurgeon, capitalize, formatTreatmentPlan, formatCodedValue, formatAnatomicalSite } from '../utils/formatters'
+import { formatStatus, formatTreatmentType, formatSurgeon, capitalize, formatTreatmentPlan, formatCodedValue, formatAnatomicalSite, formatClinicalTNM, formatPathologicalTNM } from '../utils/formatters'
+import { calculateStage, getStageColor, formatStage } from '../utils/cancerStaging'
 
 interface Treatment {
   treatment_id: string
@@ -69,7 +70,8 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
     const fetchProviderName = async () => {
       if (episode?.provider_first_seen) {
         try {
-          const response = await fetch(`http://localhost:8000/api/nhs-providers/${episode.provider_first_seen}`)
+          const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
+          const response = await fetch(`${API_URL}/nhs-providers/${episode.provider_first_seen}`)
           if (response.ok) {
             const provider = await response.json()
             // Format the name with Title Case and NHS capitalized
@@ -102,7 +104,8 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
     
     try {
       setLoading(true)
-      const response = await fetch(`http://localhost:8000/api/episodes/${episode.episode_id}`, {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
+      const response = await fetch(`${API_URL}/episodes/${episode.episode_id}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -120,9 +123,11 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
   }
 
   const handleAddTreatment = async (treatment: any) => {
+    if (!episode) return
     try {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
       const response = await fetch(
-        `http://localhost:8000/api/episodes/${episode.episode_id}/treatments`,
+        `${API_URL}/episodes/${episode.episode_id}/treatments`,
         {
           method: 'POST',
           headers: {
@@ -147,11 +152,12 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
   }
 
   const handleEditTreatment = async (treatment: any) => {
-    if (!editingTreatment) return
+    if (!editingTreatment || !episode) return
     
     try {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
       const response = await fetch(
-        `http://localhost:8000/api/episodes/${episode.episode_id}/treatments/${editingTreatment.treatment_id}`,
+        `${API_URL}/episodes/${episode.episode_id}/treatments/${editingTreatment.treatment_id}`,
         {
           method: 'PUT',
           headers: {
@@ -177,9 +183,11 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
   }
 
   const handleAddTumour = async (tumour: any) => {
+    if (!episode) return
     try {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
       const response = await fetch(
-        `http://localhost:8000/api/episodes/${episode.episode_id}/tumours`,
+        `${API_URL}/episodes/${episode.episode_id}/tumours`,
         {
           method: 'POST',
           headers: {
@@ -204,11 +212,12 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
   }
 
   const handleEditTumour = async (tumour: any) => {
-    if (!editingTumour) return
+    if (!editingTumour || !episode) return
     
     try {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
       const response = await fetch(
-        `http://localhost:8000/api/episodes/${episode.episode_id}/tumours/${editingTumour.tumour_id}`,
+        `${API_URL}/episodes/${episode.episode_id}/tumours/${editingTumour.tumour_id}`,
         {
           method: 'PUT',
           headers: {
@@ -239,11 +248,12 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
   }
 
   const handleDeleteTumourConfirm = async () => {
-    if (!deleteTumourConfirmation.tumour) return
+    if (!deleteTumourConfirmation.tumour || !episode) return
     
     try {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
       const response = await fetch(
-        `http://localhost:8000/api/episodes/${episode.episode_id}/tumours/${deleteTumourConfirmation.tumour.tumour_id}`,
+        `${API_URL}/episodes/${episode.episode_id}/tumours/${deleteTumourConfirmation.tumour.tumour_id}`,
         {
           method: 'DELETE',
           headers: {
@@ -272,11 +282,12 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
   }
 
   const handleDeleteTreatmentConfirm = async () => {
-    if (!deleteTreatmentConfirmation.treatment) return
+    if (!deleteTreatmentConfirmation.treatment || !episode) return
     
     try {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
       const response = await fetch(
-        `http://localhost:8000/api/episodes/${episode.episode_id}/treatments/${deleteTreatmentConfirmation.treatment.treatment_id}`,
+        `${API_URL}/episodes/${episode.episode_id}/treatments/${deleteTreatmentConfirmation.treatment.treatment_id}`,
         {
           method: 'DELETE',
           headers: {
@@ -558,46 +569,120 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
                                 {tumour.tumour_type?.replace('_', ' ').toUpperCase() || 'UNKNOWN'}
                               </span>
                               <span className="text-sm font-medium text-gray-900">{formatAnatomicalSite(tumour.site)}</span>
+                              {tumour.screening?.bowel_cancer_screening_programme && (
+                                <span className="px-2 py-0.5 text-xs font-medium rounded bg-blue-100 text-blue-800">BCSP</span>
+                              )}
                             </div>
                           </div>
-                          <div className="grid grid-cols-2 gap-2 text-xs">
-                            {tumour.laterality && (
-                              <div>
-                                <span className="text-gray-500">Laterality:</span>
-                                <span className="ml-1 text-gray-900">{capitalize(tumour.laterality)}</span>
-                              </div>
-                            )}
-                            {tumour.size && (
+                          
+                          {/* Pathology Info */}
+                          <div className="grid grid-cols-2 gap-2 text-xs mb-2">
+                            {tumour.size_mm && (
                               <div>
                                 <span className="text-gray-500">Size:</span>
-                                <span className="ml-1 text-gray-900">{tumour.size}mm</span>
-                              </div>
-                            )}
-                            {tumour.tnm_clinical && (
-                              <div>
-                                <span className="text-gray-500">cTNM:</span>
-                                <span className="ml-1 text-gray-900 font-mono">{tumour.tnm_clinical}</span>
-                              </div>
-                            )}
-                            {tumour.tnm_pathological && (
-                              <div>
-                                <span className="text-gray-500">pTNM:</span>
-                                <span className="ml-1 text-gray-900 font-mono">{tumour.tnm_pathological}</span>
+                                <span className="ml-1 text-gray-900">{tumour.size_mm}mm</span>
                               </div>
                             )}
                             {tumour.grade && (
                               <div>
                                 <span className="text-gray-500">Grade:</span>
-                                <span className="ml-1 text-gray-900">{formatFieldValue(tumour.grade)}</span>
+                                <span className="ml-1 text-gray-900">{tumour.grade.toUpperCase()}</span>
                               </div>
                             )}
-                            {tumour.stage && (
+                            {tumour.histology_type && (
                               <div>
-                                <span className="text-gray-500">Stage:</span>
-                                <span className="ml-1 text-gray-900">{formatFieldValue(tumour.stage)}</span>
+                                <span className="text-gray-500">Histology:</span>
+                                <span className="ml-1 text-gray-900">{capitalize(tumour.histology_type)}</span>
                               </div>
                             )}
                           </div>
+
+                          {/* TNM Staging */}
+                          {(tumour.clinical_t || tumour.clinical_n || tumour.clinical_m || 
+                            tumour.pathological_t || tumour.pathological_n || tumour.pathological_m) && (
+                            <div className="border-t border-gray-200 pt-2 mt-2">
+                              <div className="text-xs font-medium text-gray-700 mb-1">TNM Staging</div>
+                              <div className="space-y-1.5">
+                                {(tumour.clinical_t || tumour.clinical_n || tumour.clinical_m) && (
+                                  <div className="flex items-center justify-between text-xs">
+                                    <div>
+                                      <span className="text-gray-500">Clinical:</span>
+                                      <span className="ml-1 text-gray-900 font-mono">
+                                        {formatClinicalTNM(tumour.clinical_t, tumour.clinical_n, tumour.clinical_m)}
+                                      </span>
+                                    </div>
+                                  </div>
+                                )}
+                                {(tumour.pathological_t || tumour.pathological_n || tumour.pathological_m) && (() => {
+                                  const stage = calculateStage('bowel', tumour.pathological_t, tumour.pathological_n, tumour.pathological_m)
+                                  return (
+                                    <div className="flex items-center justify-between text-xs">
+                                      <div>
+                                        <span className="text-gray-500">Pathological:</span>
+                                        <span className="ml-1 text-gray-900 font-mono">
+                                          {formatPathologicalTNM(tumour.pathological_t, tumour.pathological_n, tumour.pathological_m)}
+                                        </span>
+                                      </div>
+                                      {stage !== 'Unknown' && (
+                                        <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${getStageColor(stage)}`}>
+                                          {formatStage(stage)}
+                                        </span>
+                                      )}
+                                    </div>
+                                  )
+                                })()}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Lymph Nodes & Margins */}
+                          {(tumour.lymph_nodes_examined || tumour.lymph_nodes_positive || 
+                            tumour.crm_status || tumour.proximal_margin_mm || tumour.distal_margin_mm) && (
+                            <div className="border-t border-gray-200 pt-2 mt-2">
+                              <div className="grid grid-cols-2 gap-2 text-xs">
+                                {(tumour.lymph_nodes_examined || tumour.lymph_nodes_positive) && (
+                                  <div>
+                                    <span className="text-gray-500">Lymph nodes:</span>
+                                    <span className="ml-1 text-gray-900">
+                                      {tumour.lymph_nodes_positive || 0}/{tumour.lymph_nodes_examined || 0} positive
+                                    </span>
+                                  </div>
+                                )}
+                                {tumour.crm_status && (
+                                  <div>
+                                    <span className="text-gray-500">CRM:</span>
+                                    <span className={`ml-1 font-medium ${
+                                      tumour.crm_status === 'negative' || tumour.crm_status === 'no' ? 'text-green-600' : 'text-red-600'
+                                    }`}>{capitalize(tumour.crm_status)}</span>
+                                  </div>
+                                )}
+                                {tumour.proximal_margin_mm && (
+                                  <div>
+                                    <span className="text-gray-500">Proximal margin:</span>
+                                    <span className="ml-1 text-gray-900">{tumour.proximal_margin_mm}mm</span>
+                                  </div>
+                                )}
+                                {tumour.distal_margin_mm && (
+                                  <div>
+                                    <span className="text-gray-500">Distal margin:</span>
+                                    <span className="ml-1 text-gray-900">{tumour.distal_margin_mm}mm</span>
+                                  </div>
+                                )}
+                                {tumour.lymphovascular_invasion && (
+                                  <div>
+                                    <span className="text-gray-500">LVI:</span>
+                                    <span className="ml-1 text-red-600 font-medium">Present</span>
+                                  </div>
+                                )}
+                                {tumour.perineural_invasion && (
+                                  <div>
+                                    <span className="text-gray-500">PNI:</span>
+                                    <span className="ml-1 text-red-600 font-medium">Present</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -643,7 +728,7 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
                                 {(treatment.surgeon_name || treatment.surgeon) && (
                                   <div>
                                     <span className="text-gray-500">Surgeon:</span>
-                                    <span className="ml-1 text-gray-900">{treatment.surgeon_name || formatSurgeon(treatment.surgeon)}</span>
+                                    <span className="ml-1 text-gray-900">{treatment.surgeon_name || (treatment.surgeon ? formatSurgeon(treatment.surgeon) : 'Not specified')}</span>
                                   </div>
                                 )}
                                 {treatment.anaesthetist_name && (
@@ -775,12 +860,12 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             {tumour.clinical_t || tumour.clinical_n || tumour.clinical_m ? (
-                              `${tumour.clinical_t || '?'}${tumour.clinical_n || '?'}${tumour.clinical_m || '?'}`
+                              formatClinicalTNM(tumour.clinical_t, tumour.clinical_n, tumour.clinical_m)
                             ) : '—'}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             {tumour.pathological_t || tumour.pathological_n || tumour.pathological_m ? (
-                              `${tumour.pathological_t || '?'}${tumour.pathological_n || '?'}${tumour.pathological_m || '?'}`
+                              formatPathologicalTNM(tumour.pathological_t, tumour.pathological_n, tumour.pathological_m)
                             ) : '—'}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -897,7 +982,7 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
                             )}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {formatSurgeon(treatment.surgeon_name || treatment.anaesthetist_name || treatment.surgeon || treatment.oncologist)}
+                            {formatSurgeon((treatment.surgeon_name || treatment.anaesthetist_name || treatment.surgeon || treatment.oncologist) || 'Not specified')}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             <div className="flex space-x-2">

@@ -42,9 +42,11 @@ export function SurgeonSearch({
     const fetchSurgeons = async () => {
       setLoading(true)
       try {
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
+        const baseUrl = API_URL.endsWith('/api') ? API_URL.slice(0, -4) : API_URL
         const url = consultantsOnly 
-          ? 'http://localhost:8000/api/admin/clinicians?consultants_only=true'
-          : 'http://localhost:8000/api/admin/clinicians'
+          ? `${baseUrl}/api/admin/clinicians?consultants_only=true`
+          : `${baseUrl}/api/admin/clinicians`
         
         const response = await fetch(url, {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }

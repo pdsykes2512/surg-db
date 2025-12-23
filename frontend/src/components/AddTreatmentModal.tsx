@@ -3,7 +3,7 @@ import { Button } from './Button'
 import { DateInput } from './DateInput'
 import { SurgeonSearch } from './SurgeonSearch'
 import { SearchableSelect } from './SearchableSelect'
-import { NHS_TRUST_OPTIONS } from '../utils/nhsTrusts'
+import { NHSProviderSelect } from './NHSProviderSelect'
 
 interface AddTreatmentModalProps {
   episodeId: string
@@ -124,20 +124,21 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
     const fetchEpisodeData = async () => {
       try {
         // Fetch episode to get patient_id
-        const episodeResponse = await fetch(`http://localhost:8000/api/episodes/${episodeId}`, {
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
+        const episodeResponse = await fetch(`${API_URL}/episodes/${episodeId}`, {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         })
         const episodeData = await episodeResponse.json()
         
         // Fetch patient to get NHS number
-        const patientResponse = await fetch(`http://localhost:8000/api/patients/${episodeData.patient_id}`, {
+        const patientResponse = await fetch(`${API_URL}/patients/${episodeData.patient_id}`, {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         })
         const patientData = await patientResponse.json()
         setPatientNhsNumber(patientData.nhs_number)
         
         // Fetch existing treatments for this patient to get count
-        const treatmentsResponse = await fetch(`http://localhost:8000/api/treatments/?episode_id=${episodeId}`, {
+        const treatmentsResponse = await fetch(`${API_URL}/treatments/?episode_id=${episodeId}`, {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         })
         const treatments = await treatmentsResponse.json()
@@ -207,6 +208,32 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
     drains_placed: false,
     drain_types: [] as string[],
     
+    // Colorectal-specific: Stoma
+    stoma_created: false,
+    stoma_type: '',
+    stoma_closure_date: '',
+    
+    // Colorectal-specific: Anastomosis
+    anastomosis_performed: false,
+    anastomosis_height_cm: '',
+    anterior_resection_type: '',
+    
+    // Colorectal-specific: Surgical Intent
+    surgical_intent: '',
+    palliative_reason: '',
+    
+    // Laparoscopic Conversion
+    conversion_to_open: false,
+    conversion_reason: '',
+    
+    // Surgical Team
+    assistant_surgeon: '',
+    assistant_grade: '',
+    second_assistant: '',
+    
+    // Robotic Surgery
+    robotic_surgery: false,
+    
     // Chemotherapy fields
     regimen: '',
     cycle_number: '',
@@ -234,7 +261,7 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
   useEffect(() => {
     if (patientNhsNumber && mode === 'create' && !formData.treatment_id) {
       const newTreatmentId = generateTreatmentId(treatmentType, patientNhsNumber, treatmentCount)
-      setFormData(prev => ({ ...prev, treatment_id: newTreatmentId }))
+      setFormData((prev: any) => ({ ...prev, treatment_id: newTreatmentId }))
     }
   }, [patientNhsNumber, treatmentCount, mode, treatmentType])
   
@@ -285,10 +312,16 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
       treatment.urgency = formData.urgency
       treatment.complexity = formData.complexity
       if (formData.asa_score) treatment.asa_score = parseInt(formData.asa_score)
+      treatment.robotic_surgery = formData.robotic_surgery
+      treatment.conversion_to_open = formData.conversion_to_open
+      if (formData.conversion_reason) treatment.conversion_reason = formData.conversion_reason
       
       // Team
       treatment.surgeon = formData.surgeon
       if (formData.anaesthetist) treatment.anaesthetist = formData.anaesthetist
+      if (formData.assistant_surgeon) treatment.assistant_surgeon = formData.assistant_surgeon
+      if (formData.assistant_grade) treatment.assistant_grade = formData.assistant_grade
+      if (formData.second_assistant) treatment.second_assistant = formData.second_assistant
       
       // Timeline
       if (formData.admission_date) treatment.admission_date = formData.admission_date
@@ -310,6 +343,20 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
       if (formData.units_transfused) treatment.units_transfused = parseInt(formData.units_transfused)
       if (formData.findings) treatment.findings = formData.findings
       treatment.drains_placed = formData.drains_placed
+      
+      // Colorectal-specific: Stoma
+      treatment.stoma_created = formData.stoma_created
+      if (formData.stoma_type) treatment.stoma_type = formData.stoma_type
+      if (formData.stoma_closure_date) treatment.stoma_closure_date = formData.stoma_closure_date
+      
+      // Colorectal-specific: Anastomosis
+      treatment.anastomosis_performed = formData.anastomosis_performed
+      if (formData.anastomosis_height_cm) treatment.anastomosis_height_cm = parseFloat(formData.anastomosis_height_cm)
+      if (formData.anterior_resection_type) treatment.anterior_resection_type = formData.anterior_resection_type
+      
+      // Colorectal-specific: Surgical Intent
+      if (formData.surgical_intent) treatment.surgical_intent = formData.surgical_intent
+      if (formData.palliative_reason) treatment.palliative_reason = formData.palliative_reason
       
       // Complications
       if (formData.clavien_dindo_grade) treatment.clavien_dindo_grade = formData.clavien_dindo_grade
@@ -402,17 +449,11 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
 
           {/* Provider Organisation - NBOCA CR1450 */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Provider Organisation
-            </label>
-            <SearchableSelect
+            <NHSProviderSelect
+              label="Provider Organisation"
               value={formData.provider_organisation}
               onChange={(value) => setFormData({ ...formData, provider_organisation: value })}
-              options={NHS_TRUST_OPTIONS}
-              getOptionValue={(opt) => opt.value}
-              getOptionLabel={(opt) => opt.label}
-              placeholder="Select NHS Trust..."
-              className="w-full"
+              placeholder="Search NHS Trust..."
             />
             <p className="mt-1 text-xs text-gray-500">NBOCA (CR1450) - NHS Trust Code where treatment provided</p>
           </div>
@@ -544,6 +585,97 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
                     required
                   />
                 </div>
+                
+                <div className="col-span-2 flex items-center space-x-4">
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={formData.robotic_surgery}
+                      onChange={(e) => setFormData({ ...formData, robotic_surgery: e.target.checked })}
+                      className="mr-2 h-4 w-4"
+                    />
+                    <span className="text-sm text-gray-700">Robotic Surgery</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={formData.conversion_to_open}
+                      onChange={(e) => setFormData({ ...formData, conversion_to_open: e.target.checked })}
+                      className="mr-2 h-4 w-4"
+                    />
+                    <span className="text-sm text-gray-700">Converted to Open</span>
+                  </label>
+                </div>
+              </div>
+              
+              {/* Conversion Reason */}
+              {formData.conversion_to_open && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Conversion Reason
+                  </label>
+                  <SearchableSelect
+                    value={formData.conversion_reason}
+                    onChange={(value) => setFormData({ ...formData, conversion_reason: value })}
+                    options={[
+                      { value: 'oncological', label: 'Oncological' },
+                      { value: 'adhesions', label: 'Adhesions' },
+                      { value: 'bleeding', label: 'Bleeding' },
+                      { value: 'fat', label: 'Fat/Body Habitus' },
+                      { value: 'difficult_op', label: 'Difficult Operation' },
+                      { value: 'time', label: 'Time Constraints (Anaesthetic)' },
+                      { value: 'technical', label: 'Technical' },
+                      { value: 'other', label: 'Other' }
+                    ]}
+                    getOptionValue={(opt) => opt.value}
+                    getOptionLabel={(opt) => opt.label}
+                    placeholder="Select reason..."
+                  />
+                </div>
+              )}
+              
+              {/* Surgical Intent (for cancer cases) */}
+              <div className="bg-purple-50 p-4 rounded-lg space-y-4">
+                <h4 className="text-sm font-semibold text-gray-900">Surgical Intent (Cancer Cases)</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Intent
+                    </label>
+                    <SearchableSelect
+                      value={formData.surgical_intent}
+                      onChange={(value) => setFormData({ ...formData, surgical_intent: value })}
+                      options={[
+                        { value: '', label: 'Not specified' },
+                        { value: 'curative', label: 'Curative' },
+                        { value: 'palliative', label: 'Palliative' },
+                        { value: 'uncertain', label: 'Uncertain' }
+                      ]}
+                      getOptionValue={(opt) => opt.value}
+                      getOptionLabel={(opt) => opt.label}
+                      placeholder="Select intent..."
+                    />
+                  </div>
+                  {formData.surgical_intent === 'palliative' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Palliative Reason
+                      </label>
+                      <SearchableSelect
+                        value={formData.palliative_reason}
+                        onChange={(value) => setFormData({ ...formData, palliative_reason: value })}
+                        options={[
+                          { value: 'local_disease', label: 'Local Disease' },
+                          { value: 'distant_disease', label: 'Distant Disease' },
+                          { value: 'other', label: 'Other' }
+                        ]}
+                        getOptionValue={(opt) => opt.value}
+                        getOptionLabel={(opt) => opt.label}
+                        placeholder="Select reason..."
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Patient Fitness */}
@@ -588,6 +720,40 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
                   label="Anaesthetist"
                   roleFilter="anaesthetist"
                   placeholder="Type to search anaesthetists..."
+                />
+              </div>
+              
+              {/* Additional Team Members */}
+              <div className="grid grid-cols-3 gap-4">
+                <SurgeonSearch
+                  value={formData.assistant_surgeon}
+                  onChange={(name) => {
+                    setFormData({ ...formData, assistant_surgeon: name })
+                  }}
+                  label="Assistant Surgeon"
+                  roleFilter="surgeon"
+                  placeholder="Type to search..."
+                />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Assistant Grade
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.assistant_grade}
+                    onChange={(e) => setFormData({ ...formData, assistant_grade: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
+                    placeholder="e.g., ST5, Consultant"
+                  />
+                </div>
+                <SurgeonSearch
+                  value={formData.second_assistant}
+                  onChange={(name) => {
+                    setFormData({ ...formData, second_assistant: name })
+                  }}
+                  label="Second Assistant"
+                  roleFilter="surgeon"
+                  placeholder="Type to search..."
                 />
               </div>
 
@@ -720,6 +886,99 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
                     />
                     <span className="text-sm text-gray-700">Transfusion Required</span>
                   </label>
+                </div>
+              </div>
+
+              {/* Colorectal-Specific Fields */}
+              <div className="bg-amber-50 p-4 rounded-lg space-y-4">
+                <h4 className="text-sm font-semibold text-gray-900">Colorectal-Specific Details</h4>
+                
+                {/* Stoma */}
+                <div className="space-y-3">
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={formData.stoma_created}
+                      onChange={(e) => setFormData({ ...formData, stoma_created: e.target.checked })}
+                      className="mr-2 h-4 w-4"
+                    />
+                    <span className="text-sm font-medium text-gray-700">Stoma Created</span>
+                  </label>
+                  
+                  {formData.stoma_created && (
+                    <div className="grid grid-cols-2 gap-4 ml-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Stoma Type
+                        </label>
+                        <SearchableSelect
+                          value={formData.stoma_type}
+                          onChange={(value) => setFormData({ ...formData, stoma_type: value })}
+                          options={[
+                            { value: 'ileostomy_temporary', label: 'Ileostomy (Temporary)' },
+                            { value: 'ileostomy_permanent', label: 'Ileostomy (Permanent)' },
+                            { value: 'colostomy_temporary', label: 'Colostomy (Temporary)' },
+                            { value: 'colostomy_permanent', label: 'Colostomy (Permanent)' }
+                          ]}
+                          getOptionValue={(opt) => opt.value}
+                          getOptionLabel={(opt) => opt.label}
+                          placeholder="Select type..."
+                        />
+                      </div>
+                      <DateInput
+                        label="Stoma Closure Date (if applicable)"
+                        value={formData.stoma_closure_date}
+                        onChange={(e) => setFormData({ ...formData, stoma_closure_date: e.target.value })}
+                      />
+                    </div>
+                  )}
+                </div>
+                
+                {/* Anastomosis */}
+                <div className="space-y-3">
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={formData.anastomosis_performed}
+                      onChange={(e) => setFormData({ ...formData, anastomosis_performed: e.target.checked })}
+                      className="mr-2 h-4 w-4"
+                    />
+                    <span className="text-sm font-medium text-gray-700">Anastomosis Performed</span>
+                  </label>
+                  
+                  {formData.anastomosis_performed && (
+                    <div className="grid grid-cols-2 gap-4 ml-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Height from Anal Verge (cm)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={formData.anastomosis_height_cm}
+                          onChange={(e) => setFormData({ ...formData, anastomosis_height_cm: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
+                          placeholder="e.g., 8.5"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Anterior Resection Type
+                        </label>
+                        <SearchableSelect
+                          value={formData.anterior_resection_type}
+                          onChange={(value) => setFormData({ ...formData, anterior_resection_type: value })}
+                          options={[
+                            { value: 'high', label: 'High' },
+                            { value: 'low', label: 'Low' }
+                          ]}
+                          getOptionValue={(opt) => opt.value}
+                          getOptionLabel={(opt) => opt.label}
+                          placeholder="Select type..."
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 

@@ -556,7 +556,7 @@ async def add_tumour_to_episode(episode_id: str, tumour: dict):
             )
         
         # Add episode metadata to tumour
-        tumour['episode_id'] = str(episode['_id'])
+        tumour['episode_id'] = episode.get('episode_id')  # Use semantic ID, not ObjectId
         tumour['patient_id'] = episode.get('patient_id')
         tumour['created_at'] = datetime.utcnow()
         tumour['last_modified_at'] = datetime.utcnow()

@@ -125,6 +125,31 @@ class ACPDBMigratorV4:
         except:
             return None
     
+    def normalize_coded_value(self, val):
+        """Normalize coded values - extract description and convert to lowercase."""
+        if pd.isna(val):
+            return None
+        val_str = str(val).strip()
+        if not val_str or val_str == 'nan':
+            return None
+        
+        # Handle coded values like "1 None", "2 Abnormal"
+        if val_str and len(val_str) > 1 and val_str[0].isdigit():
+            parts = val_str.split(' ', 1)
+            if len(parts) == 2:
+                return parts[1].strip().lower()
+        
+        return val_str.lower()
+    
+    def normalize_numeric(self, val):
+        """Extract numeric value from string."""
+        if pd.isna(val):
+            return None
+        try:
+            return float(val)
+        except:
+            return None
+    
     def map_approach(self, mode_op, lap_proc):
         """Map surgical approach"""
         if not pd.isna(lap_proc):
@@ -757,7 +782,7 @@ class ACPDBMigratorV4:
                 # Use ICD-10 from site if TumICD10 is empty, otherwise use TumICD10
                 tumour_icd10 = str(row["TumICD10"]).strip() if not pd.isna(row.get("TumICD10")) else site_icd10
                 
-                # Create tumour document
+                # Create comprehensive tumour document
                 tumour_doc = {
                     "tumour_id": tumour_id,
                     "patient_id": patient_id,
@@ -771,6 +796,111 @@ class ACPDBMigratorV4:
                         "m_stage": str(row["preTNM_M"]).strip() if not pd.isna(row.get("preTNM_M")) else None,
                     },
                     "icd10_code": tumour_icd10,
+                    
+                    # Imaging Results
+                    "imaging_results": {
+                        "ct_abdomen": {
+                            "result": self.normalize_coded_value(row.get("CT_Abdo_result")),
+                            "date": self.parse_date(row.get("Dt_CT_Abdo"))
+                        },
+                        "ct_chest": {
+                            "result": self.normalize_coded_value(row.get("CT_pneumo_result")),
+                            "date": self.parse_date(row.get("Dt_CT_pneumo"))
+                        },
+                        "mri_primary": {
+                            "t_stage": self.normalize_coded_value(row.get("MRI1_T")),
+                            "n_stage": self.normalize_coded_value(row.get("MRI1_N")),
+                            "crm_status": self.normalize_coded_value(row.get("MRI1_CRM")),
+                            "distance_from_anal_verge": self.normalize_numeric(row.get("MRI1_av")),
+                            "emvi": self.normalize_coded_value(row.get("EMVI")),
+                            "date": self.parse_date(row.get("Dt_MRI1"))
+                        },
+                        "mri_restaging": {
+                            "date": self.parse_date(row.get("Dt_MRI2")),
+                            "result": self.normalize_coded_value(row.get("M2result"))
+                        },
+                        "ultrasound_abdomen": {
+                            "result": self.normalize_coded_value(row.get("Abresult")),
+                            "date": self.parse_date(row.get("Dt_Abdo"))
+                        },
+                        "endoscopic_ultrasound": {
+                            "t_stage": self.normalize_coded_value(row.get("Endo_T")),
+                            "date": self.parse_date(row.get("Dt_Endo"))
+                        }
+                    },
+                    
+                    # Investigations
+                    "investigations": {
+                        "colonoscopy": {
+                            "result": self.normalize_coded_value(row.get("Col_scpy")),
+                            "date": self.parse_date(row.get("Date_Col")),
+                            "completion_reason": self.normalize_coded_value(row.get("Rea_Inco"))
+                        },
+                        "flexible_sigmoidoscopy": {
+                            "result": self.normalize_coded_value(row.get("Fle_Sig")),
+                            "date": self.parse_date(row.get("Date_Fle"))
+                        },
+                        "barium_enema": {
+                            "result": self.normalize_coded_value(row.get("Bar_Enem")),
+                            "date": self.parse_date(row.get("Date_Bar"))
+                        }
+                    },
+                    
+                    # Distant Metastases
+                    "distant_metastases": {
+                        "liver": self.normalize_coded_value(row.get("DM_Liver")),
+                        "lung": self.normalize_coded_value(row.get("DM_Lung")),
+                        "bone": self.normalize_coded_value(row.get("DM_Bone")),
+                        "other": self.normalize_coded_value(row.get("DM_Other"))
+                    },
+                    
+                    # Clinical Status
+                    "clinical_status": {
+                        "performance_status": self.normalize_coded_value(row.get("performance")),
+                        "height_cm": self.normalize_numeric(row.get("Height")),
+                        "modified_dukes": self.normalize_coded_value(row.get("Mod_Duke"))
+                    },
+                    
+                    # Screening Data
+                    "screening": {
+                        "bowel_cancer_screening_programme": bool(row.get("BCSP")) if not pd.isna(row.get("BCSP")) else False,
+                        "screened": bool(row.get("Screened")) if not pd.isna(row.get("Screened")) else False,
+                        "screening_method": self.normalize_coded_value(row.get("Scrn_Yes"))
+                    },
+                    
+                    # MDT Information
+                    "mdt": {
+                        "discussed": self.normalize_coded_value(row.get("MDT_disc")),
+                        "organization_code": str(row.get("Mdt_org")).strip() if not pd.isna(row.get("Mdt_org")) else None
+                    },
+                    
+                    # Synchronous Tumours
+                    "synchronous": {
+                        "has_synchronous": bool(row.get("Sync")) if not pd.isna(row.get("Sync")) else False,
+                        "type": self.normalize_coded_value(row.get("TumSync")),
+                        "icd10_code": str(row.get("SynICD10")).strip() if not pd.isna(row.get("SynICD10")) else None,
+                        "cancer_type": self.normalize_coded_value(row.get("Sync_cancer"))
+                    },
+                    
+                    # Complications/Colonic
+                    "colonic_complications": {
+                        "bleeding": bool(row.get("ColC_Ble")) if not pd.isna(row.get("ColC_Ble")) else False,
+                        "perforation": bool(row.get("ColC_Per")) if not pd.isna(row.get("ColC_Per")) else False,
+                        "obstruction": bool(row.get("ColC_Ov")) if not pd.isna(row.get("ColC_Ov")) else False,
+                        "other": bool(row.get("ColC_Oth")) if not pd.isna(row.get("ColC_Oth")) else False
+                    },
+                    
+                    # Additional Information
+                    "additional_info": {
+                        "other_specification": str(row.get("Oth_Spec")).strip() if not pd.isna(row.get("Oth_Spec")) else None,
+                        "other_specimen": str(row.get("Ot_Speci")).strip() if not pd.isna(row.get("Ot_Speci")) else None,
+                        "non_cancer_treatment_reason": self.normalize_coded_value(row.get("Nonca_treat")),
+                        "delay": bool(row.get("Delay")) if not pd.isna(row.get("Delay")) else False,
+                        "priority": self.normalize_numeric(row.get("Priority")),
+                        "referral_date": self.parse_date(row.get("DtRef")),
+                        "visit_date": self.parse_date(row.get("Dt_Visit"))
+                    },
+                    
                     "created_at": datetime.utcnow(),
                     "updated_at": datetime.utcnow()
                 }

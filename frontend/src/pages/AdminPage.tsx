@@ -5,7 +5,7 @@ import { PageHeader } from '../components/PageHeader'
 import { Card } from '../components/Card'
 import { Button } from '../components/Button'
 
-const API_URL = 'http://localhost:8000'
+const API_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:8000'
 
 interface User {
   _id: string

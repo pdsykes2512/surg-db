@@ -36,7 +36,8 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
   useEffect(() => {
     const fetchPatients = async () => {
       try {
-        const response = await fetch('http://localhost:8000/api/patients/', {
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
+        const response = await fetch(`${API_URL}/patients/`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
           }
@@ -56,7 +57,8 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
   useEffect(() => {
     const fetchSurgeons = async () => {
       try {
-        const response = await fetch('http://localhost:8000/api/admin/surgeons', {
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
+        const response = await fetch(`${API_URL}/admin/surgeons`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
           }

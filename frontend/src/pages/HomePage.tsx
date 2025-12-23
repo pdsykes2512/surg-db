@@ -7,7 +7,7 @@ import { formatDate, formatCancerType } from '../utils/formatters'
 import api from '../services/api'
 
 export function HomePage() {
-  const { user } = useAuth()
+  const { user: _user } = useAuth()
   const navigate = useNavigate()
   const [stats, setStats] = useState({
     totalPatients: 0,
@@ -60,7 +60,8 @@ export function HomePage() {
     const fetchRecentActivity = async () => {
       try {
         // Fetch recent cancer episodes sorted by last_modified_at (last 5 edited)
-        const response = await fetch('http://localhost:8000/api/episodes/?limit=5&sort_by=last_modified_at', {
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
+        const response = await fetch(`${API_URL}/episodes/?limit=5&sort_by=last_modified_at`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
           }

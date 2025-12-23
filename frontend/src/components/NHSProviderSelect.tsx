@@ -59,7 +59,8 @@ export function NHSProviderSelect({
       // If we have a value (code), fetch the name to display
       const fetchProviderName = async () => {
         try {
-          const response = await fetch(`http://localhost:8000/api/nhs-providers/${value}`, {
+          const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
+          const response = await fetch(`${API_URL}/nhs-providers/${value}`, {
             headers: {
               'Authorization': `Bearer ${localStorage.getItem('token')}`
             }
@@ -92,8 +93,9 @@ export function NHSProviderSelect({
     setError(null)
 
     try {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
       const response = await fetch(
-        `http://localhost:8000/api/nhs-providers/search?query=${encodeURIComponent(query)}`,
+        `${API_URL}/nhs-providers/search?query=${encodeURIComponent(query)}`,
         {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`

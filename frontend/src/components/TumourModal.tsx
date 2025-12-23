@@ -61,6 +61,29 @@ const T_STAGES = ['Tx', 'T0', 'Tis', 'T1', 'T2', 'T3', 'T4', 'T4a', 'T4b']
 const N_STAGES = ['Nx', 'N0', 'N1', 'N1a', 'N1b', 'N1c', 'N2', 'N2a', 'N2b']
 const M_STAGES = ['Mx', 'M0', 'M1', 'M1a', 'M1b', 'M1c']
 
+// Convert database TNM format to display format
+// Database: "3", "1", "x" -> Display: "T3", "N1", "Tx"
+const dbToDisplayTNM = (value: string | null | undefined, prefix: 'T' | 'N' | 'M'): string => {
+  if (!value) return ''
+  // Check if already has prefix (shouldn't happen but defensive)
+  if (value.toUpperCase().startsWith(prefix)) return value
+  // Handle special cases
+  if (value.toLowerCase() === 'x') return `${prefix}x`
+  if (value.toLowerCase() === 'is') return 'Tis'
+  // Normal case: add prefix and ensure proper case
+  return `${prefix}${value}`
+}
+
+// Convert display TNM format to database format
+// Display: "T3", "N1", "Tx" -> Database: "3", "1", "x"
+const displayToDbTNM = (value: string | null | undefined): string | null => {
+  if (!value) return null
+  // Remove T/N/M prefix
+  const cleaned = value.replace(/^[TNM]/i, '')
+  // Return lowercase for consistency
+  return cleaned.toLowerCase()
+}
+
 const GRADES = [
   { value: 'well', label: 'Well differentiated (G1)' },
   { value: 'moderate', label: 'Moderately differentiated (G2)' },
@@ -100,20 +123,21 @@ export function TumourModal({ episodeId, onSubmit, onCancel, mode = 'create', in
     const fetchEpisodeData = async () => {
       try {
         // Fetch episode to get patient_id
-        const episodeResponse = await fetch(`http://localhost:8000/api/episodes/${episodeId}`, {
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
+        const episodeResponse = await fetch(`${API_URL}/episodes/${episodeId}`, {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         })
         const episodeData = await episodeResponse.json()
         
         // Fetch patient to get NHS number
-        const patientResponse = await fetch(`http://localhost:8000/api/patients/${episodeData.patient_id}`, {
+        const patientResponse = await fetch(`${API_URL}/patients/${episodeData.patient_id}`, {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         })
         const patientData = await patientResponse.json()
         setPatientNhsNumber(patientData.nhs_number)
         
         // Fetch existing tumours for this episode to get count
-        const tumoursResponse = await fetch(`http://localhost:8000/api/tumours/?episode_id=${episodeId}`, {
+        const tumoursResponse = await fetch(`${API_URL}/tumours/?episode_id=${episodeId}`, {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         })
         const tumours = await tumoursResponse.json()
@@ -132,6 +156,13 @@ export function TumourModal({ episodeId, onSubmit, onCancel, mode = 'create', in
     if (initialData) {
       return {
         ...initialData,
+        // Convert TNM values from database format to display format
+        clinical_t: dbToDisplayTNM(initialData.clinical_t, 'T'),
+        clinical_n: dbToDisplayTNM(initialData.clinical_n, 'N'),
+        clinical_m: dbToDisplayTNM(initialData.clinical_m, 'M'),
+        pathological_t: dbToDisplayTNM(initialData.pathological_t, 'T'),
+        pathological_n: dbToDisplayTNM(initialData.pathological_n, 'N'),
+        pathological_m: dbToDisplayTNM(initialData.pathological_m, 'M'),
         treated_by_treatment_ids: initialData.treated_by_treatment_ids || []
       }
     }
@@ -178,7 +209,7 @@ export function TumourModal({ episodeId, onSubmit, onCancel, mode = 'create', in
   useEffect(() => {
     if (patientNhsNumber && mode === 'create' && !formData.tumour_id) {
       const newTumourId = generateTumourId(patientNhsNumber, tumourCount)
-      setFormData(prev => ({ ...prev, tumour_id: newTumourId }))
+      setFormData((prev: any) => ({ ...prev, tumour_id: newTumourId }))
     }
   }, [patientNhsNumber, tumourCount, mode])
 
@@ -187,8 +218,17 @@ export function TumourModal({ episodeId, onSubmit, onCancel, mode = 'create', in
     
     // Clean up empty fields and convert strings to numbers where needed
     const cleanedData = { ...formData }
+    
+    // Convert TNM values from display format to database format
+    cleanedData.clinical_t = displayToDbTNM(cleanedData.clinical_t)
+    cleanedData.clinical_n = displayToDbTNM(cleanedData.clinical_n)
+    cleanedData.clinical_m = displayToDbTNM(cleanedData.clinical_m)
+    cleanedData.pathological_t = displayToDbTNM(cleanedData.pathological_t)
+    cleanedData.pathological_n = displayToDbTNM(cleanedData.pathological_n)
+    cleanedData.pathological_m = displayToDbTNM(cleanedData.pathological_m)
+    
     Object.keys(cleanedData).forEach(key => {
-      if (cleanedData[key] === '') {
+      if (cleanedData[key] === '' || cleanedData[key] === null) {
         delete cleanedData[key]
       } else if (['size_mm', 'distance_from_anal_verge_cm', 'crm_distance_mm', 'proximal_margin_mm', 'distal_margin_mm'].includes(key)) {
         if (cleanedData[key]) {

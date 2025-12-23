@@ -1,6 +1,6 @@
 {
   "reference_note": "NHS Provider (Trust) Codes verified from ODS API - https://directory.spineservices.nhs.uk/STU3/",
-  "last_updated": "2025-12-23 17:27:39",
+  "last_updated": "2025-12-23 23:35:12",
   "providers": {
     "RHU": {
       "name": "portsmouth hospitals university nhs trust",

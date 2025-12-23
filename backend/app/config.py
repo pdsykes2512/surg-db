@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     """Application settings from environment variables"""
     
     # MongoDB settings
-    mongodb_uri: str = "mongodb://localhost:27017"
+    mongodb_uri: str = "mongodb://surg-db.vps:27017"
     mongodb_db_name: str = "surg_outcomes"
     
     # API settings
@@ -24,10 +24,11 @@ class Settings(BaseSettings):
     # CORS settings
     cors_origins: list = [
         "http://localhost:3000",
-        "http://localhost:3001",
-        "http://localhost:5173",
         "http://surg-db.vps:3000"
     ]
+    
+    # CORS regex for both network ranges (192.168.10.0/24 and 192.168.11.0/24)
+    cors_origin_regex: str = r"http://192\.168\.(10|11)\.\d{1,3}:\d+"
     
     class Config:
         env_file = "../.env"  # .env is in parent directory

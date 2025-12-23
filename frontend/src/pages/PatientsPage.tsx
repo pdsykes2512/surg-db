@@ -22,10 +22,18 @@ interface Patient {
     weight_kg?: number;
     height_cm?: number;
   };
+  medical_history?: {
+    conditions: string[];
+    previous_surgeries: any[];
+    medications: string[];
+    allergies: string[];
+    smoking_status?: string;
+    alcohol_use?: string;
+  };
 }
 
 interface PatientFormData {
-  record_number: string;
+  patient_id: string;
   nhs_number: string;
   demographics: {
     date_of_birth: string;
@@ -60,7 +68,7 @@ export function PatientsPage() {
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   
   const [formData, setFormData] = useState<PatientFormData>({
-    record_number: '',
+    patient_id: '',
     nhs_number: '',
     demographics: {
       date_of_birth: '',
@@ -143,7 +151,7 @@ export function PatientsPage() {
   const handleEdit = (patient: Patient) => {
     setEditingPatient(patient);
     setFormData({
-      record_number: patient.record_number,
+      patient_id: patient.patient_id,
       nhs_number: patient.nhs_number,
       demographics: {
         date_of_birth: patient.demographics.date_of_birth,
@@ -155,7 +163,7 @@ export function PatientsPage() {
         weight_kg: patient.demographics.weight_kg,
         height_cm: patient.demographics.height_cm,
       },
-      medical_history: patient.medical_history || {
+      medical_history: {
         conditions: [],
         previous_surgeries: [],
         medications: [],
@@ -178,7 +186,7 @@ export function PatientsPage() {
       setLoading(true);
       if (editingPatient) {
         // Update existing patient
-        await api.put(`/patients/${editingPatient.record_number}`, formData);
+        await api.put(`/patients/${editingPatient.patient_id}`, formData);
         setSuccess('Patient updated successfully');
       } else {
         // Create new patient
@@ -188,7 +196,7 @@ export function PatientsPage() {
       setShowForm(false);
       setEditingPatient(null);
       setFormData({
-        record_number: '',
+        patient_id: '',
         nhs_number: '',
         demographics: {
           date_of_birth: '',
@@ -222,15 +230,15 @@ export function PatientsPage() {
     if (!deleteConfirmation.patient) return;
     
     // Verify user typed the correct record number
-    if (deleteConfirmText !== deleteConfirmation.patient.record_number) {
+    if (deleteConfirmText !== deleteConfirmation.patient.patient_id) {
       setError('Record number does not match. Deletion cancelled.');
       return;
     }
 
     try {
       setLoading(true);
-      await api.delete(`/patients/${deleteConfirmation.patient.record_number}`);
-      setSuccess(`Patient ${deleteConfirmation.patient.record_number} deleted successfully`);
+      await api.delete(`/patients/${deleteConfirmation.patient.patient_id}`);
+      setSuccess(`Patient ${deleteConfirmation.patient.patient_id} deleted successfully`);
       setDeleteConfirmation({ show: false, patient: null });
       setDeleteConfirmText('');
       loadPatients();
@@ -271,7 +279,7 @@ export function PatientsPage() {
               setShowForm(false);
               setEditingPatient(null);
               setFormData({
-                record_number: '',
+                patient_id: '',
                 nhs_number: '',
                 demographics: {
                   date_of_birth: '',
@@ -323,8 +331,8 @@ export function PatientsPage() {
                     pattern="^\d{8}$|^IW\d{6}$"
                     title="Must be 8 digits or IW followed by 6 digits"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={formData.record_number}
-                    onChange={(e) => handleInputChange('record_number', e.target.value)}
+                    value={formData.patient_id}
+                    onChange={(e) => handleInputChange('patient_id', e.target.value)}
                     readOnly={!!editingPatient}
                     disabled={!!editingPatient}
                   />
@@ -698,7 +706,7 @@ export function PatientsPage() {
                   You are about to permanently delete the patient record for:
                 </p>
                 <div className="bg-gray-50 rounded-md p-3 border border-gray-200">
-                  <p className="text-sm font-medium text-gray-900">Record Number: {deleteConfirmation.patient.record_number}</p>
+                  <p className="text-sm font-medium text-gray-900">Record Number: {deleteConfirmation.patient.patient_id}</p>
                   <p className="text-sm text-gray-600">NHS Number: {deleteConfirmation.patient.nhs_number}</p>
                   <p className="text-sm text-gray-600">DOB: {formatDate(deleteConfirmation.patient.demographics.date_of_birth)}</p>
                 </div>
@@ -713,7 +721,7 @@ export function PatientsPage() {
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   To confirm deletion, please type the patient's record number:
-                  <span className="font-semibold text-red-600"> {deleteConfirmation.patient.record_number}</span>
+                  <span className="font-semibold text-red-600"> {deleteConfirmation.patient.patient_id}</span>
                 </label>
                 <input
                   type="text"
@@ -744,7 +752,7 @@ export function PatientsPage() {
                 type="button"
                 variant="danger"
                 onClick={handleDeleteConfirm}
-                disabled={loading || deleteConfirmText !== deleteConfirmation.patient.record_number}
+                disabled={loading || deleteConfirmText !== deleteConfirmation.patient.patient_id}
               >
                 {loading ? 'Deleting...' : 'Delete Patient'}
               </Button>

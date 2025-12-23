@@ -2,6 +2,38 @@
 
 > This file is mirrored across CLAUDE.md, AGENTS.md, CODEX.md and GEMINI.md so the same instructions load in any AI environment.
 
+## ⚠️ CRITICAL: Services Management
+
+**THE BACKEND AND FRONTEND RUN AS SYSTEMD SERVICES - DO NOT USE TERMINAL COMMANDS**
+
+When restarting services, ALWAYS use systemd:
+```bash
+# Restart backend
+sudo systemctl restart surg-db-backend
+
+# Restart frontend  
+sudo systemctl restart surg-db-frontend
+
+# Check status
+sudo systemctl status surg-db-backend
+sudo systemctl status surg-db-frontend
+```
+
+**NEVER use these commands:**
+- ❌ `pkill -f "uvicorn"`
+- ❌ `bash execution/start_backend.sh` (except for development/debugging)
+- ❌ `cd frontend && npm run dev` (except for development/debugging)
+
+**Service files location:** `/etc/systemd/system/`
+- `surg-db-backend.service` - Backend FastAPI (port 8000)
+- `surg-db-frontend.service` - Frontend Vite dev server (port 3000)
+
+**Log locations:**
+- Backend: `~/.tmp/backend.log`
+- Frontend: `~/.tmp/frontend.log`
+
+---
+
 You operate within a 3-layer architecture that separates concerns to maximize reliability. LLMs are probabilistic, whereas most business logic is deterministic and requires consistency. This system fixes that mismatch.
 
 ## The 3-Layer Architecture

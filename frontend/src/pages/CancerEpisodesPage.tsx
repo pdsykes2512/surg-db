@@ -21,7 +21,8 @@ interface Episode {
 }
 
 export function CancerEpisodesPage() {
-  const navigate = useNavigate()
+  // @ts-ignore - Unused but kept for potential future use
+  const _navigate = useNavigate()
   const [episodes, setEpisodes] = useState<Episode[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)

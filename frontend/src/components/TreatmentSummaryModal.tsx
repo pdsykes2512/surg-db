@@ -1,4 +1,4 @@
-import { formatDate, formatTreatmentType, formatSurgeon } from '../utils/formatters'
+import { formatDate, formatTreatmentType, formatSurgeon, formatAnatomicalSite } from '../utils/formatters'
 import { formatTrustName } from '../utils/nhsTrusts'
 import { Button } from './Button'
 
@@ -108,6 +108,10 @@ export function TreatmentSummaryModal({ treatment, onClose, onEdit }: TreatmentS
 
               <Section title="Surgical Team">
                 <Field label="Primary Surgeon" value={formatSurgeon(treatment.surgeon)} />
+                <Field label="Assistant Surgeon" value={treatment.assistant_surgeon} />
+                <Field label="Assistant Grade" value={treatment.assistant_grade} />
+                <Field label="Second Assistant" value={treatment.second_assistant} />
+                <Field label="Surgical Fellow" value={treatment.surgical_fellow ? 'Yes' : treatment.surgical_fellow === false ? 'No' : undefined} />
                 {treatment.assistant_surgeons?.length > 0 && (
                   <Field label="Assistant Surgeons" value={treatment.assistant_surgeons.join(', ')} />
                 )}
@@ -136,8 +140,18 @@ export function TreatmentSummaryModal({ treatment, onClose, onEdit }: TreatmentS
                 </div>
                 <div className="grid grid-cols-2 gap-4 py-1.5 border-b border-gray-100">
                   <CompactField label="Drains" value={treatment.drains_placed ? (treatment.drain_types?.length > 0 ? `Yes (${treatment.drain_types.join(', ')})` : 'Yes') : 'No'} />
-                  <CompactField label="Stoma" value={treatment.stoma_created ? (treatment.stoma_type ? `Yes (${treatment.stoma_type})` : 'Yes') : treatment.stoma_created === false ? 'No' : undefined} />
+                  <CompactField label="Robotic" value={treatment.robotic_surgery ? 'Yes' : treatment.robotic_surgery === false ? 'No' : undefined} />
                 </div>
+                {treatment.laparoscopic_converted && (
+                  <Field label="Laparoscopic Conversion" value={
+                    <div>
+                      <span className="text-orange-600 font-semibold">Yes</span>
+                      {treatment.conversion_reason && (
+                        <span className="ml-2 text-gray-600">— {treatment.conversion_reason}</span>
+                      )}
+                    </div>
+                  } />
+                )}
                 {treatment.specimens_sent?.length > 0 && (
                   <Field label="Specimens Sent" value={treatment.specimens_sent.join(', ')} />
                 )}
@@ -145,6 +159,73 @@ export function TreatmentSummaryModal({ treatment, onClose, onEdit }: TreatmentS
                   <Field label="Operative Findings" value={treatment.findings} />
                 )}
               </Section>
+
+              {/* Colorectal-Specific Details */}
+              {(treatment.stoma_created !== undefined || treatment.anastomosis_performed !== undefined || treatment.surgical_intent) && (
+                <Section title="Colorectal-Specific Details">
+                  {/* Surgical Intent */}
+                  {treatment.surgical_intent && (
+                    <Field 
+                      label="Surgical Intent" 
+                      value={
+                        <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
+                          treatment.surgical_intent === 'curative' ? 'bg-green-100 text-green-800' :
+                          treatment.surgical_intent === 'palliative' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {treatment.surgical_intent.charAt(0).toUpperCase() + treatment.surgical_intent.slice(1)}
+                        </span>
+                      }
+                    />
+                  )}
+                  
+                  {/* Stoma Information */}
+                  {treatment.stoma_created !== undefined && (
+                    <Field 
+                      label="Stoma Created" 
+                      value={
+                        treatment.stoma_created ? (
+                          <div>
+                            <span className="font-semibold">Yes</span>
+                            {treatment.stoma_type && (
+                              <span className="ml-2">
+                                ({treatment.stoma_type.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())})
+                              </span>
+                            )}
+                            {treatment.stoma_closure_date && (
+                              <span className="ml-2 text-gray-600">
+                                — Closed: {formatDate(treatment.stoma_closure_date)}
+                              </span>
+                            )}
+                          </div>
+                        ) : 'No'
+                      }
+                    />
+                  )}
+                  
+                  {/* Anastomosis Information */}
+                  {treatment.anastomosis_performed !== undefined && (
+                    <Field 
+                      label="Anastomosis" 
+                      value={
+                        treatment.anastomosis_performed ? (
+                          <div>
+                            <span className="font-semibold">Yes</span>
+                            {treatment.anastomosis_height_cm !== undefined && (
+                              <span className="ml-2">— {treatment.anastomosis_height_cm} cm from anal verge</span>
+                            )}
+                            {treatment.anterior_resection_type && (
+                              <span className="ml-2">
+                                ({treatment.anterior_resection_type.replace(/_/g, ' ').toUpperCase()})
+                              </span>
+                            )}
+                          </div>
+                        ) : 'No'
+                      }
+                    />
+                  )}
+                </Section>
+              )}
             </>
           )}
 

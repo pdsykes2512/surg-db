@@ -24,6 +24,9 @@ class Procedure(BaseModel):
     icd10_codes: List[str] = Field(default_factory=list)
     opcs_codes: List[str] = Field(default_factory=list)
     approach: str = Field(..., description="open/laparoscopic/robotic/converted")
+    robotic_surgery: bool = Field(False, description="Whether robotic assistance was used")
+    conversion_to_open: bool = Field(False, description="Whether laparoscopic procedure was converted to open")
+    conversion_reason: Optional[str] = Field(None, description="Reason for conversion: oncological/adhesions/bleeding/fat/difficult_op/time/technical/other")
     description: Optional[str] = None
 
 
@@ -68,6 +71,8 @@ class SurgicalTeam(BaseModel):
     """Surgical team members"""
     primary_surgeon: str = Field(..., min_length=1)
     assistant_surgeons: List[str] = Field(default_factory=list)
+    assistant_grade: Optional[str] = Field(None, description="Grade of first assistant surgeon")
+    second_assistant: Optional[str] = Field(None, description="Second assistant surgeon")
     anesthesiologist: Optional[str] = None
     scrub_nurse: Optional[str] = None
     circulating_nurse: Optional[str] = None
@@ -83,6 +88,26 @@ class Intraoperative(BaseModel):
     specimens_sent: List[str] = Field(default_factory=list)
     drains_placed: bool = False
     drain_types: List[str] = Field(default_factory=list)
+    # Colorectal-specific: Stoma
+    stoma_created: bool = Field(False, description="Whether a stoma was created")
+    stoma_type: Optional[str] = Field(None, description="Type of stoma: ileostomy_temporary/ileostomy_permanent/colostomy_temporary/colostomy_permanent")
+    stoma_closure_date: Optional[Union[datetime, date, str]] = Field(None, description="Date when stoma was closed")
+    # Colorectal-specific: Anastomosis
+    anastomosis_performed: bool = Field(False, description="Whether an anastomosis was performed")
+    anastomosis_height_cm: Optional[float] = Field(None, ge=0, description="Height of anastomosis from anal verge in cm")
+    anterior_resection_type: Optional[str] = Field(None, description="Type of anterior resection: high/low")
+    
+    @field_validator('stoma_closure_date', mode='before')
+    @classmethod
+    def parse_closure_date(cls, v):
+        if isinstance(v, str) and v:
+            try:
+                if len(v) == 10 and 'T' not in v:
+                    return datetime.fromisoformat(v + 'T00:00:00')
+                return datetime.fromisoformat(v.replace('Z', '+00:00'))
+            except ValueError:
+                return v
+        return v
 
 
 class TNMStaging(BaseModel):
@@ -117,6 +142,9 @@ class CancerSpecific(BaseModel):
     neoadjuvant_therapy: bool = False
     neoadjuvant_details: Optional[str] = None
     adjuvant_therapy_planned: bool = False
+    # Surgical intent for cancer
+    surgical_intent: Optional[str] = Field(None, description="curative/palliative/uncertain")
+    palliative_reason: Optional[str] = Field(None, description="Reason if palliative: local_disease/distant_disease/other")
 
 
 class IBDSpecific(BaseModel):

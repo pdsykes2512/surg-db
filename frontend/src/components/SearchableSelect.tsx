@@ -42,6 +42,9 @@ export function SearchableSelect<T>({
       const selectedOption = options.find(opt => getOptionValue(opt) === value)
       if (selectedOption) {
         setSearchTerm(getOptionLabel(selectedOption))
+      } else {
+        // If no matching option found, display the raw value (for legacy/mismatched data)
+        setSearchTerm(value)
       }
     } else {
       setSearchTerm('')

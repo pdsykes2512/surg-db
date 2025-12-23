@@ -274,3 +274,54 @@ export const formatTreatmentPlan = (plan: string | undefined | null): string => 
     .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(' ')
 }
+
+/**
+ * Format individual TNM component (T, N, or M stage)
+ * Examples: 'x' -> 'x', '1' -> '1', '3' -> '3', null -> '-'
+ */
+export const formatTNMComponent = (value: string | number | null | undefined): string => {
+  if (value === null || value === undefined || value === '') return '-'
+  return String(value).toLowerCase()
+}
+
+/**
+ * Format clinical TNM staging: T1 N0 M0
+ * Takes individual T, N, M values and formats them with proper spacing
+ */
+export const formatClinicalTNM = (
+  t: string | number | null | undefined,
+  n: string | number | null | undefined,
+  m: string | number | null | undefined
+): string => {
+  const tFormatted = formatTNMComponent(t)
+  const nFormatted = formatTNMComponent(n)
+  const mFormatted = formatTNMComponent(m)
+  
+  // Only show if at least one component is present
+  if (tFormatted === '-' && nFormatted === '-' && mFormatted === '-') {
+    return '-'
+  }
+  
+  return `T${tFormatted} N${nFormatted} M${mFormatted}`
+}
+
+/**
+ * Format pathological TNM staging: pT1 pN0 pM0
+ * Takes individual T, N, M values and formats them with 'p' prefix
+ */
+export const formatPathologicalTNM = (
+  t: string | number | null | undefined,
+  n: string | number | null | undefined,
+  m: string | number | null | undefined
+): string => {
+  const tFormatted = formatTNMComponent(t)
+  const nFormatted = formatTNMComponent(n)
+  const mFormatted = formatTNMComponent(m)
+  
+  // Only show if at least one component is present
+  if (tFormatted === '-' && nFormatted === '-' && mFormatted === '-') {
+    return '-'
+  }
+  
+  return `pT${tFormatted} pN${nFormatted} pM${mFormatted}`
+}

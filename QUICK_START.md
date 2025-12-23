@@ -62,7 +62,31 @@ Auto-dismiss after 3 seconds or click X to close immediately.
   - Readmission rates
   - Average duration and length of stay
 
-## How to Test
+## How to Start the Application
+
+### ⚠️ Production: Use Systemd Services
+
+The application runs as systemd services in production:
+
+```bash
+# Restart backend
+sudo systemctl restart surg-db-backend
+
+# Restart frontend
+sudo systemctl restart surg-db-frontend
+
+# Check status
+sudo systemctl status surg-db-backend
+sudo systemctl status surg-db-frontend
+
+# View logs
+tail -f ~/.tmp/backend.log
+tail -f ~/.tmp/frontend.log
+```
+
+### Development: Manual Startup
+
+For development/debugging only:
 
 1. **Start the backend:**
    ```bash
@@ -76,6 +100,8 @@ Auto-dismiss after 3 seconds or click X to close immediately.
    cd frontend
    npm run dev
    ```
+
+## How to Test
 
 3. **Test Episode Creation:**
    - Navigate to Episodes page

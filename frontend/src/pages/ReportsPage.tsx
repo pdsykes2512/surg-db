@@ -21,8 +21,8 @@ interface SurgeonPerformance {
   complication_rate: number
   readmission_rate: number
   mortality_rate: number
-  avg_duration: number
-  avg_los: number
+  median_duration: number
+  median_los: number
 }
 
 interface FieldStat {
@@ -47,6 +47,18 @@ interface DataQualityReport {
   total_tumours: number
   overall_completeness: number
   categories: CategoryStat[]
+  episode_fields?: Array<{
+    field: string
+    completeness: number
+    complete_count: number
+    total_count: number
+  }>
+  treatment_fields?: Array<{
+    field: string
+    completeness: number
+    complete_count: number
+    total_count: number
+  }>
 }
 
 type Tab = 'outcomes' | 'quality'
@@ -73,7 +85,8 @@ export function ReportsPage() {
         setSummary(summaryRes.data)
         setSurgeonPerf(surgeonRes.data.surgeons || [])
       } else {
-        const response = await fetch('http://localhost:8000/api/reports/data-quality', {
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
+        const response = await fetch(`${API_URL}/reports/data-quality`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
           }
@@ -142,29 +155,57 @@ export function ReportsPage() {
     return 'text-red-600'
   }
 
-  // For outcomes: lower is better (inverse of data quality)
-  const getOutcomeColor = (rate: number) => {
-    const percentage = rate * 100
-    if (percentage <= 5) return 'text-green-600 bg-green-100'
-    if (percentage <= 10) return 'text-yellow-600 bg-yellow-100'
-    if (percentage <= 20) return 'text-orange-600 bg-orange-100'
-    return 'text-red-600 bg-red-100'
+  // For outcomes: lower is better
+  // Based on published NBOCA and colorectal surgery benchmarks
+  const getOutcomeColor = (rate: number, metric: 'complication' | 'readmission' | 'mortality') => {
+    if (metric === 'complication') {
+      // Complications: <15% excellent, 15-25% acceptable, >25% concerning
+      if (rate < 15) return 'text-green-600 bg-green-100'
+      if (rate < 25) return 'text-yellow-600 bg-yellow-100'
+      return 'text-red-600 bg-red-100'
+    } else if (metric === 'readmission') {
+      // 30-day readmissions: <8% excellent, 8-12% acceptable, >12% concerning
+      if (rate < 8) return 'text-green-600 bg-green-100'
+      if (rate < 12) return 'text-yellow-600 bg-yellow-100'
+      return 'text-red-600 bg-red-100'
+    } else {
+      // 30-day mortality: <2% excellent, 2-5% acceptable, >5% concerning
+      if (rate < 2) return 'text-green-600 bg-green-100'
+      if (rate < 5) return 'text-yellow-600 bg-yellow-100'
+      return 'text-red-600 bg-red-100'
+    }
   }
 
-  const getOutcomeCardColor = (rate: number) => {
-    const percentage = rate * 100
-    if (percentage <= 5) return 'bg-green-50 border-green-200'
-    if (percentage <= 10) return 'bg-yellow-50 border-yellow-200'
-    if (percentage <= 20) return 'bg-orange-50 border-orange-200'
-    return 'bg-red-50 border-red-200'
+  const getOutcomeCardColor = (rate: number, metric: 'complication' | 'readmission' | 'mortality') => {
+    if (metric === 'complication') {
+      if (rate < 15) return 'bg-green-50 border-green-200'
+      if (rate < 25) return 'bg-yellow-50 border-yellow-200'
+      return 'bg-red-50 border-red-200'
+    } else if (metric === 'readmission') {
+      if (rate < 8) return 'bg-green-50 border-green-200'
+      if (rate < 12) return 'bg-yellow-50 border-yellow-200'
+      return 'bg-red-50 border-red-200'
+    } else {
+      if (rate < 2) return 'bg-green-50 border-green-200'
+      if (rate < 5) return 'bg-yellow-50 border-yellow-200'
+      return 'bg-red-50 border-red-200'
+    }
   }
 
-  const getOutcomeTextColor = (rate: number) => {
-    const percentage = rate * 100
-    if (percentage <= 5) return 'text-green-600'
-    if (percentage <= 10) return 'text-yellow-600'
-    if (percentage <= 20) return 'text-orange-600'
-    return 'text-red-600'
+  const getOutcomeTextColor = (rate: number, metric: 'complication' | 'readmission' | 'mortality') => {
+    if (metric === 'complication') {
+      if (rate < 15) return 'text-green-600'
+      if (rate < 25) return 'text-yellow-600'
+      return 'text-red-600'
+    } else if (metric === 'readmission') {
+      if (rate < 8) return 'text-green-600'
+      if (rate < 12) return 'text-yellow-600'
+      return 'text-red-600'
+    } else {
+      if (rate < 2) return 'text-green-600'
+      if (rate < 5) return 'text-yellow-600'
+      return 'text-red-600'
+    }
   }
 
   return (
@@ -210,49 +251,60 @@ export function ReportsPage() {
           {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <Card className="p-6">
-              <h3 className="text-sm font-medium text-gray-500">Total Surgeries</h3>
+              <h3 className="text-sm font-medium text-gray-500">Total Resections</h3>
               <p className="mt-2 text-3xl font-bold text-gray-900">{summary.total_surgeries}</p>
             </Card>
 
-            <Card className={`p-6 border-2 ${getOutcomeCardColor(summary.complication_rate)}`}>
-              <h3 className="text-sm font-medium text-gray-600">Complication Rate</h3>
-              <p className={`mt-2 text-3xl font-bold ${getOutcomeTextColor(summary.complication_rate)}`}>
-                {summary.complication_rate.toFixed(1)}%
+            <Card className="p-6">
+              <h3 className="text-sm font-medium text-gray-500">Median Length of Stay</h3>
+              <p className="mt-2 text-3xl font-bold text-gray-900">
+                {summary.median_length_of_stay_days 
+                  ? (summary.median_length_of_stay_days % 1 === 0 
+                      ? summary.median_length_of_stay_days.toFixed(0) 
+                      : summary.median_length_of_stay_days.toFixed(1))
+                  : 'N/A'} days
               </p>
             </Card>
 
-            <Card className={`p-6 border-2 ${getOutcomeCardColor(summary.readmission_rate)}`}>
+            <Card className={`p-6 border-2 ${getOutcomeCardColor(summary.readmission_rate, 'readmission')}`}>
               <h3 className="text-sm font-medium text-gray-600">Readmission Rate</h3>
-              <p className={`mt-2 text-3xl font-bold ${getOutcomeTextColor(summary.readmission_rate)}`}>
+              <p className={`mt-2 text-3xl font-bold ${getOutcomeTextColor(summary.readmission_rate, 'readmission')}`}>
                 {summary.readmission_rate.toFixed(1)}%
               </p>
             </Card>
 
-            <Card className={`p-6 border-2 ${getOutcomeCardColor(summary.mortality_rate)}`}>
-              <h3 className="text-sm font-medium text-gray-600">Mortality Rate</h3>
-              <p className={`mt-2 text-3xl font-bold ${getOutcomeTextColor(summary.mortality_rate)}`}>
-                {summary.mortality_rate.toFixed(1)}%
-              </p>
-            </Card>
-
-            <Card className={`p-6 border-2 ${getOutcomeCardColor(summary.return_to_theatre_rate)}`}>
-              <h3 className="text-sm font-medium text-gray-600">Return to Theatre</h3>
-              <p className={`mt-2 text-3xl font-bold ${getOutcomeTextColor(summary.return_to_theatre_rate)}`}>
-                {summary.return_to_theatre_rate.toFixed(1)}%
-              </p>
-            </Card>
-
-            <Card className={`p-6 border-2 ${getOutcomeCardColor(summary.escalation_rate)}`}>
+            <Card className={`p-6 border-2 ${getOutcomeCardColor(summary.escalation_rate, 'complication')}`}>
               <h3 className="text-sm font-medium text-gray-600">ICU Escalation</h3>
-              <p className={`mt-2 text-3xl font-bold ${getOutcomeTextColor(summary.escalation_rate)}`}>
+              <p className={`mt-2 text-3xl font-bold ${getOutcomeTextColor(summary.escalation_rate, 'complication')}`}>
                 {summary.escalation_rate.toFixed(1)}%
               </p>
             </Card>
 
-            <Card className="p-6">
-              <h3 className="text-sm font-medium text-gray-500">Avg Length of Stay</h3>
-              <p className="mt-2 text-3xl font-bold text-gray-900">
-                {summary.avg_length_of_stay_days?.toFixed(1) || 'N/A'} days
+            <Card className={`p-6 border-2 ${getOutcomeCardColor(summary.complication_rate, 'complication')}`}>
+              <h3 className="text-sm font-medium text-gray-600">Complication Rate</h3>
+              <p className={`mt-2 text-3xl font-bold ${getOutcomeTextColor(summary.complication_rate, 'complication')}`}>
+                {summary.complication_rate.toFixed(1)}%
+              </p>
+            </Card>
+
+            <Card className={`p-6 border-2 ${getOutcomeCardColor(summary.return_to_theatre_rate, 'complication')}`}>
+              <h3 className="text-sm font-medium text-gray-600">Return to Theatre</h3>
+              <p className={`mt-2 text-3xl font-bold ${getOutcomeTextColor(summary.return_to_theatre_rate, 'complication')}`}>
+                {summary.return_to_theatre_rate.toFixed(1)}%
+              </p>
+            </Card>
+
+            <Card className={`p-6 border-2 ${getOutcomeCardColor(summary.mortality_30d_rate, 'mortality')}`}>
+              <h3 className="text-sm font-medium text-gray-600">30-Day Mortality</h3>
+              <p className={`mt-2 text-3xl font-bold ${getOutcomeTextColor(summary.mortality_30d_rate, 'mortality')}`}>
+                {summary.mortality_30d_rate.toFixed(1)}%
+              </p>
+            </Card>
+
+            <Card className={`p-6 border-2 ${getOutcomeCardColor(summary.mortality_90d_rate, 'mortality')}`}>
+              <h3 className="text-sm font-medium text-gray-600">90-Day Mortality</h3>
+              <p className={`mt-2 text-3xl font-bold ${getOutcomeTextColor(summary.mortality_90d_rate, 'mortality')}`}>
+                {summary.mortality_90d_rate.toFixed(1)}%
               </p>
             </Card>
           </div>
@@ -293,13 +345,16 @@ export function ReportsPage() {
                         Readmission Rate
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Mortality Rate
+                        30d Mortality
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Avg Duration (min)
+                        90d Mortality
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Avg LOS (days)
+                        Median Duration (min)
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Median LOS (days)
                       </th>
                     </tr>
                   </thead>
@@ -313,25 +368,34 @@ export function ReportsPage() {
                           {surgeon.total_surgeries}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`text-sm font-semibold px-2 py-1 rounded ${getOutcomeColor(surgeon.complication_rate)}`}>
+                          <span className={`text-sm font-semibold px-2 py-1 rounded ${getOutcomeColor(surgeon.complication_rate, 'complication')}`}>
                             {surgeon.complication_rate.toFixed(1)}%
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`text-sm font-semibold px-2 py-1 rounded ${getOutcomeColor(surgeon.readmission_rate)}`}>
+                          <span className={`text-sm font-semibold px-2 py-1 rounded ${getOutcomeColor(surgeon.readmission_rate, 'readmission')}`}>
                             {surgeon.readmission_rate.toFixed(1)}%
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`text-sm font-semibold px-2 py-1 rounded ${getOutcomeColor(surgeon.mortality_rate)}`}>
-                            {surgeon.mortality_rate.toFixed(1)}%
+                          <span className={`text-sm font-semibold px-2 py-1 rounded ${getOutcomeColor(surgeon.mortality_30d_rate, 'mortality')}`}>
+                            {surgeon.mortality_30d_rate.toFixed(1)}%
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`text-sm font-semibold px-2 py-1 rounded ${getOutcomeColor(surgeon.mortality_90d_rate, 'mortality')}`}>
+                            {surgeon.mortality_90d_rate.toFixed(1)}%
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {surgeon.avg_duration?.toFixed(0) || 'N/A'}
+                          {surgeon.median_duration?.toFixed(0) || 'N/A'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {surgeon.avg_los?.toFixed(1) || 'N/A'}
+                          {surgeon.median_los 
+                            ? (surgeon.median_los % 1 === 0 
+                                ? surgeon.median_los.toFixed(0) 
+                                : surgeon.median_los.toFixed(1))
+                            : 'N/A'}
                         </td>
                       </tr>
                     ))}
@@ -441,8 +505,8 @@ export function ReportsPage() {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {dataQuality.episode_fields
-                    .sort((a, b) => a.completeness - b.completeness)
-                    .map((field) => (
+                    ?.sort((a: any, b: any) => a.completeness - b.completeness)
+                    .map((field: any) => (
                       <tr key={field.field}>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                           {field.field}
@@ -494,8 +558,8 @@ export function ReportsPage() {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {dataQuality.treatment_fields
-                    .sort((a, b) => a.completeness - b.completeness)
-                    .map((field) => (
+                    ?.sort((a: any, b: any) => a.completeness - b.completeness)
+                    .map((field: any) => (
                       <tr key={field.field}>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                           {field.field}

@@ -7,7 +7,7 @@ import { SearchableSelect } from './SearchableSelect'
 import { NHSProviderSelect } from './NHSProviderSelect'
 import { TumourModal } from './TumourModal'
 import { AddTreatmentModal } from './AddTreatmentModal'
-import { formatSurgeon, formatCancerType, formatAnatomicalSite } from '../utils/formatters'
+import { formatCancerType, formatAnatomicalSite } from '../utils/formatters'
 
 interface CancerEpisodeFormProps {
   onSubmit: (data: any) => void
@@ -213,7 +213,8 @@ export function CancerEpisodeForm({ onSubmit, onCancel, initialData, mode = 'cre
           if (patientData?.nhs_number && mode === 'create') {
             try {
               // Fetch existing episodes for this patient to get count
-              const response = await fetch(`http://localhost:8000/api/episodes/?patient_id=${mrn}`, {
+              const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
+              const response = await fetch(`${API_URL}/episodes/?patient_id=${mrn}`, {
                 headers: {
                   'Authorization': `Bearer ${localStorage.getItem('token')}`
                 }
@@ -528,7 +529,8 @@ export function CancerEpisodeForm({ onSubmit, onCancel, initialData, mode = 'cre
     </div>
   )
 
-  const renderBreastCancerFields = () => (
+  // @ts-ignore - Unused but kept for potential future use
+  const _renderBreastCancerFields = () => (
     <div className="space-y-6">
       <h3 className="text-lg font-semibold text-gray-900">
         {formData.cancer_type === 'breast_metastatic' ? 'Metastatic Breast Cancer Details' : 'Primary Breast Cancer Details'}
@@ -687,7 +689,8 @@ export function CancerEpisodeForm({ onSubmit, onCancel, initialData, mode = 'cre
     </div>
   )
 
-  const renderProstateCancerFields = () => (
+  // @ts-ignore - Unused but kept for potential future use
+  const _renderProstateCancerFields = () => (
     <div className="space-y-6">
       <h3 className="text-lg font-semibold text-gray-900">Prostate Cancer Details</h3>
 
@@ -817,7 +820,8 @@ export function CancerEpisodeForm({ onSubmit, onCancel, initialData, mode = 'cre
     </div>
   )
 
-  const renderGenericCancerFields = () => (
+  // @ts-ignore - Unused but kept for potential future use
+  const _renderGenericCancerFields = () => (
     <div className="space-y-6">
       <h3 className="text-lg font-semibold text-gray-900">
         {formData.cancer_type.charAt(0).toUpperCase() + formData.cancer_type.slice(1).replace('_', ' ')} Cancer Details

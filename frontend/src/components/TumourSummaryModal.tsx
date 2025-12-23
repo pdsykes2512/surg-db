@@ -1,4 +1,5 @@
-import { capitalize, formatAnatomicalSite } from '../utils/formatters'
+import { capitalize, formatAnatomicalSite, formatClinicalTNM, formatPathologicalTNM } from '../utils/formatters'
+import { calculateStage, formatStage } from '../utils/cancerStaging'
 import { Button } from './Button'
 
 interface TumourSummaryModalProps {
@@ -98,7 +99,7 @@ export function TumourSummaryModal({ tumour, onClose, onEdit }: TumourSummaryMod
                 <dt className="text-sm font-medium text-gray-500">TNM (cTNM)</dt>
                 <dd className="text-sm text-gray-900 col-span-2">
                   <span className="font-mono">
-                    {tumour.clinical_t || '?'}{tumour.clinical_n || '?'}{tumour.clinical_m || '?'}
+                    {formatClinicalTNM(tumour.clinical_t, tumour.clinical_n, tumour.clinical_m)}
                   </span>
                 </dd>
               </div>
@@ -117,26 +118,31 @@ export function TumourSummaryModal({ tumour, onClose, onEdit }: TumourSummaryMod
 
           {/* Pathological Staging (TNM) */}
           <Section title="Pathological Staging">
-            {(tumour.pathological_t || tumour.pathological_n || tumour.pathological_m) && (
-              <div className="grid grid-cols-3 gap-4 py-2">
-                <dt className="text-sm font-medium text-gray-500">TNM (pTNM)</dt>
-                <dd className="text-sm text-gray-900 col-span-2">
-                  <span className="font-mono">
-                    {tumour.pathological_t || '?'}{tumour.pathological_n || '?'}{tumour.pathological_m || '?'}
-                  </span>
-                </dd>
-              </div>
-            )}
-            {tumour.pathological_stage && (
-              <Field 
-                label="Pathological Stage" 
-                value={
-                  <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${getStageColor(tumour.pathological_stage)}`}>
-                    {tumour.pathological_stage}
-                  </span>
-                }
-              />
-            )}
+            {(tumour.pathological_t || tumour.pathological_n || tumour.pathological_m) && (() => {
+              const calculatedStage = calculateStage('bowel', tumour.pathological_t, tumour.pathological_n, tumour.pathological_m)
+              return (
+                <>
+                  <div className="grid grid-cols-3 gap-4 py-2">
+                    <dt className="text-sm font-medium text-gray-500">TNM (pTNM)</dt>
+                    <dd className="text-sm text-gray-900 col-span-2">
+                      <span className="font-mono">
+                        {formatPathologicalTNM(tumour.pathological_t, tumour.pathological_n, tumour.pathological_m)}
+                      </span>
+                    </dd>
+                  </div>
+                  {calculatedStage !== 'Unknown' && (
+                    <div className="grid grid-cols-3 gap-4 py-2">
+                      <dt className="text-sm font-medium text-gray-500">Pathological Stage</dt>
+                      <dd className="text-sm text-gray-900 col-span-2">
+                        <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${getStageColor(calculatedStage)}`}>
+                          {formatStage(calculatedStage)}
+                        </span>
+                      </dd>
+                    </div>
+                  )}
+                </>
+              )
+            })()}
           </Section>
 
           {/* Histopathology */}

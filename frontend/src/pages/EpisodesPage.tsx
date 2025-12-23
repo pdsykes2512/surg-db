@@ -9,9 +9,10 @@ import { CancerEpisodeDetailModal } from '../components/CancerEpisodeDetailModal
 import { ToastContainer } from '../components/Toast'
 import { apiService } from '../services/api'
 import api from '../services/api'
-import { formatDate, formatStatus, formatCancerType, formatSurgeon } from '../utils/formatters'
+import { formatDate, formatCancerType, formatSurgeon } from '../utils/formatters'
 
-const capitalize = (str: string) => {
+// @ts-ignore - Unused but kept for potential future use
+const _capitalize = (str: string) => {
   if (!str) return ''
   return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
 }
@@ -132,7 +133,8 @@ export function EpisodesPage() {
     try {
       console.log('Creating cancer episode with data:', data)
       
-      const response = await fetch('http://localhost:8000/api/episodes/', {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
+      const response = await fetch(`${API_URL}/episodes/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -183,7 +185,8 @@ export function EpisodesPage() {
     if (!editingEpisode) return
     
     try {
-      const response = await fetch(`http://localhost:8000/api/episodes/${editingEpisode.episode_id}`, {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
+      const response = await fetch(`${API_URL}/episodes/${editingEpisode.episode_id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -231,7 +234,8 @@ export function EpisodesPage() {
   // No need for local filtering - backend handles search
   const filteredEpisodes = episodes
 
-  const getUrgencyColor = (urgency: string) => {
+  // @ts-ignore - Unused but kept for potential future use
+  const _getUrgencyColor = (urgency: string) => {
     switch (urgency) {
       case 'emergency': return 'bg-red-100 text-red-800'
       case 'urgent': return 'bg-orange-100 text-orange-800'

@@ -26,7 +26,8 @@ async def get_summary_report() -> Dict[str, Any]:
             "total_surgeries": 0,
             "complication_rate": 0,
             "readmission_rate": 0,
-            "mortality_rate": 0,
+            "mortality_30d_rate": 0,
+            "mortality_90d_rate": 0,
             "return_to_theatre_rate": 0,
             "escalation_rate": 0,
             "avg_length_of_stay_days": 0,
@@ -37,20 +38,27 @@ async def get_summary_report() -> Dict[str, Any]:
     # Calculate metrics - using flat structure from AddTreatmentModal
     surgeries_with_complications = sum(1 for t in all_treatments if t.get('complications'))
     readmissions = sum(1 for t in all_treatments if t.get('readmission_30d'))
-    mortality_count = sum(1 for t in all_treatments if t.get('mortality_30d'))
+    mortality_30d_count = sum(1 for t in all_treatments if t.get('mortality_30d'))
+    mortality_90d_count = sum(1 for t in all_treatments if t.get('mortality_90d'))
     return_to_theatre = sum(1 for t in all_treatments if t.get('return_to_theatre'))
     escalation_of_care = sum(1 for t in all_treatments if t.get('icu_admission'))
     
     # Calculate rates
     complication_rate = (surgeries_with_complications / total_surgeries * 100) if total_surgeries > 0 else 0
     readmission_rate = (readmissions / total_surgeries * 100) if total_surgeries > 0 else 0
-    mortality_rate = (mortality_count / total_surgeries * 100) if total_surgeries > 0 else 0
+    mortality_30d_rate = (mortality_30d_count / total_surgeries * 100) if total_surgeries > 0 else 0
+    mortality_90d_rate = (mortality_90d_count / total_surgeries * 100) if total_surgeries > 0 else 0
     return_to_theatre_rate = (return_to_theatre / total_surgeries * 100) if total_surgeries > 0 else 0
     escalation_rate = (escalation_of_care / total_surgeries * 100) if total_surgeries > 0 else 0
     
-    # Calculate average length of stay - using flat field
+    # Calculate median length of stay - using flat field
     los_values = [t.get('length_of_stay') for t in all_treatments if t.get('length_of_stay') is not None]
-    avg_length_of_stay = sum(los_values) / len(los_values) if los_values else 0
+    if los_values:
+        sorted_los = sorted(los_values)
+        n = len(sorted_los)
+        median_length_of_stay = sorted_los[n // 2] if n % 2 == 1 else (sorted_los[n // 2 - 1] + sorted_los[n // 2]) / 2
+    else:
+        median_length_of_stay = 0
     
     # Urgency breakdown - using flat field
     urgency_breakdown = {}
@@ -62,10 +70,11 @@ async def get_summary_report() -> Dict[str, Any]:
         "total_surgeries": total_surgeries,
         "complication_rate": round(complication_rate, 2),
         "readmission_rate": round(readmission_rate, 2),
-        "mortality_rate": round(mortality_rate, 2),
+        "mortality_30d_rate": round(mortality_30d_rate, 2),
+        "mortality_90d_rate": round(mortality_90d_rate, 2),
         "return_to_theatre_rate": round(return_to_theatre_rate, 2),
         "escalation_rate": round(escalation_rate, 2),
-        "avg_length_of_stay_days": round(avg_length_of_stay, 2),
+        "median_length_of_stay_days": round(median_length_of_stay, 2),
         "urgency_breakdown": urgency_breakdown,
         "generated_at": datetime.utcnow().isoformat()
     }
@@ -73,33 +82,81 @@ async def get_summary_report() -> Dict[str, Any]:
 
 @router.get("/surgeon-performance")
 async def get_surgeon_performance() -> Dict[str, Any]:
-    """Get surgeon-specific performance metrics from surgical treatments"""
+    """Get surgeon-specific performance metrics stratified by episode lead clinician"""
     db = Database.get_database()
     treatments_collection = db.treatments
+    episodes_collection = db.episodes
+    clinicians_collection = db.clinicians
+    
+    # Get all current clinicians (active surgeons)
+    clinicians = await clinicians_collection.find({"clinical_role": "surgeon"}).to_list(length=None)
+    
+    # Create a mapping of clinician ID to full name and name to ID
+    clinician_id_to_name = {}
+    clinician_name_to_id = {}
+    clinician_ids = set()
+    for clinician in clinicians:
+        clinician_id = str(clinician['_id'])
+        first_name = clinician.get('first_name', '')
+        surname = clinician.get('surname', '')
+        if first_name and surname:
+            full_name = f"{first_name} {surname}"
+            clinician_id_to_name[clinician_id] = full_name
+            clinician_name_to_id[full_name.lower()] = clinician_id
+            # Also try surname only
+            clinician_name_to_id[surname.lower()] = clinician_id
+            clinician_ids.add(clinician_id)
+    
+    # Get all episodes to build episode_id -> lead_clinician mapping
+    all_episodes = await episodes_collection.find({}).to_list(length=None)
+    episode_to_lead_clinician = {}
+    for episode in all_episodes:
+        episode_id = episode.get('episode_id')
+        lead_clinician_name = episode.get('lead_clinician')
+        if episode_id and lead_clinician_name:
+            # Try to match the name to a clinician ID
+            lead_clinician_lower = lead_clinician_name.lower()
+            matched_id = None
+            for known_name, cid in clinician_name_to_id.items():
+                if known_name in lead_clinician_lower or lead_clinician_lower in known_name:
+                    matched_id = cid
+                    break
+            if matched_id:
+                episode_to_lead_clinician[episode_id] = matched_id
     
     # Get all surgical treatments
     all_treatments = await treatments_collection.find({"treatment_type": "surgery"}).to_list(length=None)
     
-    # Group by surgeon - using flat structure
+    # Group by episode lead clinician
     surgeon_stats = {}
     for treatment in all_treatments:
-        surgeon = treatment.get('surgeon', 'Unknown')
-        if surgeon not in surgeon_stats:
-            surgeon_stats[surgeon] = {
-                '_id': surgeon,
+        episode_id = treatment.get('episode_id')
+        if not episode_id:
+            continue
+        
+        # Look up lead clinician from episode
+        lead_clinician_id = episode_to_lead_clinician.get(episode_id)
+        if not lead_clinician_id or lead_clinician_id not in clinician_ids:
+            continue
+        
+        # Use the full name for display
+        surgeon_name = clinician_id_to_name.get(lead_clinician_id, lead_clinician_id)
+        
+        if surgeon_name not in surgeon_stats:
+            surgeon_stats[surgeon_name] = {
+                '_id': surgeon_name,
                 'total_surgeries': 0,
                 'surgeries_with_complications': 0,
                 'readmissions': 0,
                 'mortality_30day': 0,
+                'mortality_90day': 0,
                 'return_to_theatre_count': 0,
                 'icu_admissions': 0,
-                'duration_sum': 0,
-                'duration_count': 0,
-                'los_sum': 0,
-                'los_count': 0
+                'duration_values': [],  # Changed to list for median calculation
+                'los_values': []  # Changed to list for median calculation
             }
         
-        stats = surgeon_stats[surgeon]
+        stats = surgeon_stats[surgeon_name]
         stats['total_surgeries'] += 1
         
         # Using flat fields from AddTreatmentModal
@@ -109,6 +166,8 @@ async def get_surgeon_performance() -> Dict[str, Any]:
             stats['readmissions'] += 1
         if treatment.get('mortality_30d'):
             stats['mortality_30day'] += 1
+        if treatment.get('mortality_90d'):
+            stats['mortality_90day'] += 1
         if treatment.get('return_to_theatre'):
             stats['return_to_theatre_count'] += 1
         if treatment.get('icu_admission'):
@@ -116,26 +175,42 @@ async def get_surgeon_performance() -> Dict[str, Any]:
         
         duration = treatment.get('operation_duration_minutes')
         if duration:
-            stats['duration_sum'] += duration
-            stats['duration_count'] += 1
+            stats['duration_values'].append(duration)
         
         los = treatment.get('length_of_stay')
         if los is not None:
-            stats['los_sum'] += los
-            stats['los_count'] += 1
+            stats['los_values'].append(los)
     
-    # Calculate rates and averages
+    # Calculate rates and medians
     surgeon_list = []
     for surgeon, stats in surgeon_stats.items():
         total = stats['total_surgeries']
+        
+        # Calculate median duration
+        median_duration = None
+        if stats['duration_values']:
+            sorted_duration = sorted(stats['duration_values'])
+            n = len(sorted_duration)
+            median_duration = sorted_duration[n // 2] if n % 2 == 1 else (sorted_duration[n // 2 - 1] + sorted_duration[n // 2]) / 2
+            median_duration = round(median_duration, 2)
+        
+        # Calculate median LOS
+        median_los = None
+        if stats['los_values']:
+            sorted_los = sorted(stats['los_values'])
+            n = len(sorted_los)
+            median_los = sorted_los[n // 2] if n % 2 == 1 else (sorted_los[n // 2 - 1] + sorted_los[n // 2]) / 2
+            median_los = round(median_los, 2)
+        
         surgeon_list.append({
             '_id': surgeon,
             'total_surgeries': total,
             'complication_rate': round((stats['surgeries_with_complications'] / total * 100) if total > 0 else 0, 2),
             'readmission_rate': round((stats['readmissions'] / total * 100) if total > 0 else 0, 2),
-            'mortality_rate': round((stats['mortality_30day'] / total * 100) if total > 0 else 0, 2),
-            'avg_duration': round(stats['duration_sum'] / stats['duration_count'], 2) if stats['duration_count'] > 0 else None,
-            'avg_los': round(stats['los_sum'] / stats['los_count'], 2) if stats['los_count'] > 0 else None
+            'mortality_30d_rate': round((stats['mortality_30day'] / total * 100) if total > 0 else 0, 2),
+            'mortality_90d_rate': round((stats['mortality_90day'] / total * 100) if total > 0 else 0, 2),
+            'median_duration': median_duration,
+            'median_los': median_los
         })
     
     # Sort by total surgeries
