@@ -1,4 +1,5 @@
 import { formatDate, formatTreatmentType, formatSurgeon } from '../utils/formatters'
+import { formatTrustName } from '../utils/nhsTrusts'
 import { Button } from './Button'
 
 interface TreatmentSummaryModalProps {
