@@ -31,7 +31,7 @@ export function TumourSummaryModal({ tumour, onClose, onEdit }: TumourSummaryMod
   const Section = ({ title, children }: { title: string, children: React.ReactNode }) => (
     <div className="mb-4">
       <h3 className="text-base font-semibold text-gray-900 mb-2 pb-1 border-b border-gray-200">{title}</h3>
-      <div className="space-y-1">
+      <div className="space-y-0">
         {children}
       </div>
     </div>
