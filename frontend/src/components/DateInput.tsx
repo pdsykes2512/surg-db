@@ -1,5 +1,4 @@
 import { InputHTMLAttributes } from 'react'
-import { X } from 'lucide-react'
 
 interface DateInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> {
   value: string
@@ -50,7 +49,9 @@ export function DateInput({
             className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
             aria-label="Clear date"
           >
-            <X className="w-4 h-4" />
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         )}
       </div>
