@@ -65,7 +65,11 @@ export function Layout({ children }: LayoutProps) {
             </nav>
 
             {/* User Menu */}
-            <div className="flex items-center">
+            <div className="flex items-center space-x-4">
+              <div className="hidden sm:flex flex-col items-end">
+                <span className="text-sm font-medium text-gray-900">{user?.full_name}</span>
+                <span className="text-xs text-gray-500">{user?.email}</span>
+              </div>
               <button
                 onClick={logout}
                 className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
