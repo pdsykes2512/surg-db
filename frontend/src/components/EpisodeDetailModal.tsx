@@ -190,10 +190,10 @@ export function EpisodeDetailModal({ episode, onClose, onEdit }: EpisodeDetailMo
                   </p>
                 </div>
               )}
-              {episode.team.anaesthetist && (
+              {episode.team.anesthesiologist && (
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Anaesthetist</label>
-                  <p className="text-sm text-gray-900 mt-1">{episode.team.anaesthetist}</p>
+                  <label className="text-sm font-medium text-gray-500">Anesthesiologist</label>
+                  <p className="text-sm text-gray-900 mt-1">{episode.team.anesthesiologist}</p>
                 </div>
               )}
             </div>

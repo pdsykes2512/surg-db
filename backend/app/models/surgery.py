@@ -14,14 +14,6 @@ class Classification(BaseModel):
     complexity: Optional[str] = Field(None, description="routine/intermediate/complex")
     primary_diagnosis: str
     indication: Optional[str] = Field(None, description="cancer/ibd/diverticular/benign/other")
-    asa_score: Optional[int] = Field(None, ge=1, le=5, description="ASA physical status classification (1-5) - CR6010")
-    
-    @field_validator('asa_score')
-    @classmethod
-    def validate_asa_score(cls, v):
-        if v is not None and not (1 <= v <= 5):
-            raise ValueError('ASA score must be between 1 and 5')
-        return v
 
 
 class Procedure(BaseModel):
@@ -45,7 +37,7 @@ class PerioperativeTimeline(BaseModel):
     anesthesia_duration_minutes: Optional[int] = Field(None, ge=0)
     operation_duration_minutes: Optional[int] = Field(None, ge=0)
     discharge_date: Optional[Union[datetime, date, str]] = None
-    length_of_stay_days: Optional[int] = Field(None, ge=0, description="Calculated from admission to discharge")
+    length_of_stay_days: Optional[int] = Field(None, ge=0)
     
     @field_validator('admission_date', 'surgery_date', 'discharge_date', mode='before')
     @classmethod
@@ -70,31 +62,13 @@ class PerioperativeTimeline(BaseModel):
             except ValueError:
                 return v
         return v
-    
-    def model_post_init(self, __context):
-        """Calculate length of stay if admission and discharge dates are present"""
-        if self.admission_date and self.discharge_date:
-            # Convert to datetime objects for calculation
-            admission = self.admission_date
-            discharge = self.discharge_date
-            
-            # Handle string dates
-            if isinstance(admission, str):
-                admission = datetime.fromisoformat(admission.replace('Z', '+00:00').split('T')[0] + 'T00:00:00')
-            if isinstance(discharge, str):
-                discharge = datetime.fromisoformat(discharge.replace('Z', '+00:00').split('T')[0] + 'T00:00:00')
-            
-            # Calculate difference in days
-            if isinstance(admission, datetime) and isinstance(discharge, datetime):
-                delta = discharge - admission
-                self.length_of_stay_days = max(0, delta.days)
 
 
 class SurgicalTeam(BaseModel):
     """Surgical team members"""
     primary_surgeon: str = Field(..., min_length=1)
     assistant_surgeons: List[str] = Field(default_factory=list)
-    anaesthetist: Optional[str] = None
+    anesthesiologist: Optional[str] = None
     scrub_nurse: Optional[str] = None
     circulating_nurse: Optional[str] = None
 
@@ -119,7 +93,6 @@ class TNMStaging(BaseModel):
     pathological_t: Optional[str] = None
     pathological_n: Optional[str] = None
     pathological_m: Optional[str] = None
-    tnm_version: Optional[str] = Field("8", description="CR2070/pCR6820: TNM version (7 or 8)")
 
 
 class Pathology(BaseModel):
@@ -133,9 +106,6 @@ class Pathology(BaseModel):
     tumor_size_mm: Optional[float] = Field(None, ge=0)
     lymphovascular_invasion: Optional[bool] = None
     perineural_invasion: Optional[bool] = None
-    # NBOCA COSD fields
-    circumferential_resection_margin: Optional[str] = Field(None, description="pCR1150: clear/involved/uncertain")
-    crm_distance_mm: Optional[float] = Field(None, ge=0, description="Distance from tumor to CRM in mm")
 
 
 class CancerSpecific(BaseModel):

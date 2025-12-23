@@ -40,13 +40,6 @@ class Demographics(BaseModel):
     bmi: Optional[float] = Field(None, ge=10, le=80)
     weight_kg: Optional[float] = Field(None, ge=20, le=300)
     height_cm: Optional[float] = Field(None, ge=100, le=250)
-    
-    def model_post_init(self, __context):
-        """Auto-calculate BMI if height and weight are provided but BMI is not"""
-        if self.height_cm and self.weight_kg and not self.bmi:
-            # BMI = weight(kg) / (height(m))^2
-            height_m = self.height_cm / 100
-            self.bmi = round(self.weight_kg / (height_m ** 2), 1)
 
 
 class MedicalHistory(BaseModel):

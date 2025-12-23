@@ -10,7 +10,7 @@ from ..models.surgery import Surgery, SurgeryCreate, SurgeryUpdate
 from ..database import get_surgeries_collection, get_patients_collection
 
 
-router = APIRouter(prefix="/api/legacy/surgeries", tags=["legacy-surgeries"])
+router = APIRouter(prefix="/api/episodes", tags=["episodes"])
 
 
 @router.post("/", response_model=Surgery, status_code=status.HTTP_201_CREATED)
