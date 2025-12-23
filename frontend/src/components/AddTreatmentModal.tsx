@@ -234,6 +234,14 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
       if (formData.discharge_date) treatment.discharge_date = formData.discharge_date
       if (formData.operation_duration_minutes) treatment.operation_duration_minutes = parseInt(formData.operation_duration_minutes)
       
+      // Calculate length of stay if both dates are present
+      if (formData.admission_date && formData.discharge_date) {
+        const los = calculateLengthOfStay(formData.admission_date, formData.discharge_date)
+        if (los !== null) {
+          treatment.length_of_stay = los
+        }
+      }
+      
       // Intraoperative
       treatment.anesthesia_type = formData.anesthesia_type
       if (formData.blood_loss_ml) treatment.blood_loss_ml = parseInt(formData.blood_loss_ml)
