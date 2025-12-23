@@ -6,7 +6,7 @@ Wants=mongodb.service
 [Service]
 Type=simple
 User=root
-WorkingDirectory=/root
+WorkingDirectory=/root/surg-db
 Environment="PATH=/usr/local/bin:/usr/bin:/bin"
 Environment="MONGODB_URI=mongodb://admin:admin123@localhost:27017/surg_outcomes?authSource=admin"
 Environment="MONGODB_DB_NAME=surg_outcomes"
