@@ -1,0 +1,20 @@
+[Unit]
+Description=Surgical Database Backend API
+After=network.target mongodb.service
+Wants=mongodb.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root
+Environment="PATH=/usr/local/bin:/usr/bin:/bin"
+Environment="MONGODB_URI=mongodb://admin:admin123@localhost:27017/surg_outcomes?authSource=admin"
+Environment="MONGODB_DB_NAME=surg_outcomes"
+ExecStart=/usr/bin/python3 -m uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --log-level info
+Restart=always
+RestartSec=10
+StandardOutput=append:/root/.tmp/backend.log
+StandardError=append:/root/.tmp/backend.log
+
+[Install]
+WantedBy=multi-user.target
