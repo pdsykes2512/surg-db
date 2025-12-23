@@ -7,7 +7,7 @@ from datetime import datetime
 from bson import ObjectId
 
 from ..models.patient import Patient, PatientCreate, PatientUpdate
-from ..database import get_patients_collection, get_surgeries_collection
+from ..database import get_patients_collection, get_episodes_collection
 
 
 router = APIRouter(prefix="/api/patients", tags=["patients"])
@@ -45,7 +45,7 @@ async def create_patient(patient: PatientCreate):
 async def list_patients(skip: int = 0, limit: int = 100):
     """List all patients with pagination"""
     collection = await get_patients_collection()
-    surgeries_collection = await get_surgeries_collection()
+    episodes_collection = await get_episodes_collection()
     
     # Fetch patients
     cursor = collection.find().skip(skip).limit(limit)
@@ -61,7 +61,7 @@ async def list_patients(skip: int = 0, limit: int = 100):
             {"$match": {"patient_id": {"$in": record_numbers}}},
             {"$group": {"_id": "$patient_id", "count": {"$sum": 1}}}
         ]
-        async for doc in surgeries_collection.aggregate(pipeline):
+        async for doc in episodes_collection.aggregate(pipeline):
             episode_counts[doc["_id"]] = doc["count"]
     
     # Convert ObjectId to string and add episode count
