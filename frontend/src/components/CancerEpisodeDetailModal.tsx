@@ -648,7 +648,7 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             {formatDate(treatment.treatment_date)}
                           </td>
-                          <td className="px-6 py-4 text-sm text-gray-900 max-w-xs truncate">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 max-w-xs truncate">
                             {treatment.treatment_type === 'surgery' && treatment.procedure_name ? (
                               treatment.procedure_name
                             ) : treatment.treatment_type === 'chemotherapy' && treatment.regimen ? (
