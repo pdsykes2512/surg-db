@@ -313,6 +313,48 @@ const response = await axios.get(
 ### Self-Annealing Notes
 - **2024-12-23:** Initial implementation complete. XML structure follows COSD v9/v10 spec based on NBOCA mapping directive. All mandatory fields for bowel cancer episodes included. Data completeness checker provides pre-submission validation.
 
+### Export Completeness Issues
+If export shows incomplete data, check that your episodes have these mandatory fields populated:
+
+**Demographics (All patients):**
+- `patient.nhs_number` (CR0010)
+- `patient.demographics.date_of_birth` (CR0100)
+- `patient.demographics.gender` (CR3170)
+- `patient.demographics.ethnicity` (CR0150)
+- `patient.demographics.postcode` (CR0080)
+
+**Diagnosis (All patients):**
+- `episode.cancer_data.diagnosis_date` (CR2030)
+- `episode.cancer_data.icd10_code` (CR0370) - e.g., C18.0, C19, C20
+- `episode.cancer_data.tnm_staging.version` (CR2070) - "7" or "8"
+- `episode.cancer_data.tnm_staging.clinical_t` (CR0520)
+- `episode.cancer_data.tnm_staging.clinical_n` (CR0540)
+- `episode.cancer_data.tnm_staging.clinical_m` (CR0560)
+
+**Surgery (Surgical patients):**
+- `treatment.treatment_date` (CR0710)
+- `treatment.opcs4_code` (CR0720) - e.g., H06, H33
+- `treatment.asa_score` (CR6010) - 1 to 5
+- `treatment.approach` (CR6310) - open/laparoscopic/robotic
+- `treatment.urgency` (CO6000) - elective/urgent/emergency
+
+**Optional but Recommended:**
+- `episode.provider_first_seen` (CR1410) - Organisation code
+- `episode.referral_source` (CR1600)
+- `episode.cns_involved` (CR2050)
+- `episode.mdt_meeting_type` (CR3190)
+- `episode.performance_status` (CR0510)
+- `treatment.provider_organisation` (CR1450)
+- `episode.cancer_data.snomed_morphology_code` (CR6400)
+- `treatment.circumferential_resection_margin` (pCR1150) - for resections
+
+**Pathology (Resection patients):**
+- `episode.cancer_data.tnm_staging.pathological_t` (pCR0910)
+- `episode.cancer_data.tnm_staging.pathological_n` (pCR0920)
+- `episode.cancer_data.tnm_staging.pathological_m` (pCR0930)
+- `episode.cancer_data.lymph_nodes_examined` (pCR0890)
+- `episode.cancer_data.lymph_nodes_positive` (pCR0900)
+
 ## Data Quality Monitoring
 
 ### Completeness Metrics
