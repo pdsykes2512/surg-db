@@ -343,18 +343,36 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Primary Procedure (OPCS-4) *
                 </label>
-                <input
-                  type="text"
-                  value={procedureSearch}
-                  onChange={(e) => {
-                    setProcedureSearch(e.target.value)
-                    setShowProcedureDropdown(true)
-                  }}
-                  onFocus={() => setShowProcedureDropdown(true)}
-                  placeholder="Type to search procedures..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  required
-                />
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={procedureSearch}
+                    onChange={(e) => {
+                      setProcedureSearch(e.target.value)
+                      setShowProcedureDropdown(true)
+                    }}
+                    onFocus={() => setShowProcedureDropdown(true)}
+                    placeholder="Type to search procedures..."
+                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 ${procedureSearch ? 'pr-10' : ''}`}
+                    required
+                  />
+                  {procedureSearch && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setProcedureSearch('')
+                        setFormData({ ...formData, procedure_name: '', opcs4_code: '' })
+                        setShowProcedureDropdown(false)
+                      }}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                      aria-label="Clear procedure"
+                    >
+                      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
                 {showProcedureDropdown && (
                   <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                     {OPCS4_PROCEDURES.filter(proc =>
