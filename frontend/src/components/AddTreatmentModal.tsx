@@ -263,7 +263,6 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
     }
     
     setFormData(updatedFormData)
-    })
   }
 
   const handleSubmit = (e: React.FormEvent) => {
