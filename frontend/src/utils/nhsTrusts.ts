@@ -70,8 +70,9 @@ export function formatTrustName(code: string | undefined | null): string {
 
 /**
  * Get options for SearchableSelect components
+ * Format: "Trust Name (Code)" for better readability
  */
 export const NHS_TRUST_OPTIONS = NHS_TRUSTS.map(trust => ({
   value: trust.code,
-  label: `${trust.code} - ${trust.name}`
+  label: `${trust.name} (${trust.code})`
 }))
