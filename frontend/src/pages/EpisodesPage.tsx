@@ -1,13 +1,22 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { PageHeader } from '../components/PageHeader'
 import { Card } from '../components/Card'
 import { Button } from '../components/Button'
+import { DateInput } from '../components/DateInput'
 import { EpisodeForm } from '../components/EpisodeForm'
+import { CancerEpisodeForm } from '../components/CancerEpisodeForm'
 import { EpisodeDetailModal } from '../components/EpisodeDetailModal'
+import { CancerEpisodeDetailModal } from '../components/CancerEpisodeDetailModal'
 import { ToastContainer } from '../components/Toast'
 import { apiService } from '../services/api'
 import api from '../services/api'
+import { formatDate, formatStatus, formatCancerType, formatSurgeon } from '../utils/formatters'
+
+const capitalize = (str: string) => {
+  if (!str) return ''
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
+}
 
 interface Episode {
   surgery_id: string
@@ -31,23 +40,24 @@ interface Episode {
 export function EpisodesPage() {
   const { patientId } = useParams<{ patientId: string }>()
   const navigate = useNavigate()
+  const location = useLocation()
   const [episodes, setEpisodes] = useState<Episode[]>([])
+  const [cancerEpisodes, setCancerEpisodes] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
+  const [showCancerModal, setShowCancerModal] = useState(false)
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [selectedEpisode, setSelectedEpisode] = useState<Episode | null>(null)
+  const [showCancerDetailModal, setShowCancerDetailModal] = useState(false)
+  const [selectedCancerEpisode, setSelectedCancerEpisode] = useState<any>(null)
+  const [editingCancerEpisode, setEditingCancerEpisode] = useState<any>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [toasts, setToasts] = useState<Array<{ id: string; message: string; type: 'success' | 'error' | 'info' | 'warning' }>>([])
   const [patientInfo, setPatientInfo] = useState<any>(null)
   
   // Filters
-  const [urgencyFilter, setUrgencyFilter] = useState('')
-  const [surgeonFilter, setSurgeonFilter] = useState('')
   const [startDateFilter, setStartDateFilter] = useState('')
   const [endDateFilter, setEndDateFilter] = useState('')
-  const [surgeons, setSurgeons] = useState<any[]>([])
-  const [surgeonSearch, setSurgeonSearch] = useState('')
-  const [showSurgeonDropdown, setShowSurgeonDropdown] = useState(false)
 
   const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' | 'warning' = 'info') => {
     const id = Date.now().toString()
@@ -58,26 +68,6 @@ export function EpisodesPage() {
     setToasts(prev => prev.filter(toast => toast.id !== id))
   }, [])
 
-  // Fetch surgeons list
-  useEffect(() => {
-    const fetchSurgeons = async () => {
-      try {
-        const response = await fetch('http://localhost:8000/api/admin/surgeons', {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        })
-        if (response.ok) {
-          const data = await response.json()
-          setSurgeons(data)
-        }
-      } catch (error) {
-        console.error('Error fetching surgeons:', error)
-      }
-    }
-    fetchSurgeons()
-  }, [])
-
   const loadEpisodes = useCallback(async () => {
     try {
       setLoading(true)
@@ -85,19 +75,25 @@ export function EpisodesPage() {
       if (patientId) {
         params.patient_id = patientId
       }
-      if (urgencyFilter) params.urgency = urgencyFilter
-      if (surgeonFilter) params.primary_surgeon = surgeonFilter
       if (startDateFilter) params.start_date = startDateFilter
       if (endDateFilter) params.end_date = endDateFilter
 
+      // Load episodes from main API (now includes all episode types)
       const response = await apiService.episodes.list(params)
-      setEpisodes(response.data)
+      const allEpisodes = response.data
+      
+      // Separate legacy surgery episodes from cancer episodes
+      const legacyEpisodes = allEpisodes.filter((ep: any) => ep.surgery_id)
+      const cancer = allEpisodes.filter((ep: any) => ep.episode_id && ep.condition_type === 'cancer')
+      
+      setEpisodes(legacyEpisodes)
+      setCancerEpisodes(cancer)
     } catch (error) {
       console.error('Failed to load episodes:', error)
     } finally {
       setLoading(false)
     }
-  }, [patientId, urgencyFilter, surgeonFilter, startDateFilter, endDateFilter])
+  }, [patientId, startDateFilter, endDateFilter])
 
   const loadPatientInfo = useCallback(async () => {
     if (!patientId) return
@@ -117,6 +113,20 @@ export function EpisodesPage() {
     }
   }, [loadEpisodes, patientId, loadPatientInfo])
 
+  // Handle opening edit modal from navigation state
+  useEffect(() => {
+    const state = location.state as { editEpisodeId?: string }
+    if (state?.editEpisodeId && cancerEpisodes.length > 0) {
+      const episode = cancerEpisodes.find(ep => ep.episode_id === state.editEpisodeId)
+      if (episode) {
+        setEditingCancerEpisode(episode)
+        setShowCancerModal(true)
+        // Clear the state to avoid reopening on refresh
+        navigate(location.pathname, { replace: true, state: {} })
+      }
+    }
+  }, [location.state, cancerEpisodes, navigate, location.pathname])
+
   const handleCreate = async (data: any) => {
     try {
       await apiService.episodes.create(data)
@@ -127,6 +137,56 @@ export function EpisodesPage() {
     } catch (error: any) {
       console.error('Failed to create episode:', error)
       showToast(error.response?.data?.detail || 'Failed to create episode', 'error')
+    }
+  }
+
+  const handleCreateCancerEpisode = async (data: any) => {
+    try {
+      console.log('Creating cancer episode with data:', data)
+      
+      const response = await fetch('http://localhost:8000/api/v2/episodes/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify(data)
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        console.error('Server error:', error)
+        
+        // Handle different error formats
+        let errorMessage = 'Failed to create cancer episode'
+        
+        if (typeof error.detail === 'string') {
+          errorMessage = error.detail
+        } else if (Array.isArray(error.detail)) {
+          // Pydantic validation errors
+          errorMessage = error.detail.map((err: any) => 
+            `${err.loc?.join('.') || 'Field'}: ${err.msg}`
+          ).join('\n')
+        } else if (error.detail && typeof error.detail === 'object') {
+          errorMessage = JSON.stringify(error.detail, null, 2)
+        }
+        
+        throw new Error(errorMessage)
+      }
+
+      setShowCancerModal(false)
+      loadEpisodes()
+      showToast('Cancer episode created successfully', 'success')
+    } catch (error: any) {
+      console.error('Failed to create cancer episode:', error)
+      const errorMessage = error.message || 'Failed to create cancer episode'
+      
+      // For multi-line errors, show an alert instead of toast
+      if (errorMessage.includes('\n')) {
+        alert(`Failed to create cancer episode:\n\n${errorMessage}`)
+      } else {
+        showToast(errorMessage, 'error')
+      }
     }
   }
 
@@ -145,6 +205,34 @@ export function EpisodesPage() {
     }
   }
 
+  const handleEditCancerEpisode = async (data: any) => {
+    if (!editingCancerEpisode) return
+    
+    try {
+      const response = await fetch(`http://localhost:8000/api/episodes/${editingCancerEpisode.episode_id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify(data)
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.detail || 'Failed to update cancer episode')
+      }
+
+      setEditingCancerEpisode(null)
+      setShowCancerModal(false)
+      loadEpisodes()
+      showToast('Cancer episode updated successfully', 'success')
+    } catch (error: any) {
+      console.error('Failed to update cancer episode:', error)
+      showToast(error.message || 'Failed to update cancer episode', 'error')
+    }
+  }
+
   const handleDelete = async (surgeryId: string) => {
     if (!confirm('Are you sure you want to delete this episode?')) return
     
@@ -160,28 +248,39 @@ export function EpisodesPage() {
 
   const filteredEpisodes = useMemo(() => {
     return episodes.filter(episode => {
-      if (!searchTerm) return true
-      const search = searchTerm.toLowerCase()
-      return (
-        episode.surgery_id.toLowerCase().includes(search) ||
-        episode.patient_id.toLowerCase().includes(search) ||
-        episode.procedure.primary_procedure.toLowerCase().includes(search) ||
-        episode.team.primary_surgeon.toLowerCase().includes(search)
-      )
+      // Search term filter
+      if (searchTerm) {
+        const search = searchTerm.toLowerCase()
+        const matchesSearch = (
+          episode.surgery_id.toLowerCase().includes(search) ||
+          episode.patient_id.toLowerCase().includes(search) ||
+          episode.procedure.primary_procedure.toLowerCase().includes(search) ||
+          episode.team.primary_surgeon.toLowerCase().includes(search)
+        )
+        if (!matchesSearch) return false
+      }
+
+      return true
     })
   }, [episodes, searchTerm])
 
-  const formatDate = useCallback((dateStr: string) => {
-    try {
-      return new Date(dateStr).toLocaleDateString('en-GB', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric'
-      })
-    } catch {
-      return dateStr
-    }
-  }, [])
+  const filteredCancerEpisodes = useMemo(() => {
+    return cancerEpisodes.filter(episode => {
+      // Search term filter
+      if (searchTerm) {
+        const search = searchTerm.toLowerCase()
+        const matchesSearch = (
+          episode.episode_id.toLowerCase().includes(search) ||
+          episode.patient_id.toLowerCase().includes(search) ||
+          (episode.cancer_type && episode.cancer_type.toLowerCase().includes(search)) ||
+          (episode.lead_clinician && episode.lead_clinician.toLowerCase().includes(search))
+        )
+        if (!matchesSearch) return false
+      }
+
+      return true
+    })
+  }, [cancerEpisodes, searchTerm])
 
   const getUrgencyColor = (urgency: string) => {
     switch (urgency) {
@@ -218,12 +317,9 @@ export function EpisodesPage() {
               )}
               <Button 
                 variant="primary"
-                onClick={() => {
-                  setSelectedEpisode(null)
-                  setShowModal(true)
-                }}
+                onClick={() => setShowCancerModal(true)}
               >
-                + Record Surgery
+                + Cancer Episode
               </Button>
             </div>
           }
@@ -274,125 +370,38 @@ export function EpisodesPage() {
             <h3 className="text-lg font-semibold text-gray-900">Filters</h3>
           </div>
 
-          {/* Search */}
-          <div>
-            <input
-              type="text"
-              placeholder="Search by Surgery ID, Patient ID, Procedure, or Surgeon..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full h-10 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-
-          {/* Filter dropdowns */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Urgency</label>
-              <select
-                value={urgencyFilter}
-                onChange={(e) => setUrgencyFilter(e.target.value)}
-                className="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 appearance-none bg-white"
-              >
-                <option value="">All Urgencies</option>
-                <option value="elective">Elective</option>
-                <option value="urgent">Urgent</option>
-                <option value="emergency">Emergency</option>
-              </select>
-            </div>
-
-            <div className="relative">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Surgeon</label>
+          {/* Search and Date Filters */}
+          <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
+            <div className="md:col-span-4">
               <input
                 type="text"
-                placeholder="Type to search surgeons..."
-                value={surgeonSearch || surgeonFilter}
-                onChange={(e) => {
-                  setSurgeonSearch(e.target.value)
-                  setShowSurgeonDropdown(true)
-                }}
-                onFocus={() => setShowSurgeonDropdown(true)}
-                onBlur={() => setTimeout(() => setShowSurgeonDropdown(false), 200)}
-                className="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                placeholder="Search by Episode ID, Patient ID, Cancer Type, or Clinician..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full h-10 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
-              {showSurgeonDropdown && (
-                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                  <div
-                    onClick={() => {
-                      setSurgeonFilter('')
-                      setSurgeonSearch('')
-                      setShowSurgeonDropdown(false)
-                    }}
-                    className="px-3 py-2 hover:bg-blue-50 cursor-pointer border-b border-gray-100 text-gray-500 italic"
-                  >
-                    All Surgeons
-                  </div>
-                  {surgeons
-                    .filter(surgeon => {
-                      const searchLower = (surgeonSearch || '').toLowerCase()
-                      const fullName = `${surgeon.first_name} ${surgeon.surname}`.toLowerCase()
-                      const reverseName = `${surgeon.surname} ${surgeon.first_name}`.toLowerCase()
-                      return fullName.includes(searchLower) || reverseName.includes(searchLower)
-                    })
-                    .map((surgeon) => (
-                      <div
-                        key={surgeon._id}
-                        onClick={() => {
-                          const surgeonName = `${surgeon.first_name} ${surgeon.surname}`
-                          setSurgeonFilter(surgeonName)
-                          setSurgeonSearch('')
-                          setShowSurgeonDropdown(false)
-                        }}
-                        className="px-3 py-2 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0"
-                      >
-                        <div className="font-medium text-gray-900">
-                          {surgeon.surname}, {surgeon.first_name}
-                        </div>
-                        {surgeon.gmc_number && (
-                          <div className="text-xs text-gray-500">GMC: {surgeon.gmc_number}</div>
-                        )}
-                      </div>
-                    ))}
-                  {surgeons.filter(surgeon => {
-                    const searchLower = (surgeonSearch || '').toLowerCase()
-                    const fullName = `${surgeon.first_name} ${surgeon.surname}`.toLowerCase()
-                    const reverseName = `${surgeon.surname} ${surgeon.first_name}`.toLowerCase()
-                    return fullName.includes(searchLower) || reverseName.includes(searchLower)
-                  }).length === 0 && (
-                    <div className="px-3 py-2 text-sm text-gray-500">No surgeons found</div>
-                  )}
-                </div>
-              )}
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-              <input
-                type="date"
+            <div className="md:col-span-1.5">
+              <DateInput
                 value={startDateFilter}
                 onChange={(e) => setStartDateFilter(e.target.value)}
-                className="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-              <input
-                type="date"
+            <div className="md:col-span-1.5">
+              <DateInput
                 value={endDateFilter}
                 onChange={(e) => setEndDateFilter(e.target.value)}
-                className="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>
 
-          {(urgencyFilter || surgeonFilter || startDateFilter || endDateFilter) && (
+          {(startDateFilter || endDateFilter) && (
             <div className="flex justify-end">
               <Button
                 variant="secondary"
                 onClick={() => {
-                  setUrgencyFilter('')
-                  setSurgeonFilter('')
                   setStartDateFilter('')
                   setEndDateFilter('')
                 }}
@@ -410,28 +419,17 @@ export function EpisodesPage() {
           <div className="flex items-center justify-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
           </div>
-        ) : filteredEpisodes.length === 0 ? (
+        ) : filteredEpisodes.length === 0 && filteredCancerEpisodes.length === 0 ? (
           <div className="text-center py-12">
             <svg className="mx-auto w-16 h-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
             <h3 className="text-lg font-medium text-gray-900 mb-2">No Episode Records</h3>
-            <p className="text-gray-500 mb-4">
-              {searchTerm || urgencyFilter || surgeonFilter || startDateFilter || endDateFilter
+            <p className="text-gray-500">
+              {searchTerm || startDateFilter || endDateFilter
                 ? 'No episodes match your search criteria'
-                : 'Begin tracking surgical outcomes by recording your first surgery'}
+                : 'No episodes recorded yet'}
             </p>
-            {!searchTerm && !urgencyFilter && !surgeonFilter && !startDateFilter && !endDateFilter && (
-              <Button 
-                variant="primary"
-                onClick={() => {
-                  setSelectedEpisode(null)
-                  setShowModal(true)
-                }}
-              >
-                Record Your First Surgery
-              </Button>
-            )}
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -439,7 +437,10 @@ export function EpisodesPage() {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Surgery ID
+                    Episode ID
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Type
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Patient ID
@@ -448,13 +449,10 @@ export function EpisodesPage() {
                     Date
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Procedure
+                    Clinician
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Surgeon
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Urgency
+                    Status
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
@@ -462,10 +460,76 @@ export function EpisodesPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
+                {/* Cancer Episodes */}
+                {filteredCancerEpisodes.map((episode) => (
+                  <tr 
+                    key={episode.episode_id} 
+                    onClick={() => {
+                      setSelectedCancerEpisode(episode)
+                      setShowCancerDetailModal(true)
+                    }}
+                    className="hover:bg-blue-50 cursor-pointer transition-colors"
+                  >
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {episode.episode_id}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                        {formatCancerType(episode.cancer_type)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {episode.patient_id}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {formatDate(episode.referral_date)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {formatSurgeon(episode.lead_clinician)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                        episode.episode_status === 'active' ? 'bg-blue-100 text-blue-800' :
+                        episode.episode_status === 'completed' ? 'bg-gray-100 text-gray-800' :
+                        'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {formatStatus(episode.episode_status)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setEditingCancerEpisode(episode)
+                            setShowCancerModal(true)
+                          }}
+                          className="text-blue-600 hover:text-blue-900"
+                          title="Edit episode"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>                      </div>
+                    </td>
+                  </tr>
+                ))}
+                
+                {/* Legacy Surgery Episodes */}
                 {filteredEpisodes.map((episode) => (
-                  <tr key={episode.surgery_id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
+                  <tr key={episode.surgery_id} className="hover:bg-blue-50 transition-colors cursor-pointer"
+                    onClick={() => {
+                      setSelectedEpisode(episode)
+                      setShowModal(true)
+                    }}
+                  >
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {episode.surgery_id}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                        Surgery
+                      </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {episode.patient_id}
@@ -473,15 +537,12 @@ export function EpisodesPage() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {formatDate(episode.perioperative_timeline.surgery_date)}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-900 max-w-xs truncate">
-                      {episode.procedure.primary_procedure}
-                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {episode.team.primary_surgeon}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getUrgencyColor(episode.classification.urgency)}`}>
-                        {episode.classification.urgency}
+                        {capitalize(episode.classification.urgency)}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -567,6 +628,34 @@ export function EpisodesPage() {
             setShowDetailModal(false)
             setShowModal(true)
           }}
+        />
+      )}
+
+      {/* Cancer Episode Detail Modal */}
+      {showCancerDetailModal && selectedCancerEpisode && (
+        <CancerEpisodeDetailModal
+          episode={selectedCancerEpisode}
+          onClose={() => {
+            setShowCancerDetailModal(false)
+            setSelectedCancerEpisode(null)
+          }}
+          onEdit={(episode) => {
+            setEditingCancerEpisode(episode)
+            setShowCancerModal(true)
+          }}
+        />
+      )}
+
+      {/* Cancer Episode Modal */}
+      {showCancerModal && (
+        <CancerEpisodeForm
+          onSubmit={editingCancerEpisode ? handleEditCancerEpisode : handleCreateCancerEpisode}
+          onCancel={() => {
+            setShowCancerModal(false)
+            setEditingCancerEpisode(null)
+          }}
+          mode={editingCancerEpisode ? 'edit' : 'create'}
+          initialData={editingCancerEpisode || (patientId ? { patient_id: patientId } : undefined)}
         />
       )}
       </div>

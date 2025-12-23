@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { HomePage } from './pages/HomePage'
 import { PatientsPage } from './pages/PatientsPage'
-import { CancerEpisodesPage } from './pages/CancerEpisodesPage'
+import { EpisodesPage } from './pages/EpisodesPage'
 import { ReportsPage } from './pages/ReportsPage'
 import { LoginPage } from './pages/LoginPage'
 import { AdminPage } from './pages/AdminPage'
@@ -39,7 +39,7 @@ function App() {
           element={
             <ProtectedRoute requiredRoles={['data_entry', 'surgeon', 'admin']}>
               <Layout>
-                <CancerEpisodesPage />
+                <EpisodesPage />
               </Layout>
             </ProtectedRoute>
           }
@@ -49,7 +49,7 @@ function App() {
           element={
             <ProtectedRoute requiredRoles={['data_entry', 'surgeon', 'admin']}>
               <Layout>
-                <CancerEpisodesPage />
+                <EpisodesPage />
               </Layout>
             </ProtectedRoute>
           }
