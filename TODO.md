@@ -70,6 +70,10 @@
 - ✅ Add surgeon performance analytics (aggregated)
 - ✅ Export reports to PDF/Excel
 - ✅ Add NBOCA-specific reports (30-day mortality, anastomotic leak rates, conversion rates)
+- ✅ Add return to theatre (RTT) tracking to surgeon performance table
+- ✅ Implement yearly breakdown of outcomes (2023-2025) across all metrics
+- ✅ Add color-coding to yearly metrics for quick visual assessment
+- ✅ Fix RTT data quality from CSV source (1.6% rate verified)
 
 ### Data Validation & Quality
 - ✅ Add comprehensive form validation on frontend
@@ -79,6 +83,9 @@
 - ✅ Add ICD-10 code lookup/validation (63 codes with API endpoints)
 - ✅ Add OPCS-4 code lookup/validation (126 codes with API endpoints)
 - ✅ Validate COSD mandatory fields
+- ✅ Fix RTT data from CSV source using NHS number matching (execution/fix_rtt_from_csv.py)
+- ✅ Create data migration guide for reproducible fixes (DATABASE_MIGRATION_SUMMARY.md)
+- [ ] Update DATA_MIGRATION_GUIDE.md with fix_rtt_from_csv.py script details
 
 ## Medium Priority
 
@@ -156,4 +163,4 @@
 - Authentication: JWT with 4 roles (admin, surgeon, data_entry, viewer)
 
 ---
-Last Updated: December 21, 2025
+Last Updated: December 24, 2025
