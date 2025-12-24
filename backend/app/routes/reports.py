@@ -13,7 +13,7 @@ router = APIRouter(prefix="/api/reports", tags=["reports"])
 
 @router.get("/summary")
 async def get_summary_report() -> Dict[str, Any]:
-    """Get overall surgical outcome statistics from treatments"""
+    """Get overall surgical outcome statistics from treatments with yearly breakdown"""
     db = Database.get_database()
     treatments_collection = db.treatments
     
@@ -21,44 +21,79 @@ async def get_summary_report() -> Dict[str, Any]:
     all_treatments = await treatments_collection.find({"treatment_type": "surgery"}).to_list(length=None)
     total_surgeries = len(all_treatments)
     
-    if total_surgeries == 0:
+    # Helper function to calculate metrics for a list of treatments
+    def calculate_metrics(treatments):
+        if not treatments:
+            return {
+                "total_surgeries": 0,
+                "complication_rate": 0,
+                "readmission_rate": 0,
+                "mortality_30d_rate": 0,
+                "mortality_90d_rate": 0,
+                "return_to_theatre_rate": 0,
+                "escalation_rate": 0,
+                "median_length_of_stay_days": 0
+            }
+        
+        total = len(treatments)
+        surgeries_with_complications = sum(1 for t in treatments if t.get('complications'))
+        readmissions = sum(1 for t in treatments if t.get('readmission_30d'))
+        mortality_30d_count = sum(1 for t in treatments if t.get('mortality_30d'))
+        mortality_90d_count = sum(1 for t in treatments if t.get('mortality_90d'))
+        return_to_theatre = sum(1 for t in treatments if t.get('return_to_theatre'))
+        escalation_of_care = sum(1 for t in treatments if t.get('icu_admission'))
+        
+        # Calculate median length of stay
+        los_values = [t.get('length_of_stay') for t in treatments if t.get('length_of_stay') is not None]
+        if los_values:
+            sorted_los = sorted(los_values)
+            n = len(sorted_los)
+            median_los = sorted_los[n // 2] if n % 2 == 1 else (sorted_los[n // 2 - 1] + sorted_los[n // 2]) / 2
+        else:
+            median_los = 0
+        
         return {
-            "total_surgeries": 0,
-            "complication_rate": 0,
-            "readmission_rate": 0,
-            "mortality_30d_rate": 0,
-            "mortality_90d_rate": 0,
-            "return_to_theatre_rate": 0,
-            "escalation_rate": 0,
-            "avg_length_of_stay_days": 0,
-            "urgency_breakdown": {},
-            "generated_at": datetime.utcnow().isoformat()
+            "total_surgeries": total,
+            "complication_rate": round((surgeries_with_complications / total * 100), 2),
+            "readmission_rate": round((readmissions / total * 100), 2),
+            "mortality_30d_rate": round((mortality_30d_count / total * 100), 2),
+            "mortality_90d_rate": round((mortality_90d_count / total * 100), 2),
+            "return_to_theatre_rate": round((return_to_theatre / total * 100), 2),
+            "escalation_rate": round((escalation_of_care / total * 100), 2),
+            "median_length_of_stay_days": round(median_los, 2)
         }
     
-    # Calculate metrics - using flat structure from AddTreatmentModal
-    surgeries_with_complications = sum(1 for t in all_treatments if t.get('complications'))
-    readmissions = sum(1 for t in all_treatments if t.get('readmission_30d'))
-    mortality_30d_count = sum(1 for t in all_treatments if t.get('mortality_30d'))
-    mortality_90d_count = sum(1 for t in all_treatments if t.get('mortality_90d'))
-    return_to_theatre = sum(1 for t in all_treatments if t.get('return_to_theatre'))
-    escalation_of_care = sum(1 for t in all_treatments if t.get('icu_admission'))
+    # Split treatments by year
+    from dateutil import parser as date_parser
+    treatments_2023 = []
+    treatments_2024 = []
+    treatments_2025 = []
     
-    # Calculate rates
-    complication_rate = (surgeries_with_complications / total_surgeries * 100) if total_surgeries > 0 else 0
-    readmission_rate = (readmissions / total_surgeries * 100) if total_surgeries > 0 else 0
-    mortality_30d_rate = (mortality_30d_count / total_surgeries * 100) if total_surgeries > 0 else 0
-    mortality_90d_rate = (mortality_90d_count / total_surgeries * 100) if total_surgeries > 0 else 0
-    return_to_theatre_rate = (return_to_theatre / total_surgeries * 100) if total_surgeries > 0 else 0
-    escalation_rate = (escalation_of_care / total_surgeries * 100) if total_surgeries > 0 else 0
+    for t in all_treatments:
+        treatment_date = t.get('treatment_date')
+        if treatment_date:
+            try:
+                if isinstance(treatment_date, str):
+                    dt = date_parser.parse(treatment_date)
+                else:
+                    dt = treatment_date
+                
+                if dt.year == 2023:
+                    treatments_2023.append(t)
+                elif dt.year == 2024:
+                    treatments_2024.append(t)
+                elif dt.year == 2025:
+                    treatments_2025.append(t)
+            except:
+                pass
     
-    # Calculate median length of stay - using flat field
-    los_values = [t.get('length_of_stay') for t in all_treatments if t.get('length_of_stay') is not None]
-    if los_values:
-        sorted_los = sorted(los_values)
-        n = len(sorted_los)
-        median_length_of_stay = sorted_los[n // 2] if n % 2 == 1 else (sorted_los[n // 2 - 1] + sorted_los[n // 2]) / 2
-    else:
-        median_length_of_stay = 0
+    # Calculate overall metrics
+    overall_metrics = calculate_metrics(all_treatments)
+    
+    # Calculate yearly metrics
+    metrics_2023 = calculate_metrics(treatments_2023)
+    metrics_2024 = calculate_metrics(treatments_2024)
+    metrics_2025 = calculate_metrics(treatments_2025)
     
     # Urgency breakdown - using flat field
     urgency_breakdown = {}
@@ -67,15 +102,13 @@ async def get_summary_report() -> Dict[str, Any]:
         urgency_breakdown[urgency] = urgency_breakdown.get(urgency, 0) + 1
     
     return {
-        "total_surgeries": total_surgeries,
-        "complication_rate": round(complication_rate, 2),
-        "readmission_rate": round(readmission_rate, 2),
-        "mortality_30d_rate": round(mortality_30d_rate, 2),
-        "mortality_90d_rate": round(mortality_90d_rate, 2),
-        "return_to_theatre_rate": round(return_to_theatre_rate, 2),
-        "escalation_rate": round(escalation_rate, 2),
-        "median_length_of_stay_days": round(median_length_of_stay, 2),
+        **overall_metrics,
         "urgency_breakdown": urgency_breakdown,
+        "yearly_breakdown": {
+            "2023": metrics_2023,
+            "2024": metrics_2024,
+            "2025": metrics_2025
+        },
         "generated_at": datetime.utcnow().isoformat()
     }
 
@@ -207,6 +240,7 @@ async def get_surgeon_performance() -> Dict[str, Any]:
             'total_surgeries': total,
             'complication_rate': round((stats['surgeries_with_complications'] / total * 100) if total > 0 else 0, 2),
             'readmission_rate': round((stats['readmissions'] / total * 100) if total > 0 else 0, 2),
+            'return_to_theatre_rate': round((stats['return_to_theatre_count'] / total * 100) if total > 0 else 0, 2),
             'mortality_30d_rate': round((stats['mortality_30day'] / total * 100) if total > 0 else 0, 2),
             'mortality_90d_rate': round((stats['mortality_90day'] / total * 100) if total > 0 else 0, 2),
             'median_duration': median_duration,

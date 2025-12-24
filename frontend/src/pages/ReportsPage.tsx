@@ -157,7 +157,7 @@ export function ReportsPage() {
 
   // For outcomes: lower is better
   // Based on published NBOCA and colorectal surgery benchmarks
-  const getOutcomeColor = (rate: number, metric: 'complication' | 'readmission' | 'mortality') => {
+  const getOutcomeColor = (rate: number, metric: 'complication' | 'readmission' | 'mortality' | 'return_to_theatre') => {
     if (metric === 'complication') {
       // Complications: <15% excellent, 15-25% acceptable, >25% concerning
       if (rate < 15) return 'text-green-600 bg-green-100'
@@ -168,11 +168,38 @@ export function ReportsPage() {
       if (rate < 8) return 'text-green-600 bg-green-100'
       if (rate < 12) return 'text-yellow-600 bg-yellow-100'
       return 'text-red-600 bg-red-100'
+    } else if (metric === 'return_to_theatre') {
+      // Return to theatre: <5% excellent, 5-10% acceptable, >10% concerning
+      if (rate < 5) return 'text-green-600 bg-green-100'
+      if (rate < 10) return 'text-yellow-600 bg-yellow-100'
+      return 'text-red-600 bg-red-100'
     } else {
       // 30-day mortality: <2% excellent, 2-5% acceptable, >5% concerning
       if (rate < 2) return 'text-green-600 bg-green-100'
       if (rate < 5) return 'text-yellow-600 bg-yellow-100'
       return 'text-red-600 bg-red-100'
+    }
+  }
+
+  // Text-only color for yearly breakdown (no background)
+  const getYearlyTextColor = (rate: number, metric: 'complication' | 'readmission' | 'mortality' | 'return_to_theatre') => {
+    if (metric === 'complication') {
+      if (rate < 15) return 'text-green-600'
+      if (rate < 25) return 'text-yellow-600'
+      return 'text-red-600'
+    } else if (metric === 'readmission') {
+      if (rate < 8) return 'text-green-600'
+      if (rate < 12) return 'text-yellow-600'
+      return 'text-red-600'
+    } else if (metric === 'return_to_theatre') {
+      if (rate < 5) return 'text-green-600'
+      if (rate < 10) return 'text-yellow-600'
+      return 'text-red-600'
+    } else {
+      // mortality
+      if (rate < 2) return 'text-green-600'
+      if (rate < 5) return 'text-yellow-600'
+      return 'text-red-600'
     }
   }
 
@@ -253,6 +280,22 @@ export function ReportsPage() {
             <Card className="p-6">
               <h3 className="text-sm font-medium text-gray-500">Total Resections</h3>
               <p className="mt-2 text-3xl font-bold text-gray-900">{summary.total_surgeries}</p>
+              {summary.yearly_breakdown && (
+                <div className="mt-3 pt-3 border-t border-gray-200 text-xs text-gray-600 space-y-1">
+                  <div className="flex justify-between">
+                    <span>2025:</span>
+                    <span className="font-semibold">{summary.yearly_breakdown['2025']?.total_surgeries || 0}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>2024:</span>
+                    <span className="font-semibold">{summary.yearly_breakdown['2024']?.total_surgeries || 0}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>2023:</span>
+                    <span className="font-semibold">{summary.yearly_breakdown['2023']?.total_surgeries || 0}</span>
+                  </div>
+                </div>
+              )}
             </Card>
 
             <Card className="p-6">
@@ -264,6 +307,40 @@ export function ReportsPage() {
                       : summary.median_length_of_stay_days.toFixed(1))
                   : 'N/A'} days
               </p>
+              {summary.yearly_breakdown && (
+                <div className="mt-3 pt-3 border-t border-gray-200 text-xs text-gray-600 space-y-1">
+                  <div className="flex justify-between">
+                    <span>2025:</span>
+                    <span className="font-semibold">
+                      {summary.yearly_breakdown['2025']?.median_length_of_stay_days 
+                        ? (summary.yearly_breakdown['2025'].median_length_of_stay_days % 1 === 0
+                            ? summary.yearly_breakdown['2025'].median_length_of_stay_days.toFixed(0)
+                            : summary.yearly_breakdown['2025'].median_length_of_stay_days.toFixed(1))
+                        : '0'} days
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>2024:</span>
+                    <span className="font-semibold">
+                      {summary.yearly_breakdown['2024']?.median_length_of_stay_days 
+                        ? (summary.yearly_breakdown['2024'].median_length_of_stay_days % 1 === 0
+                            ? summary.yearly_breakdown['2024'].median_length_of_stay_days.toFixed(0)
+                            : summary.yearly_breakdown['2024'].median_length_of_stay_days.toFixed(1))
+                        : '0'} days
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>2023:</span>
+                    <span className="font-semibold">
+                      {summary.yearly_breakdown['2023']?.median_length_of_stay_days 
+                        ? (summary.yearly_breakdown['2023'].median_length_of_stay_days % 1 === 0
+                            ? summary.yearly_breakdown['2023'].median_length_of_stay_days.toFixed(0)
+                            : summary.yearly_breakdown['2023'].median_length_of_stay_days.toFixed(1))
+                        : '0'} days
+                    </span>
+                  </div>
+                </div>
+              )}
             </Card>
 
             <Card className={`p-6 border-2 ${getOutcomeCardColor(summary.readmission_rate, 'readmission')}`}>
@@ -271,6 +348,22 @@ export function ReportsPage() {
               <p className={`mt-2 text-3xl font-bold ${getOutcomeTextColor(summary.readmission_rate, 'readmission')}`}>
                 {summary.readmission_rate.toFixed(1)}%
               </p>
+              {summary.yearly_breakdown && (
+                <div className="mt-3 pt-3 border-t border-gray-200 text-xs text-gray-600 space-y-1">
+                  <div className="flex justify-between">
+                    <span>2025:</span>
+                    <span className={`font-semibold ${getYearlyTextColor(summary.yearly_breakdown['2025']?.readmission_rate || 0, 'readmission')}`}>{summary.yearly_breakdown['2025']?.readmission_rate?.toFixed(1) || '0.0'}%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>2024:</span>
+                    <span className={`font-semibold ${getYearlyTextColor(summary.yearly_breakdown['2024']?.readmission_rate || 0, 'readmission')}`}>{summary.yearly_breakdown['2024']?.readmission_rate?.toFixed(1) || '0.0'}%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>2023:</span>
+                    <span className={`font-semibold ${getYearlyTextColor(summary.yearly_breakdown['2023']?.readmission_rate || 0, 'readmission')}`}>{summary.yearly_breakdown['2023']?.readmission_rate?.toFixed(1) || '0.0'}%</span>
+                  </div>
+                </div>
+              )}
             </Card>
 
             <Card className={`p-6 border-2 ${getOutcomeCardColor(summary.escalation_rate, 'complication')}`}>
@@ -278,6 +371,22 @@ export function ReportsPage() {
               <p className={`mt-2 text-3xl font-bold ${getOutcomeTextColor(summary.escalation_rate, 'complication')}`}>
                 {summary.escalation_rate.toFixed(1)}%
               </p>
+              {summary.yearly_breakdown && (
+                <div className="mt-3 pt-3 border-t border-gray-200 text-xs text-gray-600 space-y-1">
+                  <div className="flex justify-between">
+                    <span>2025:</span>
+                    <span className={`font-semibold ${getYearlyTextColor(summary.yearly_breakdown['2025']?.escalation_rate || 0, 'complication')}`}>{summary.yearly_breakdown['2025']?.escalation_rate?.toFixed(1) || '0.0'}%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>2024:</span>
+                    <span className={`font-semibold ${getYearlyTextColor(summary.yearly_breakdown['2024']?.escalation_rate || 0, 'complication')}`}>{summary.yearly_breakdown['2024']?.escalation_rate?.toFixed(1) || '0.0'}%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>2023:</span>
+                    <span className={`font-semibold ${getYearlyTextColor(summary.yearly_breakdown['2023']?.escalation_rate || 0, 'complication')}`}>{summary.yearly_breakdown['2023']?.escalation_rate?.toFixed(1) || '0.0'}%</span>
+                  </div>
+                </div>
+              )}
             </Card>
 
             <Card className={`p-6 border-2 ${getOutcomeCardColor(summary.complication_rate, 'complication')}`}>
@@ -285,6 +394,22 @@ export function ReportsPage() {
               <p className={`mt-2 text-3xl font-bold ${getOutcomeTextColor(summary.complication_rate, 'complication')}`}>
                 {summary.complication_rate.toFixed(1)}%
               </p>
+              {summary.yearly_breakdown && (
+                <div className="mt-3 pt-3 border-t border-gray-200 text-xs text-gray-600 space-y-1">
+                  <div className="flex justify-between">
+                    <span>2025:</span>
+                    <span className={`font-semibold ${getYearlyTextColor(summary.yearly_breakdown['2025']?.complication_rate || 0, 'complication')}`}>{summary.yearly_breakdown['2025']?.complication_rate?.toFixed(1) || '0.0'}%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>2024:</span>
+                    <span className={`font-semibold ${getYearlyTextColor(summary.yearly_breakdown['2024']?.complication_rate || 0, 'complication')}`}>{summary.yearly_breakdown['2024']?.complication_rate?.toFixed(1) || '0.0'}%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>2023:</span>
+                    <span className={`font-semibold ${getYearlyTextColor(summary.yearly_breakdown['2023']?.complication_rate || 0, 'complication')}`}>{summary.yearly_breakdown['2023']?.complication_rate?.toFixed(1) || '0.0'}%</span>
+                  </div>
+                </div>
+              )}
             </Card>
 
             <Card className={`p-6 border-2 ${getOutcomeCardColor(summary.return_to_theatre_rate, 'complication')}`}>
@@ -292,6 +417,22 @@ export function ReportsPage() {
               <p className={`mt-2 text-3xl font-bold ${getOutcomeTextColor(summary.return_to_theatre_rate, 'complication')}`}>
                 {summary.return_to_theatre_rate.toFixed(1)}%
               </p>
+              {summary.yearly_breakdown && (
+                <div className="mt-3 pt-3 border-t border-gray-200 text-xs text-gray-600 space-y-1">
+                  <div className="flex justify-between">
+                    <span>2025:</span>
+                    <span className={`font-semibold ${getYearlyTextColor(summary.yearly_breakdown['2025']?.return_to_theatre_rate || 0, 'return_to_theatre')}`}>{summary.yearly_breakdown['2025']?.return_to_theatre_rate?.toFixed(1) || '0.0'}%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>2024:</span>
+                    <span className={`font-semibold ${getYearlyTextColor(summary.yearly_breakdown['2024']?.return_to_theatre_rate || 0, 'return_to_theatre')}`}>{summary.yearly_breakdown['2024']?.return_to_theatre_rate?.toFixed(1) || '0.0'}%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>2023:</span>
+                    <span className={`font-semibold ${getYearlyTextColor(summary.yearly_breakdown['2023']?.return_to_theatre_rate || 0, 'return_to_theatre')}`}>{summary.yearly_breakdown['2023']?.return_to_theatre_rate?.toFixed(1) || '0.0'}%</span>
+                  </div>
+                </div>
+              )}
             </Card>
 
             <Card className={`p-6 border-2 ${getOutcomeCardColor(summary.mortality_30d_rate, 'mortality')}`}>
@@ -299,6 +440,22 @@ export function ReportsPage() {
               <p className={`mt-2 text-3xl font-bold ${getOutcomeTextColor(summary.mortality_30d_rate, 'mortality')}`}>
                 {summary.mortality_30d_rate.toFixed(1)}%
               </p>
+              {summary.yearly_breakdown && (
+                <div className="mt-3 pt-3 border-t border-gray-200 text-xs text-gray-600 space-y-1">
+                  <div className="flex justify-between">
+                    <span>2025:</span>
+                    <span className={`font-semibold ${getYearlyTextColor(summary.yearly_breakdown['2025']?.mortality_30d_rate || 0, 'mortality')}`}>{summary.yearly_breakdown['2025']?.mortality_30d_rate?.toFixed(1) || '0.0'}%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>2024:</span>
+                    <span className={`font-semibold ${getYearlyTextColor(summary.yearly_breakdown['2024']?.mortality_30d_rate || 0, 'mortality')}`}>{summary.yearly_breakdown['2024']?.mortality_30d_rate?.toFixed(1) || '0.0'}%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>2023:</span>
+                    <span className={`font-semibold ${getYearlyTextColor(summary.yearly_breakdown['2023']?.mortality_30d_rate || 0, 'mortality')}`}>{summary.yearly_breakdown['2023']?.mortality_30d_rate?.toFixed(1) || '0.0'}%</span>
+                  </div>
+                </div>
+              )}
             </Card>
 
             <Card className={`p-6 border-2 ${getOutcomeCardColor(summary.mortality_90d_rate, 'mortality')}`}>
@@ -306,6 +463,22 @@ export function ReportsPage() {
               <p className={`mt-2 text-3xl font-bold ${getOutcomeTextColor(summary.mortality_90d_rate, 'mortality')}`}>
                 {summary.mortality_90d_rate.toFixed(1)}%
               </p>
+              {summary.yearly_breakdown && (
+                <div className="mt-3 pt-3 border-t border-gray-200 text-xs text-gray-600 space-y-1">
+                  <div className="flex justify-between">
+                    <span>2025:</span>
+                    <span className={`font-semibold ${getYearlyTextColor(summary.yearly_breakdown['2025']?.mortality_90d_rate || 0, 'mortality')}`}>{summary.yearly_breakdown['2025']?.mortality_90d_rate?.toFixed(1) || '0.0'}%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>2024:</span>
+                    <span className={`font-semibold ${getYearlyTextColor(summary.yearly_breakdown['2024']?.mortality_90d_rate || 0, 'mortality')}`}>{summary.yearly_breakdown['2024']?.mortality_90d_rate?.toFixed(1) || '0.0'}%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>2023:</span>
+                    <span className={`font-semibold ${getYearlyTextColor(summary.yearly_breakdown['2023']?.mortality_90d_rate || 0, 'mortality')}`}>{summary.yearly_breakdown['2023']?.mortality_90d_rate?.toFixed(1) || '0.0'}%</span>
+                  </div>
+                </div>
+              )}
             </Card>
           </div>
 
@@ -345,6 +518,9 @@ export function ReportsPage() {
                         Readmission Rate
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        RTT
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                         30d Mortality
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
@@ -375,6 +551,11 @@ export function ReportsPage() {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`text-sm font-semibold px-2 py-1 rounded ${getOutcomeColor(surgeon.readmission_rate, 'readmission')}`}>
                             {surgeon.readmission_rate.toFixed(1)}%
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`text-sm font-semibold px-2 py-1 rounded ${getOutcomeColor(surgeon.return_to_theatre_rate, 'return_to_theatre')}`}>
+                            {surgeon.return_to_theatre_rate.toFixed(1)}%
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
