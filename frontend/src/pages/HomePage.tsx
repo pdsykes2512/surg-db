@@ -160,17 +160,14 @@ export function HomePage() {
                     {/* Surgery Treatments */}
                     <div>
                       <div className="text-xs font-medium text-gray-700 mb-1">Surgery</div>
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="text-center">
                         {stats.treatmentBreakdown
                           .filter(item => item.treatment_type === 'surgery')
                           .map((item, idx) => (
-                            <div key={idx} className="text-center">
-                              <div className="text-xs text-gray-500 capitalize">{item.treatment_type}</div>
-                              <div className="text-lg font-semibold text-gray-900">{item.count}</div>
-                            </div>
+                            <div key={idx} className="text-lg font-semibold text-gray-900">{item.count}</div>
                           ))}
                         {stats.treatmentBreakdown.filter(item => item.treatment_type === 'surgery').length === 0 && (
-                          <div className="text-center col-span-2 text-sm text-gray-400">No surgical treatments</div>
+                          <div className="text-sm text-gray-400">None</div>
                         )}
                       </div>
                     </div>
