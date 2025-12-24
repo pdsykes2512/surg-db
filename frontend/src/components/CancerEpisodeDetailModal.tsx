@@ -1114,60 +1114,74 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
 
           {/* Investigations Tab */}
           {activeTab === 'investigations' && (
-            <div>
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-semibold text-gray-900">
-                  Investigations & Imaging
+            <div className="bg-white rounded-lg border">
+              <div className="px-6 py-4 border-b flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Investigations & Imaging ({investigations.length})
                 </h3>
-                <Button 
+                <button
                   onClick={() => setShowInvestigationModal(true)}
-                  size="sm"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
                 >
                   + Add Investigation
-                </Button>
+                </button>
               </div>
 
-              {investigations.length === 0 ? (
-                <div className="text-center py-12 bg-gray-50 rounded-lg">
-                  <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  <p className="mt-2 text-sm text-gray-500">No investigations recorded</p>
-                  <p className="text-xs text-gray-400">Add imaging, endoscopy, or laboratory investigations</p>
+              {loading ? (
+                <div className="p-8 text-center text-gray-500">Loading investigations...</div>
+              ) : investigations.length === 0 ? (
+                <div className="p-8 text-center text-gray-500">
+                  <p className="mb-2">No investigations recorded yet</p>
+                  <p className="text-sm">Add imaging, endoscopy, or laboratory investigations</p>
                 </div>
               ) : (
-                <div className="overflow-x-auto border rounded-lg">
+                <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Investigation</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Result</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Date
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Type
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Investigation
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Result
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Actions
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                       {investigations.map((inv) => (
-                        <tr key={inv.investigation_id} className="hover:bg-gray-50">
+                        <tr key={inv.investigation_id} className="hover:bg-blue-50 cursor-pointer transition-colors">
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {inv.date ? formatDate(inv.date) : 'Not recorded'}
+                            {inv.date ? formatDate(inv.date) : '—'}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                              inv.type === 'imaging' ? 'bg-blue-100 text-blue-800' :
+                              inv.type === 'endoscopy' ? 'bg-green-100 text-green-800' :
+                              'bg-purple-100 text-purple-800'
+                            }`}>
                               {capitalize(inv.type)}
                             </span>
                           </td>
                           <td className="px-6 py-4 text-sm text-gray-900">
-                            {inv.subtype.split('_').map(w => capitalize(w)).join(' ')}
+                            {inv.subtype.split('_').map((w: string) => capitalize(w)).join(' ')}
                           </td>
                           <td className="px-6 py-4 text-sm text-gray-900">
-                            {inv.result || 'Pending'}
+                            {inv.result || '—'}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             <div className="flex space-x-2">
                               <button
-                                onClick={() => {
+                                onClick={(e) => {
+                                  e.stopPropagation()
                                   setEditingInvestigation(inv)
                                   setShowInvestigationModal(true)
                                 }}
