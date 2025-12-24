@@ -12,6 +12,7 @@ export function HomePage() {
   const [stats, setStats] = useState({
     totalPatients: 0,
     totalEpisodes: 0,
+    treatmentBreakdown: [] as { treatment_type: string, count: number }[],
     monthlyEpisodes: [] as { month: string, count: number }[],
     loading: true
   })
@@ -21,13 +22,15 @@ export function HomePage() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const [patientsCountRes, episodesCountRes] = await Promise.all([
+        const [patientsCountRes, episodesCountRes, treatmentBreakdownRes] = await Promise.all([
           api.get('/patients/count'),
-          api.get('/episodes/count')
+          api.get('/episodes/count'),
+          api.get('/episodes/treatment-breakdown')
         ])
         
         const totalPatients = patientsCountRes.data.count
         const totalEpisodes = episodesCountRes.data.count
+        const treatmentBreakdown = treatmentBreakdownRes.data.breakdown || []
         
         // Get all episodes to calculate monthly counts for past 4 months
         const episodesRes = await api.get('/episodes')
@@ -52,6 +55,7 @@ export function HomePage() {
         setStats({
           totalPatients,
           totalEpisodes,
+          treatmentBreakdown,
           monthlyEpisodes: monthlyData,
           loading: false
         })
@@ -150,6 +154,34 @@ export function HomePage() {
               <p className="text-2xl font-semibold text-gray-900">
                 {stats.loading ? '—' : stats.totalEpisodes}
               </p>
+            </div>
+          </div>
+        </Card>
+
+        <Card hover>
+          <div className="flex items-center">
+            <div className="flex-shrink-0 bg-indigo-100 rounded-md p-3">
+              <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+            </div>
+            <div className="ml-4 flex-1">
+              <h3 className="text-sm font-medium text-gray-500">Treatments by Type</h3>
+              <p className="text-2xl font-semibold text-gray-900">
+                {stats.loading ? '—' : stats.treatmentBreakdown.reduce((sum, item) => sum + item.count, 0)}
+              </p>
+              {!stats.loading && stats.treatmentBreakdown.length > 0 && (
+                <div className="mt-3 pt-3 border-t border-gray-200">
+                  <div className="grid grid-cols-4 gap-2">
+                    {stats.treatmentBreakdown.map((item, idx) => (
+                      <div key={idx} className="text-center">
+                        <div className="text-xs text-gray-500 capitalize">{item.treatment_type}</div>
+                        <div className="text-lg font-semibold text-gray-900">{item.count}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </Card>
