@@ -14,6 +14,7 @@ export function HomePage() {
     totalEpisodes: 0,
     treatmentBreakdown: [] as { treatment_type: string, count: number }[],
     monthlyEpisodes: [] as { month: string, count: number }[],
+    yearToDateEpisodes: 0,
     loading: true
   })
   const [recentActivity, setRecentActivity] = useState<any[]>([])
@@ -22,28 +23,30 @@ export function HomePage() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const [patientsCountRes, episodesCountRes, treatmentBreakdownRes] = await Promise.all([
+        const [patientsCountRes, episodesCountRes, treatmentBreakdownRes, treatmentsRes] = await Promise.all([
           api.get('/patients/count'),
           api.get('/episodes/count'),
-          api.get('/episodes/treatment-breakdown')
+          api.get('/episodes/treatment-breakdown'),
+          api.get('/episodes/treatments')
         ])
         
         const totalPatients = patientsCountRes.data.count
         const totalEpisodes = episodesCountRes.data.count
         const treatmentBreakdown = treatmentBreakdownRes.data.breakdown || []
-        
-        // Get all episodes to calculate monthly counts for past 4 months
-        const episodesRes = await api.get('/episodes')
+        const treatments = treatmentsRes.data
         const now = new Date()
         
-        // Calculate counts for the past 4 months
+        // Calculate counts for the past 4 months based on treatment_date (surgery only)
         const monthlyData = []
         for (let i = 0; i < 4; i++) {
           const targetMonth = new Date(now.getFullYear(), now.getMonth() - i, 1)
           const nextMonth = new Date(now.getFullYear(), now.getMonth() - i + 1, 1)
           
-          const count = episodesRes.data.filter((ep: any) => {
-            const date = new Date(ep.referral_date || ep.first_seen_date || ep.perioperative_timeline?.surgery_date)
+          const count = treatments.filter((t: any) => {
+            if (t.treatment_type !== 'surgery') return false
+            const treatmentDate = t.treatment_date
+            if (!treatmentDate) return false
+            const date = new Date(treatmentDate)
             return date >= targetMonth && date < nextMonth
           }).length
           
@@ -52,11 +55,22 @@ export function HomePage() {
           monthlyData.push({ month: monthName, count })
         }
         
+        // Calculate year-to-date total (all surgical treatments in 2025)
+        const yearStart = new Date(2025, 0, 1) // January 1, 2025
+        const yearToDateEpisodes = treatments.filter((t: any) => {
+          if (t.treatment_type !== 'surgery') return false
+          const treatmentDate = t.treatment_date
+          if (!treatmentDate) return false
+          const date = new Date(treatmentDate)
+          return date >= yearStart && date <= now
+        }).length
+        
         setStats({
           totalPatients,
           totalEpisodes,
           treatmentBreakdown,
           monthlyEpisodes: monthlyData,
+          yearToDateEpisodes,
           loading: false
         })
       } catch (error) {
@@ -127,30 +141,34 @@ export function HomePage() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card hover>
-          <div className="flex flex-col items-center text-center">
-            <div className="bg-blue-100 rounded-md p-3 mb-3">
+          <div className="relative pt-2">
+            <div className="absolute top-0 left-0 bg-blue-100 rounded-md p-3">
               <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
             </div>
-            <h3 className="text-sm font-medium text-gray-500">Total Patients</h3>
-            <p className="text-2xl font-semibold text-gray-900 mt-2">
-              {stats.loading ? '—' : stats.totalPatients}
-            </p>
+            <div className="text-center">
+              <h3 className="text-sm font-medium text-gray-500 mb-1">Total Patients</h3>
+              <p className="text-2xl font-semibold text-gray-900">
+                {stats.loading ? '—' : stats.totalPatients}
+              </p>
+            </div>
           </div>
         </Card>
 
         <Card hover>
-          <div className="flex flex-col items-center text-center">
-            <div className="bg-green-100 rounded-md p-3 mb-3">
+          <div className="relative pt-2">
+            <div className="absolute top-0 left-0 bg-green-100 rounded-md p-3">
               <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
               </svg>
             </div>
-            <h3 className="text-sm font-medium text-gray-500">Total Episodes</h3>
-            <p className="text-2xl font-semibold text-gray-900 mt-2">
-              {stats.loading ? '—' : stats.totalEpisodes}
-            </p>
+            <div className="text-center">
+              <h3 className="text-sm font-medium text-gray-500 mb-1">Total Episodes</h3>
+              <p className="text-2xl font-semibold text-gray-900">
+                {stats.loading ? '—' : stats.totalEpisodes}
+              </p>
+            </div>
             {!stats.loading && (
               <div className="mt-3 pt-3 border-t border-gray-200 w-full">
                 <div className="grid grid-cols-2 gap-4">
@@ -193,25 +211,37 @@ export function HomePage() {
         </Card>
 
         <Card hover>
-          <div className="flex flex-col items-center text-center">
-            <div className="bg-purple-100 rounded-md p-3 mb-3">
+          <div className="relative pt-2">
+            <div className="absolute top-0 left-0 bg-purple-100 rounded-md p-3">
               <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </div>
-            <h3 className="text-sm font-medium text-gray-500">Monthly Episodes</h3>
-            {stats.loading ? (
-              <p className="text-2xl font-semibold text-gray-900 mt-2">—</p>
-            ) : (
-              <div className="grid grid-cols-4 gap-2 mt-3 w-full">
-                {stats.monthlyEpisodes.map((data, idx) => (
-                  <div key={idx} className="text-center">
-                    <div className="text-xs text-gray-500">{data.month}</div>
-                    <div className="text-lg font-semibold text-gray-900">{data.count}</div>
+            <div className="text-center">
+              <h3 className="text-sm font-medium text-gray-500 mb-1">Monthly Operations</h3>
+              {stats.loading ? (
+                <p className="text-2xl font-semibold text-gray-900">—</p>
+              ) : (
+                <>
+                  <div>
+                    <div className="text-xs text-gray-500">Year Total</div>
+                    <div className="text-2xl font-semibold text-gray-900">
+                      {stats.yearToDateEpisodes}
+                    </div>
                   </div>
-                ))}
-              </div>
-            )}
+                  <div className="mt-3 pt-3 border-t border-gray-200">
+                    <div className="grid grid-cols-4 gap-2 w-full">
+                      {stats.monthlyEpisodes.map((data, idx) => (
+                        <div key={idx} className="text-center">
+                          <div className="text-xs text-gray-500">{data.month}</div>
+                          <div className="text-lg font-semibold text-gray-900">{data.count}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </Card>
       </div>

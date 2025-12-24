@@ -16,15 +16,13 @@ router = APIRouter(prefix="/api/admin/clinicians", tags=["Admin - Clinician Mana
 async def list_clinicians(
     skip: int = 0,
     limit: int = 1000,
-    consultants_only: bool = False,
     current_user: User = Depends(get_current_user),
     db: AsyncIOMotorDatabase = Depends(get_database)
 ):
     """
     List all clinicians, sorted by surname (paginated)
-    Optional filter for consultants only
     """
-    query = {"is_consultant": True} if consultants_only else {}
+    query = {}
     cursor = db.clinicians.find(query).sort("surname", 1).skip(skip).limit(limit)
     clinicians = []
     async for doc in cursor:

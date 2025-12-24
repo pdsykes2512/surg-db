@@ -35,21 +35,24 @@ export function SearchableSelect<T>({
 }: SearchableSelectProps<T>) {
   const [searchTerm, setSearchTerm] = useState('')
   const [showDropdown, setShowDropdown] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
 
-  // Sync searchTerm with value prop when it changes
+  // Sync searchTerm with value prop when it changes (but not while user is actively editing)
   useEffect(() => {
-    if (value) {
-      const selectedOption = options.find(opt => getOptionValue(opt) === value)
-      if (selectedOption) {
-        setSearchTerm(getOptionLabel(selectedOption))
+    if (!isEditing) {
+      if (value) {
+        const selectedOption = options.find(opt => getOptionValue(opt) === value)
+        if (selectedOption) {
+          setSearchTerm(getOptionLabel(selectedOption))
+        } else {
+          // If no matching option found, display the raw value (for legacy/mismatched data)
+          setSearchTerm(value)
+        }
       } else {
-        // If no matching option found, display the raw value (for legacy/mismatched data)
-        setSearchTerm(value)
+        setSearchTerm('')
       }
-    } else {
-      setSearchTerm('')
     }
-  }, [value, options, getOptionValue, getOptionLabel])
+  }, [value, options, getOptionValue, getOptionLabel, isEditing])
 
   // Default filter function
   const defaultFilter = (option: T, search: string) => {
@@ -91,11 +94,16 @@ export function SearchableSelect<T>({
             const newValue = e.target.value
             setSearchTerm(newValue)
             setShowDropdown(true)
+            setIsEditing(true)
           }}
-          onFocus={() => setShowDropdown(true)}
+          onFocus={() => {
+            setShowDropdown(true)
+            setIsEditing(true)
+          }}
           onBlur={() => {
             setTimeout(() => {
               setShowDropdown(false)
+              setIsEditing(false)
               // Reset searchTerm to show selected value label when blurred
               if (value) {
                 const selectedOption = options.find(opt => getOptionValue(opt) === value)
@@ -119,6 +127,7 @@ export function SearchableSelect<T>({
               onChange('')
               setSearchTerm('')
               setShowDropdown(false)
+              setIsEditing(false)
             }}
             className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
           >

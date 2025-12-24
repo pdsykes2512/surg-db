@@ -23,7 +23,6 @@ interface Clinician {
   first_name: string
   surname: string
   gmc_number?: string
-  is_consultant: boolean
   subspecialty_leads?: string[]
   clinical_role?: string
   created_at: string
@@ -55,7 +54,6 @@ export function AdminPage() {
     first_name: '',
     surname: '',
     gmc_number: '',
-    is_consultant: false,
     subspecialty_leads: [] as string[],
     clinical_role: 'surgeon'
   })
@@ -219,7 +217,7 @@ export function AdminPage() {
       }
       setShowClinicianForm(false)
       setEditingClinician(null)
-      setClinicianFormData({ first_name: '', surname: '', gmc_number: '', is_consultant: false, subspecialty_leads: [], clinical_role: 'surgeon' })
+      setClinicianFormData({ first_name: '', surname: '', gmc_number: '', subspecialty_leads: [], clinical_role: 'surgeon' })
       fetchClinicians()
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to save clinician')
@@ -245,7 +243,6 @@ export function AdminPage() {
       first_name: clinician.first_name,
       surname: clinician.surname,
       gmc_number: clinician.gmc_number || '',
-      is_consultant: clinician.is_consultant || false,
       subspecialty_leads: clinician.subspecialty_leads || [],
       clinical_role: clinician.clinical_role || 'surgeon'
     })
@@ -520,7 +517,7 @@ export function AdminPage() {
             <Button 
               onClick={() => {
                 setEditingClinician(null)
-                setClinicianFormData({ first_name: '', surname: '', gmc_number: '', is_consultant: false, subspecialty_leads: [], clinical_role: 'surgeon' })
+                setClinicianFormData({ first_name: '', surname: '', gmc_number: '', subspecialty_leads: [], clinical_role: 'surgeon' })
                 setShowClinicianForm(!showClinicianForm)
                 setError('')
               }} 
