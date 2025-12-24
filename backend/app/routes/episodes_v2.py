@@ -143,6 +143,21 @@ async def get_treatment_breakdown():
     }
 
 
+@router.get("/treatments")
+async def get_all_treatments():
+    """Get all treatments with minimal data (for dashboard statistics)"""
+    from ..database import get_treatments_collection
+    treatments_collection = await get_treatments_collection()
+    
+    # Fetch only the fields we need for date calculations
+    treatments = await treatments_collection.find(
+        {},
+        {"treatment_date": 1, "treatment_type": 1, "_id": 0}
+    ).to_list(length=None)
+    
+    return treatments
+
+
 @router.get("/")
 async def list_episodes(
     skip: int = 0,

@@ -140,16 +140,10 @@ export function TreatmentSummaryModal({ treatment, onClose, onEdit }: TreatmentS
                 </div>
                 <div className="grid grid-cols-2 gap-4 py-1.5 border-b border-gray-100">
                   <CompactField label="Drains" value={treatment.drains_placed ? (treatment.drain_types?.length > 0 ? `Yes (${treatment.drain_types.join(', ')})` : 'Yes') : 'No'} />
-                  <CompactField label="Robotic" value={treatment.robotic_surgery ? 'Yes' : treatment.robotic_surgery === false ? 'No' : undefined} />
                 </div>
-                {treatment.laparoscopic_converted && (
-                  <Field label="Laparoscopic Conversion" value={
-                    <div>
-                      <span className="text-orange-600 font-semibold">Yes</span>
-                      {treatment.conversion_reason && (
-                        <span className="ml-2 text-gray-600">— {treatment.conversion_reason}</span>
-                      )}
-                    </div>
+                {(treatment.approach === 'converted_to_open' || treatment.laparoscopic_converted) && treatment.conversion_reason && (
+                  <Field label="Conversion Reason" value={
+                    <span className="text-gray-900">{treatment.conversion_reason.charAt(0).toUpperCase() + treatment.conversion_reason.slice(1).replace(/_/g, ' ')}</span>
                   } />
                 )}
                 {treatment.specimens_sent?.length > 0 && (

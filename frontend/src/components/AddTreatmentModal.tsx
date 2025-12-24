@@ -222,17 +222,13 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
     surgical_intent: '',
     palliative_reason: '',
     
-    // Laparoscopic Conversion
-    conversion_to_open: false,
+    // Conversion Reason (when approach is 'converted_to_open')
     conversion_reason: '',
     
     // Surgical Team
     assistant_surgeon: '',
     assistant_grade: '',
     second_assistant: '',
-    
-    // Robotic Surgery
-    robotic_surgery: false,
     
     // Chemotherapy fields
     regimen: '',
@@ -312,8 +308,6 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
       treatment.urgency = formData.urgency
       treatment.complexity = formData.complexity
       if (formData.asa_score) treatment.asa_score = parseInt(formData.asa_score)
-      treatment.robotic_surgery = formData.robotic_surgery
-      treatment.conversion_to_open = formData.conversion_to_open
       if (formData.conversion_reason) treatment.conversion_reason = formData.conversion_reason
       
       // Team
@@ -398,33 +392,36 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Treatment Type Selection */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Treatment Type *
-            </label>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {[
-                { value: 'surgery', label: 'Surgery', icon: '🔪' },
-                { value: 'chemotherapy', label: 'Chemotherapy', icon: '💊' },
-                { value: 'radiotherapy', label: 'Radiotherapy', icon: '☢️' },
-                { value: 'immunotherapy', label: 'Immunotherapy', icon: '🧬' }
-              ].map((type) => (
-                <button
-                  key={type.value}
-                  type="button"
-                  onClick={() => handleTreatmentTypeChange(type.value)}
-                  className={`p-3 border-2 rounded-lg text-center transition-all ${
-                    treatmentType === type.value
-                      ? 'border-blue-600 bg-blue-50 text-blue-700'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <div className="text-2xl mb-1">{type.icon}</div>
-                  <div className="text-sm font-medium">{type.label}</div>
-                </button>
-              ))}
+          {/* Treatment Type Selection - Only show when creating */}
+          {mode === 'create' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Treatment Type *
+              </label>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {[
+                  { value: 'surgery', label: 'Surgery', icon: '🔪' },
+                  { value: 'chemotherapy', label: 'Chemotherapy', icon: '💊' },
+                  { value: 'radiotherapy', label: 'Radiotherapy', icon: '☢️' },
+                  { value: 'immunotherapy', label: 'Immunotherapy', icon: '🧬' }
+                ].map((type) => (
+                  <button
+                    key={type.value}
+                    type="button"
+                    onClick={() => handleTreatmentTypeChange(type.value)}
+                    className={`p-3 border-2 rounded-lg text-center transition-all ${
+                      treatmentType === type.value
+                        ? 'border-blue-600 bg-blue-50 text-blue-700'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="text-2xl mb-1">{type.icon}</div>
+                    <div className="text-sm font-medium">{type.label}</div>
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Common Fields */}
           <div className="grid grid-cols-2 gap-4">
@@ -577,6 +574,7 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
                       { value: 'open', label: 'Open' },
                       { value: 'laparoscopic', label: 'Laparoscopic' },
                       { value: 'robotic', label: 'Robotic' },
+                      { value: 'converted_to_open', label: 'Converted to Open' },
                       { value: 'endoscopic', label: 'Endoscopic' }
                     ]}
                     getOptionValue={(opt) => opt.value}
@@ -585,31 +583,10 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
                     required
                   />
                 </div>
-                
-                <div className="col-span-2 flex items-center space-x-4">
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={formData.robotic_surgery}
-                      onChange={(e) => setFormData({ ...formData, robotic_surgery: e.target.checked })}
-                      className="mr-2 h-4 w-4"
-                    />
-                    <span className="text-sm text-gray-700">Robotic Surgery</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={formData.conversion_to_open}
-                      onChange={(e) => setFormData({ ...formData, conversion_to_open: e.target.checked })}
-                      className="mr-2 h-4 w-4"
-                    />
-                    <span className="text-sm text-gray-700">Converted to Open</span>
-                  </label>
-                </div>
               </div>
               
               {/* Conversion Reason */}
-              {formData.conversion_to_open && (
+              {formData.approach === 'converted_to_open' && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Conversion Reason

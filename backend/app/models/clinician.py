@@ -9,7 +9,6 @@ class ClinicianBase(BaseModel):
     first_name: str = Field(..., description="Clinician's first name")
     surname: str = Field(..., description="Clinician's surname")
     gmc_number: Optional[str] = Field(None, description="GMC registration number (7 digits)")
-    is_consultant: bool = Field(default=False, description="Whether the clinician is a consultant")
     subspecialty_leads: List[str] = Field(default_factory=list, description="List of subspecialties: colorectal/urology/breast/upper_gi/gynae_onc/other")
     clinical_role: str = Field(default="surgeon", description="surgeon/anaesthetist/oncologist/radiologist/other")
     
@@ -35,7 +34,6 @@ class ClinicianUpdate(BaseModel):
     first_name: Optional[str] = None
     surname: Optional[str] = None
     gmc_number: Optional[str] = None
-    is_consultant: Optional[bool] = None
     subspecialty_leads: Optional[List[str]] = None
     clinical_role: Optional[str] = None
 

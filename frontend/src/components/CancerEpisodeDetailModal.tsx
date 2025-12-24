@@ -723,6 +723,12 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
                                 <span className="ml-1 text-gray-900">{treatment.procedure_name}</span>
                               </div>
                             )}
+                            {treatment.treatment_type === 'surgery' && treatment.approach && (
+                              <div>
+                                <span className="text-gray-500">Approach:</span>
+                                <span className="ml-1 text-gray-900 capitalize">{treatment.approach}</span>
+                              </div>
+                            )}
                             {(treatment.treatment_type === 'surgery' || treatment.treatment_type === 'endoscopy') && (
                               <>
                                 {(treatment.surgeon_name || treatment.surgeon) && (

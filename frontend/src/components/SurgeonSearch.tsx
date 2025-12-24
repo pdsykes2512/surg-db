@@ -6,7 +6,6 @@ interface Surgeon {
   first_name: string
   surname: string
   gmc_number?: string
-  is_consultant: boolean
   subspecialty_leads?: string[]
   clinical_role?: string
 }
@@ -44,15 +43,16 @@ export function SurgeonSearch({
       try {
         const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
         const baseUrl = API_URL.endsWith('/api') ? API_URL.slice(0, -4) : API_URL
-        const url = consultantsOnly 
-          ? `${baseUrl}/api/admin/clinicians?consultants_only=true`
-          : `${baseUrl}/api/admin/clinicians`
+        const url = `${baseUrl}/api/admin/clinicians`
         
         const response = await fetch(url, {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         })
         if (response.ok) {
-          setSurgeons(await response.json())
+          const data = await response.json()
+          setSurgeons(data)
+        } else {
+          console.error('Failed to fetch surgeons:', response.status)
         }
       } catch (error) {
         console.error('Error fetching surgeons:', error)
@@ -61,15 +61,17 @@ export function SurgeonSearch({
       }
     }
     fetchSurgeons()
-  }, [consultantsOnly])
+  }, [])
 
   // Filter surgeons based on subspecialty and role
+  // Default to showing only surgeons (not anaesthetists, nurses, etc) unless roleFilter specified
   const filteredSurgeons = surgeons.filter((s) => {
     const matchesSubspecialty = !subspecialtyFilter || 
       (s.subspecialty_leads && s.subspecialty_leads.includes(subspecialtyFilter))
-    // If roleFilter is set, match it - but treat missing/undefined clinical_role as matching "surgeon" for backward compatibility
+    // Default to surgeon role if not specified
     const clinicianRole = s.clinical_role || 'surgeon'
-    const matchesRole = !roleFilter || clinicianRole === roleFilter
+    const targetRole = roleFilter || 'surgeon'
+    const matchesRole = clinicianRole === targetRole
     return matchesSubspecialty && matchesRole
   })
   
@@ -83,6 +85,31 @@ export function SurgeonSearch({
     surgeon: surgeon
   }))
 
+  // Custom filter that searches name, GMC, and subspecialty
+  const filterOption = (opt: typeof options[0], search: string) => {
+    const searchLower = search.toLowerCase()
+    const surgeon = opt.surgeon
+    
+    // Search in name
+    if (opt.label.toLowerCase().includes(searchLower)) {
+      return true
+    }
+    
+    // Search in GMC number
+    if (surgeon.gmc_number && surgeon.gmc_number.toLowerCase().includes(searchLower)) {
+      return true
+    }
+    
+    // Search in subspecialties
+    if (surgeon.subspecialty_leads) {
+      return surgeon.subspecialty_leads.some(lead => 
+        lead.toLowerCase().replace('_', ' ').includes(searchLower)
+      )
+    }
+    
+    return false
+  }
+
   return (
     <SearchableSelect
       value={value}
@@ -90,6 +117,7 @@ export function SurgeonSearch({
       options={options}
       getOptionValue={(opt) => opt.value}
       getOptionLabel={(opt) => opt.label}
+      filterOption={filterOption}
       renderOption={(opt) => (
         <div>
           <div className="font-medium">{opt.label}</div>

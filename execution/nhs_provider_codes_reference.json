@@ -1,12 +1,12 @@
 {
   "reference_note": "NHS Provider (Trust) Codes verified from ODS API - https://directory.spineservices.nhs.uk/STU3/",
-  "last_updated": "2025-12-23 23:35:12",
+  "last_updated": "2025-12-24 21:04:35",
   "providers": {
     "RHU": {
       "name": "portsmouth hospitals university nhs trust",
       "type": "nhs trust",
       "verified": true,
-      "last_verified": "2025-12-23"
+      "last_verified": "2025-12-24"
     },
     "RHM": {
       "name": "university hospital southampton nhs foundation trust",
@@ -32,235 +32,235 @@
       "name": "portsmouth pathology service",
       "type": "pathology lab",
       "verified": true,
-      "last_verified": "2025-12-23"
+      "last_verified": "2025-12-24"
     },
     "813": {
       "name": "portsmouth city council",
       "type": "local authority",
       "verified": true,
-      "last_verified": "2025-12-23"
+      "last_verified": "2025-12-24"
     },
     "813AA": {
       "name": "portsmouth city council public health",
       "type": "local authority site",
       "verified": true,
-      "last_verified": "2025-12-23"
+      "last_verified": "2025-12-24"
     },
     "8K751": {
       "name": "portsmouth diocesan council for social responsibility",
       "type": "non-nhs organisation",
       "verified": true,
-      "last_verified": "2025-12-23"
+      "last_verified": "2025-12-24"
     },
     "A91155": {
       "name": "portsmouth medical centre",
       "type": "prescribing cost centre",
       "verified": true,
-      "last_verified": "2025-12-23"
+      "last_verified": "2025-12-24"
     },
     "A91222": {
       "name": "portsmouth combined medical centre",
       "type": "other prescribing cost centre",
       "verified": true,
-      "last_verified": "2025-12-23"
+      "last_verified": "2025-12-24"
     },
     "AR7": {
       "name": "portsmouth primary care alliance ltd",
       "type": "independent sector healthcare provider",
       "verified": true,
-      "last_verified": "2025-12-23"
+      "last_verified": "2025-12-24"
     },
     "AR701": {
       "name": "portsmouth primary care alliance ltd - havant rd",
       "type": "independent sector h/c provider site",
       "verified": true,
-      "last_verified": "2025-12-23"
+      "last_verified": "2025-12-24"
     },
     "B8T1W": {
       "name": "portsmouth and south eastern hampshire",
       "type": "independent sector h/c provider site",
       "verified": true,
-      "last_verified": "2025-12-23"
+      "last_verified": "2025-12-24"
     },
     "C36Q": {
       "name": "portsmouth elder care limited",
       "type": "social care provider",
       "verified": true,
-      "last_verified": "2025-12-23"
+      "last_verified": "2025-12-24"
     },
     "EE116581": {
       "name": "portsmouth high school gdst",
       "type": "school",
       "verified": true,
-      "last_verified": "2025-12-23"
+      "last_verified": "2025-12-24"
     },
     "FQG76": {
       "name": "portsmouth pharmacy",
       "type": "pharmacy",
       "verified": true,
-      "last_verified": "2025-12-23"
+      "last_verified": "2025-12-24"
     },
     "L7P6U": {
       "name": "portsmouth cdc",
       "type": "nhs trust site",
       "verified": true,
-      "last_verified": "2025-12-23"
+      "last_verified": "2025-12-24"
     },
     "NT9C2": {
       "name": "portsmouth pet/ct centre",
       "type": "independent sector h/c provider site",
       "verified": true,
-      "last_verified": "2025-12-23"
+      "last_verified": "2025-12-24"
     },
     "NTPP3": {
       "name": "portsmouth adult community ophthalmology assessment (smtc)",
       "type": "independent sector h/c provider site",
       "verified": true,
-      "last_verified": "2025-12-23"
+      "last_verified": "2025-12-24"
     },
     "NWA01": {
       "name": "portsmouth technopole (echotech ltd)",
       "type": "independent sector h/c provider site",
       "verified": true,
-      "last_verified": "2025-12-23"
+      "last_verified": "2025-12-24"
     },
     "Q6D4A": {
       "name": "portsmouth artificial eye service",
       "type": "independent sector h/c provider site",
       "verified": true,
-      "last_verified": "2025-12-23"
+      "last_verified": "2025-12-24"
     },
     "R1CDP": {
       "name": "portsmouth academy for girls",
       "type": "nhs trust site",
       "verified": true,
-      "last_verified": "2025-12-23"
+      "last_verified": "2025-12-24"
     },
     "R1C84": {
       "name": "portsmouth college",
       "type": "nhs trust site",
       "verified": true,
-      "last_verified": "2025-12-23"
+      "last_verified": "2025-12-24"
     },
     "R1C97": {
       "name": "portsmouth civic offices",
       "type": "nhs trust site",
       "verified": true,
-      "last_verified": "2025-12-23"
+      "last_verified": "2025-12-24"
     },
     "R1CAF": {
       "name": "portsmouth foyer",
       "type": "nhs trust site",
       "verified": true,
-      "last_verified": "2025-12-23"
+      "last_verified": "2025-12-24"
     },
     "RTHC7": {
       "name": "portsmouth renal",
       "type": "nhs trust site",
       "verified": true,
-      "last_verified": "2025-12-23"
+      "last_verified": "2025-12-24"
     },
     "RXX4H": {
       "name": "portsmouth disability forum",
       "type": "nhs trust site",
       "verified": true,
-      "last_verified": "2025-12-23"
+      "last_verified": "2025-12-24"
     },
     "RXX4F": {
       "name": "portsmouth drug interventions programme",
       "type": "nhs trust site",
       "verified": true,
-      "last_verified": "2025-12-23"
+      "last_verified": "2025-12-24"
     },
     "RYE14": {
       "name": "portsmouth pts",
       "type": "nhs trust site",
       "verified": true,
-      "last_verified": "2025-12-23"
+      "last_verified": "2025-12-24"
     },
     "TP3Y2": {
       "name": "portsmouth n h extra",
       "type": "optical site",
       "verified": true,
-      "last_verified": "2025-12-23"
+      "last_verified": "2025-12-24"
     },
     "TP8MV": {
       "name": "portsmouth north end specsavers limited",
       "type": "optical site",
       "verified": true,
-      "last_verified": "2025-12-23"
+      "last_verified": "2025-12-24"
     },
     "U19124": {
       "name": "portsmouth north pcn",
       "type": "primary care network",
       "verified": true,
-      "last_verified": "2025-12-23"
+      "last_verified": "2025-12-24"
     },
     "U72114": {
       "name": "portsmouth south coast pcn",
       "type": "primary care network",
       "verified": true,
-      "last_verified": "2025-12-23"
+      "last_verified": "2025-12-24"
     },
     "U7M3M": {
       "name": "portsmouth research hub - azd2816 covid19 trials",
       "type": "nhs trust site",
       "verified": true,
-      "last_verified": "2025-12-23"
+      "last_verified": "2025-12-24"
     },
     "VN1Q9": {
       "name": "portsmouth shared lives service",
       "type": "social care site",
       "verified": true,
-      "last_verified": "2025-12-23"
+      "last_verified": "2025-12-24"
     },
     "WYE": {
       "name": "portsmouth magistrates court",
       "type": "non residential institution",
       "verified": true,
-      "last_verified": "2025-12-23"
+      "last_verified": "2025-12-24"
     },
     "X6Z2U": {
       "name": "portsmouth research hub",
       "type": "nhs trust site",
       "verified": true,
-      "last_verified": "2025-12-23"
+      "last_verified": "2025-12-24"
     },
     "Y05178": {
       "name": "portsmouth primary care alliance ltd",
       "type": "other prescribing cost centre",
       "verified": true,
-      "last_verified": "2025-12-23"
+      "last_verified": "2025-12-24"
     },
     "C5V7O": {
       "name": "portsmouth college",
       "type": "nhs trust site",
       "verified": true,
-      "last_verified": "2025-12-23"
+      "last_verified": "2025-12-24"
     },
     "C6W0B": {
       "name": "portsmouth foyer",
       "type": "nhs trust site",
       "verified": true,
-      "last_verified": "2025-12-23"
+      "last_verified": "2025-12-24"
     },
     "H0Z0G": {
       "name": "portsmouth civic offices",
       "type": "nhs trust site",
       "verified": true,
-      "last_verified": "2025-12-23"
+      "last_verified": "2025-12-24"
     },
     "Y1J5K": {
       "name": "portsmouth academy for girls",
       "type": "nhs trust site",
       "verified": true,
-      "last_verified": "2025-12-23"
+      "last_verified": "2025-12-24"
     },
     "Y08675": {
       "name": "portsmouth continence service",
       "type": "prescribing cost centre",
       "verified": true,
-      "last_verified": "2025-12-23"
+      "last_verified": "2025-12-24"
     },
     "694X0": {
       "name": "southampton general hospital laboratory",
@@ -861,6 +861,276 @@
       "type": "local authority",
       "verified": true,
       "last_verified": "2025-12-23"
+    },
+    "RYR": {
+      "name": "university hospitals sussex nhs foundation trust",
+      "type": "nhs trust",
+      "verified": true,
+      "last_verified": "2025-12-24"
+    },
+    "7A1S7": {
+      "name": "rhuddlan health centre",
+      "type": "local health board site",
+      "verified": true,
+      "last_verified": "2025-12-24"
+    },
+    "8JT84": {
+      "name": "rhubarb business services limited",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-24"
+    },
+    "M8E7X": {
+      "name": "rhubarb farm cic",
+      "type": "independent sector healthcare provider",
+      "verified": true,
+      "last_verified": "2025-12-24"
+    },
+    "RGT54": {
+      "name": "rhuematology sw",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-24"
+    },
+    "03NWD": {
+      "name": "porter brook medical centre",
+      "type": "clinical commissioning group site",
+      "verified": true,
+      "last_verified": "2025-12-24"
+    },
+    "503RK": {
+      "name": "portland street kindergarten",
+      "type": "local authority site",
+      "verified": true,
+      "last_verified": "2025-12-24"
+    },
+    "5C450": {
+      "name": "portsoken health and community centre",
+      "type": "primary care trust site",
+      "verified": true,
+      "last_verified": "2025-12-24"
+    },
+    "5M2M1": {
+      "name": "portcullis community centre",
+      "type": "primary care trust site",
+      "verified": true,
+      "last_verified": "2025-12-24"
+    },
+    "5N4WD": {
+      "name": "porter brook medical centre",
+      "type": "primary care trust site",
+      "verified": true,
+      "last_verified": "2025-12-24"
+    },
+    "5QM04": {
+      "name": "portland hospital",
+      "type": "primary care trust site",
+      "verified": true,
+      "last_verified": "2025-12-24"
+    },
+    "5QM23": {
+      "name": "portesham",
+      "type": "primary care trust site",
+      "verified": true,
+      "last_verified": "2025-12-24"
+    },
+    "7A3NJ": {
+      "name": "porthcawl infant welfare clinic",
+      "type": "local health board site",
+      "verified": true,
+      "last_verified": "2025-12-24"
+    },
+    "7A3P6": {
+      "name": "port talbot resource centre",
+      "type": "local health board site",
+      "verified": true,
+      "last_verified": "2025-12-24"
+    },
+    "8AW08": {
+      "name": "portland nh",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-24"
+    },
+    "8C060": {
+      "name": "porthgwara nh",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-24"
+    },
+    "8C594": {
+      "name": "portland house nh (shrewsbury)",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-24"
+    },
+    "8DN36": {
+      "name": "portugal prints (westminster ass for mental health)",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-24"
+    },
+    "8DQ16": {
+      "name": "portland physiotherapy clinic",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-24"
+    },
+    "8E296": {
+      "name": "porter martyn (orthopaedist)",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-24"
+    },
+    "8FW76": {
+      "name": "portland house nh (hove)",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-24"
+    },
+    "8J225": {
+      "name": "portals uk limited",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-24"
+    },
+    "8K073": {
+      "name": "portal voice & data ltd",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-24"
+    },
+    "A1G3F": {
+      "name": "portslade health centre",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-24"
+    },
+    "A46H": {
+      "name": "porthgwara nursing home llp",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2025-12-24"
+    },
+    "A4XJ": {
+      "name": "portelet care ltd",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2025-12-24"
+    },
+    "A75F": {
+      "name": "portland college",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2025-12-24"
+    },
+    "A81057001": {
+      "name": "port clarence health centre",
+      "type": "branch surgery",
+      "verified": true,
+      "last_verified": "2025-12-24"
+    },
+    "A864": {
+      "name": "portland care services ltd",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2025-12-24"
+    },
+    "A9A5A": {
+      "name": "portway lifestyle centre",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-24"
+    },
+    "AMV4": {
+      "name": "portelet manor limited",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2025-12-24"
+    },
+    "ANG51": {
+      "name": "portcullis medical practice",
+      "type": "independent sector h/c provider site",
+      "verified": true,
+      "last_verified": "2025-12-24"
+    },
+    "AP6X": {
+      "name": "porthaven care homes limited",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2025-12-24"
+    },
+    "ANVC": {
+      "name": "porthaven care homes llp",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2025-12-24"
+    },
+    "APCR": {
+      "name": "porthaven care homes no 2 limited",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2025-12-24"
+    },
+    "APLK": {
+      "name": "portland house care limited",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2025-12-24"
+    },
+    "APRE": {
+      "name": "portelet cottage limited",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2025-12-24"
+    },
+    "AR407": {
+      "name": "portswood solent surgery",
+      "type": "independent sector h/c provider site",
+      "verified": true,
+      "last_verified": "2025-12-24"
+    },
+    "ARY8": {
+      "name": "portfolio homecare limited",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2025-12-24"
+    },
+    "AYK3": {
+      "name": "porthaven care homes no 3 limited",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2025-12-24"
+    },
+    "C0O2X": {
+      "name": "portland medical centre",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-24"
+    },
+    "C4LV": {
+      "name": "portland care 5 limited",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2025-12-24"
+    },
+    "C4LX": {
+      "name": "portland care 4 limited",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2025-12-24"
+    },
+    "C4LY": {
+      "name": "portland care 3 limited",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2025-12-24"
+    },
+    "C4M0": {
+      "name": "portland care 2 limited",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2025-12-24"
     }
   }
 }

@@ -324,7 +324,7 @@ export function EpisodesPage() {
           </div>
 
           {/* Search and Date Filters */}
-          <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-7 gap-4 items-center">
             <div className="md:col-span-4">
               <input
                 type="text"
@@ -335,14 +335,16 @@ export function EpisodesPage() {
               />
             </div>
 
-            <div className="md:col-span-1.5">
+            <div className="md:col-span-1.5 flex items-center gap-2">
+              <span className="text-sm text-gray-600 whitespace-nowrap">From:</span>
               <DateInput
                 value={startDateFilter}
                 onChange={(e) => setStartDateFilter(e.target.value)}
               />
             </div>
 
-            <div className="md:col-span-1.5">
+            <div className="md:col-span-1.5 flex items-center gap-2">
+              <span className="text-sm text-gray-600 whitespace-nowrap">To:</span>
               <DateInput
                 value={endDateFilter}
                 onChange={(e) => setEndDateFilter(e.target.value)}
