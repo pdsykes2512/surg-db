@@ -159,7 +159,7 @@ export function HomePage() {
                   <div className="grid grid-cols-2 gap-4">
                     {/* Surgery Treatments */}
                     <div>
-                      <div className="text-xs font-medium text-gray-700 mb-1">Surgery</div>
+                      <div className="text-xs font-medium text-gray-700 mb-1 text-center">Surgery</div>
                       <div className="text-center">
                         {stats.treatmentBreakdown
                           .filter(item => item.treatment_type === 'surgery')
@@ -174,7 +174,7 @@ export function HomePage() {
                     
                     {/* Oncology Treatments */}
                     <div>
-                      <div className="text-xs font-medium text-gray-700 mb-1">Oncology</div>
+                      <div className="text-xs font-medium text-gray-700 mb-1 text-center">Oncology</div>
                       <div className="grid grid-cols-2 gap-2">
                         {stats.treatmentBreakdown
                           .filter(item => ['chemotherapy', 'radiotherapy', 'immunotherapy'].includes(item.treatment_type))
