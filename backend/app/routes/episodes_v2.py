@@ -112,6 +112,37 @@ async def count_episodes():
     return {"count": total}
 
 
+@router.get("/treatment-breakdown")
+async def get_treatment_breakdown():
+    """Get count of treatments by type"""
+    from ..database import get_treatments_collection
+    treatments_collection = await get_treatments_collection()
+    
+    # Aggregate treatments by type
+    pipeline = [
+        {
+            "$group": {
+                "_id": "$treatment_type",
+                "count": {"$sum": 1}
+            }
+        }
+    ]
+    
+    result = []
+    async for doc in treatments_collection.aggregate(pipeline):
+        result.append({
+            "treatment_type": doc["_id"] or "unspecified",
+            "count": doc["count"]
+        })
+    
+    # Return with total
+    total = sum(item["count"] for item in result)
+    return {
+        "total": total,
+        "breakdown": result
+    }
+
+
 @router.get("/")
 async def list_episodes(
     skip: int = 0,
