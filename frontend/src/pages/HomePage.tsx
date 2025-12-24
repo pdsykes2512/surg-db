@@ -12,7 +12,7 @@ export function HomePage() {
   const [stats, setStats] = useState({
     totalPatients: 0,
     totalEpisodes: 0,
-    thisMonth: 0,
+    monthlyEpisodes: [] as { month: string, count: number }[],
     loading: true
   })
   const [recentActivity, setRecentActivity] = useState<any[]>([])
@@ -21,30 +21,38 @@ export function HomePage() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const [patientsCountRes, episodesCountRes, episodesRes] = await Promise.all([
+        const [patientsCountRes, episodesCountRes] = await Promise.all([
           api.get('/patients/count'),
-          api.get('/episodes/count'),
-          api.get('/episodes/')
+          api.get('/episodes/count')
         ])
         
         const totalPatients = patientsCountRes.data.count
         const totalEpisodes = episodesCountRes.data.count
-        const episodes = episodesRes.data
         
-        // Count episodes this month (using referral_date for cancer episodes)
+        // Get all episodes to calculate monthly counts for past 4 months
+        const episodesRes = await api.get('/episodes')
         const now = new Date()
-        const thisMonthCount = episodes.filter((ep: any) => {
-          const dateField = ep.referral_date || ep.first_seen_date || ep.perioperative_timeline?.surgery_date
-          if (!dateField) return false
-          const episodeDate = new Date(dateField)
-          return episodeDate.getMonth() === now.getMonth() && 
-                 episodeDate.getFullYear() === now.getFullYear()
-        }).length
+        
+        // Calculate counts for the past 4 months
+        const monthlyData = []
+        for (let i = 0; i < 4; i++) {
+          const targetMonth = new Date(now.getFullYear(), now.getMonth() - i, 1)
+          const nextMonth = new Date(now.getFullYear(), now.getMonth() - i + 1, 1)
+          
+          const count = episodesRes.data.filter((ep: any) => {
+            const date = new Date(ep.referral_date || ep.first_seen_date || ep.perioperative_timeline?.surgery_date)
+            return date >= targetMonth && date < nextMonth
+          }).length
+          
+          // Format month name (e.g., "Dec", "Nov", "Oct")
+          const monthName = targetMonth.toLocaleDateString('en-US', { month: 'short' })
+          monthlyData.push({ month: monthName, count })
+        }
         
         setStats({
           totalPatients,
           totalEpisodes,
-          thisMonth: thisMonthCount,
+          monthlyEpisodes: monthlyData,
           loading: false
         })
       } catch (error) {
@@ -150,14 +158,23 @@ export function HomePage() {
           <div className="flex items-center">
             <div className="flex-shrink-0 bg-purple-100 rounded-md p-3">
               <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </div>
-            <div className="ml-4">
-              <h3 className="text-sm font-medium text-gray-500">This Month</h3>
-              <p className="text-2xl font-semibold text-gray-900">
-                {stats.loading ? '—' : stats.thisMonth}
-              </p>
+            <div className="ml-4 flex-1">
+              <h3 className="text-sm font-medium text-gray-500 mb-2">Monthly Episodes</h3>
+              {stats.loading ? (
+                <p className="text-2xl font-semibold text-gray-900">—</p>
+              ) : (
+                <div className="grid grid-cols-4 gap-2">
+                  {stats.monthlyEpisodes.map((data, idx) => (
+                    <div key={idx} className="text-center">
+                      <div className="text-xs text-gray-500">{data.month}</div>
+                      <div className="text-lg font-semibold text-gray-900">{data.count}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </Card>
