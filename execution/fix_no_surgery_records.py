@@ -82,6 +82,7 @@ print(f"Built lookup for {len(hosp_to_patient)} hospital numbers")
 # Find treatments to delete
 treatments_to_delete = []
 not_found_count = 0
+skipped_with_procedure = 0
 
 for _, row in no_surgery_records.iterrows():
     hosp_no = str(row['Hosp_No']).strip().upper()
@@ -98,19 +99,45 @@ for _, row in no_surgery_records.iterrows():
             seq_str = f"-{int(su_seq_no):02d}"
             for t in treatments:
                 if seq_str in t.get('treatment_id', ''):
-                    treatments_to_delete.append(t['_id'])
+                    # Additional safety check: verify no procedure/OPCS code
+                    opcs_code = t.get('opcs_code') or t.get('opcs4_code')
+                    procedure_name = t.get('procedure_name')
+                    
+                    if opcs_code or procedure_name:
+                        # This treatment has procedure data, don't delete
+                        skipped_with_procedure += 1
+                        print(f"  ⚠ Skipping {t.get('treatment_id')}: has procedure data (OPCS: {opcs_code}, Proc: {procedure_name})")
+                    else:
+                        treatments_to_delete.append(t['_id'])
                     break
             else:
-                # If no sequence match and patient has only one treatment, delete it
+                # If no sequence match and patient has only one treatment, check it
                 if len(treatments) == 1:
-                    treatments_to_delete.append(treatments[0]['_id'])
+                    t = treatments[0]
+                    opcs_code = t.get('opcs_code') or t.get('opcs4_code')
+                    procedure_name = t.get('procedure_name')
+                    
+                    if opcs_code or procedure_name:
+                        skipped_with_procedure += 1
+                        print(f"  ⚠ Skipping {t.get('treatment_id')}: has procedure data (OPCS: {opcs_code}, Proc: {procedure_name})")
+                    else:
+                        treatments_to_delete.append(treatments[0]['_id'])
         elif len(treatments) == 1:
-            # Patient has only one treatment, delete it
-            treatments_to_delete.append(treatments[0]['_id'])
+            # Patient has only one treatment, check it
+            t = treatments[0]
+            opcs_code = t.get('opcs_code') or t.get('opcs4_code')
+            procedure_name = t.get('procedure_name')
+            
+            if opcs_code or procedure_name:
+                skipped_with_procedure += 1
+                print(f"  ⚠ Skipping {t.get('treatment_id')}: has procedure data (OPCS: {opcs_code}, Proc: {procedure_name})")
+            else:
+                treatments_to_delete.append(treatments[0]['_id'])
     else:
         not_found_count += 1
 
 print(f"\nTreatments to delete: {len(treatments_to_delete)}")
+print(f"Skipped (have procedure data): {skipped_with_procedure}")
 print(f"Records not found in DB: {not_found_count}")
 
 # Show summary of NoSurg reasons
