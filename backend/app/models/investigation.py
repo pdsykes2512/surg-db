@@ -22,9 +22,7 @@ class Investigation(BaseModel):
     notes: Optional[str] = Field(None, description="Additional notes")
     
     created_at: Optional[datetime] = None
-    created_by: Optional[str] = None
     updated_at: Optional[datetime] = None
-    updated_by: Optional[str] = None
     
     class Config:
         json_schema_extra = {

@@ -7,6 +7,7 @@ from typing import Optional, List, Any
 from datetime import datetime, date, timezone
 from enum import Enum
 
+from .utils import parse_date_string
 
 class TumourType(str, Enum):
     PRIMARY = "primary"
@@ -142,12 +143,11 @@ class TumourBase(BaseModel):
     @field_validator('diagnosis_date', 'clinical_stage_date', 'pathological_stage_date', mode='before')
     @classmethod
     def parse_dates(cls, v: Any) -> date | str:
-        if isinstance(v, str) and v:
-            try:
-                return datetime.fromisoformat(v).date()
-            except ValueError:
-                return v
-        return v
+        result = parse_date_string(v)
+        # Convert to date if we got a datetime
+        if isinstance(result, datetime):
+            return result.date()
+        return result
 
 
 class TumourCreate(TumourBase):

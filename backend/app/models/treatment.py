@@ -8,6 +8,8 @@ from typing import Optional, List, Union
 from datetime import datetime, date
 from enum import Enum
 
+from .utils import parse_date_string
+
 # Import surgery components
 from .surgery import (
     Classification, Procedure, PerioperativeTimeline, SurgicalTeam,
@@ -47,14 +49,7 @@ class TreatmentBase(BaseModel):
     @field_validator('treatment_date', mode='before')
     @classmethod
     def parse_date(cls, v):
-        if isinstance(v, str) and v:
-            try:
-                if len(v) == 10 and 'T' not in v:
-                    return datetime.fromisoformat(v + 'T00:00:00')
-                return datetime.fromisoformat(v.replace('Z', '+00:00'))
-            except ValueError:
-                return v
-        return v
+        return parse_date_string(v)
 
 
 # ============== SURGERY TREATMENT ==============

@@ -95,9 +95,7 @@ async def register(
         "department": user_data.department,
         "job_title": user_data.job_title,
         "created_at": datetime.utcnow(),
-        "created_by": None,
         "updated_at": datetime.utcnow(),
-        "updated_by": None,
         "last_login": None
     }
     
