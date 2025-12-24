@@ -79,9 +79,7 @@ class PatientInDB(PatientBase):
     """Patient model as stored in database"""
     id: str = Field(alias="_id")
     created_at: datetime = Field(default_factory=datetime.utcnow)
-    created_by: Optional[str] = None
     updated_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_by: Optional[str] = None
     
     model_config = ConfigDict(
         populate_by_name=True,

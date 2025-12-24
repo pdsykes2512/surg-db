@@ -54,9 +54,7 @@ async def create_investigation(
     """Create a new investigation record."""
     investigation_dict = investigation.model_dump()
     investigation_dict["created_at"] = datetime.utcnow()
-    investigation_dict["created_by"] = current_user.get("username")
     investigation_dict["updated_at"] = datetime.utcnow()
-    investigation_dict["updated_by"] = current_user.get("username")
     
     # Check if investigation_id already exists
     existing = db.investigations.find_one({"investigation_id": investigation.investigation_id})
@@ -80,7 +78,6 @@ async def update_investigation(
     
     investigation_dict = investigation.model_dump()
     investigation_dict["updated_at"] = datetime.utcnow()
-    investigation_dict["updated_by"] = current_user.get("username")
     
     db.investigations.update_one(
         {"investigation_id": investigation_id},

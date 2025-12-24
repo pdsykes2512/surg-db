@@ -70,9 +70,7 @@ async def create_user(
         "department": user_data.department,
         "job_title": user_data.job_title,
         "created_at": datetime.utcnow(),
-        "created_by": current_user.email,
         "updated_at": datetime.utcnow(),
-        "updated_by": current_user.email,
         "last_login": None
     }
     
@@ -143,7 +141,6 @@ async def update_user(
         update_data["hashed_password"] = get_password_hash(user_data.password)
     
     update_data["updated_at"] = datetime.utcnow()
-    update_data["updated_by"] = current_user.email
     
     await db.users.update_one(
         {"_id": ObjectId(user_id)},
@@ -193,8 +190,7 @@ async def change_user_password(
     # Update password
     update_data = {
         "hashed_password": get_password_hash(password_data.password),
-        "updated_at": datetime.utcnow(),
-        "updated_by": current_user.email
+        "updated_at": datetime.utcnow()
     }
     
     await db.users.update_one(

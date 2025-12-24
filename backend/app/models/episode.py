@@ -9,6 +9,8 @@ from datetime import datetime, date
 from bson import ObjectId
 from enum import Enum
 
+from .utils import parse_date_string
+
 
 class PyObjectId(ObjectId):
     @classmethod
@@ -90,14 +92,7 @@ class EpisodeBase(BaseModel):
     @field_validator('referral_date', 'first_seen_date', 'mdt_discussion_date', mode='before')
     @classmethod
     def parse_dates(cls, v):
-        if isinstance(v, str) and v:
-            try:
-                if len(v) == 10 and 'T' not in v:
-                    return datetime.fromisoformat(v + 'T00:00:00')
-                return datetime.fromisoformat(v.replace('Z', '+00:00'))
-            except ValueError:
-                return v
-        return v
+        return parse_date_string(v)
 
 
 # TNM Staging (used across multiple cancer types)

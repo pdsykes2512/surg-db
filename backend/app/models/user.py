@@ -43,9 +43,7 @@ class UserInDB(UserBase):
     id: str = Field(..., alias="_id")
     hashed_password: str
     created_at: datetime
-    created_by: Optional[str] = None
     updated_at: datetime
-    updated_by: Optional[str] = None
     last_login: Optional[datetime] = None
 
     class Config:

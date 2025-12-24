@@ -6,6 +6,7 @@ from typing import Optional, List, Union
 from datetime import datetime, date
 from bson import ObjectId
 from .patient import PyObjectId
+from .utils import parse_date_string
 
 
 class Classification(BaseModel):
@@ -45,26 +46,12 @@ class PerioperativeTimeline(BaseModel):
     @field_validator('admission_date', 'surgery_date', 'discharge_date', mode='before')
     @classmethod
     def parse_dates(cls, v):
-        if isinstance(v, str):
-            try:
-                # Try parsing as date only (YYYY-MM-DD)
-                if len(v) == 10 and 'T' not in v:
-                    return datetime.fromisoformat(v + 'T00:00:00')
-                # Try parsing as datetime
-                return datetime.fromisoformat(v.replace('Z', '+00:00'))
-            except ValueError:
-                return v
-        return v
+        return parse_date_string(v)
     
     @field_validator('induction_time', 'knife_to_skin_time', 'surgery_end_time', mode='before')
     @classmethod
     def parse_datetimes(cls, v):
-        if isinstance(v, str) and v:
-            try:
-                return datetime.fromisoformat(v.replace('Z', '+00:00'))
-            except ValueError:
-                return v
-        return v
+        return parse_date_string(v)
 
 
 class SurgicalTeam(BaseModel):
@@ -100,14 +87,7 @@ class Intraoperative(BaseModel):
     @field_validator('stoma_closure_date', mode='before')
     @classmethod
     def parse_closure_date(cls, v):
-        if isinstance(v, str) and v:
-            try:
-                if len(v) == 10 and 'T' not in v:
-                    return datetime.fromisoformat(v + 'T00:00:00')
-                return datetime.fromisoformat(v.replace('Z', '+00:00'))
-            except ValueError:
-                return v
-        return v
+        return parse_date_string(v)
 
 
 class TNMStaging(BaseModel):
