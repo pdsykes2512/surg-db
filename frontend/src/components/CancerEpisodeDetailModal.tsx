@@ -4,6 +4,8 @@ import { AddTreatmentModal } from './AddTreatmentModal'
 import { TumourModal } from './TumourModal'
 import { TumourSummaryModal } from './TumourSummaryModal'
 import { TreatmentSummaryModal } from './TreatmentSummaryModal'
+import { InvestigationModal } from './InvestigationModal'
+import { FollowUpModal } from './FollowUpModal'
 import { formatStatus, formatTreatmentType, formatSurgeon, capitalize, formatTreatmentPlan, formatCodedValue, formatAnatomicalSite, formatClinicalTNM, formatPathologicalTNM } from '../utils/formatters'
 import { calculateStage, getStageColor, formatStage } from '../utils/cancerStaging'
 
@@ -49,12 +51,18 @@ interface CancerEpisodeDetailModalProps {
 export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpisodeDetailModalProps) {
   const [treatments, setTreatments] = useState<Treatment[]>([])
   const [tumours, setTumours] = useState<any[]>([])
+  const [investigations, setInvestigations] = useState<any[]>([])
+  const [followUps, setFollowUps] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [showAddTreatment, setShowAddTreatment] = useState(false)
   const [editingTreatment, setEditingTreatment] = useState<Treatment | null>(null)
   const [showTumourModal, setShowTumourModal] = useState(false)
   const [editingTumour, setEditingTumour] = useState<any>(null)
-  const [activeTab, setActiveTab] = useState<'overview' | 'tumours' | 'treatments'>('overview')
+  const [showInvestigationModal, setShowInvestigationModal] = useState(false)
+  const [editingInvestigation, setEditingInvestigation] = useState<any>(null)
+  const [showFollowUpModal, setShowFollowUpModal] = useState(false)
+  const [editingFollowUp, setEditingFollowUp] = useState<any>(null)
+  const [activeTab, setActiveTab] = useState<'overview' | 'tumours' | 'treatments' | 'investigations' | 'followups'>('overview')
   const [viewingTumour, setViewingTumour] = useState<any>(null)
   const [viewingTreatment, setViewingTreatment] = useState<Treatment | null>(null)
   const [providerName, setProviderName] = useState<string>('')
@@ -310,6 +318,52 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
     }
   }
 
+  // Investigation handlers
+  const handleAddInvestigation = async (investigation: any) => {
+    if (!episode) return
+    console.log('Adding investigation:', investigation)
+    // TODO: Implement API call when backend endpoint is ready
+    setInvestigations([...investigations, investigation])
+    setShowInvestigationModal(false)
+    alert('Investigation added (API integration pending)')
+  }
+
+  const handleEditInvestigation = async (investigation: any) => {
+    if (!episode) return
+    console.log('Editing investigation:', investigation)
+    // TODO: Implement API call when backend endpoint is ready
+    const updated = investigations.map(inv => 
+      inv.investigation_id === investigation.investigation_id ? investigation : inv
+    )
+    setInvestigations(updated)
+    setEditingInvestigation(null)
+    setShowInvestigationModal(false)
+    alert('Investigation updated (API integration pending)')
+  }
+
+  // Follow-up handlers
+  const handleAddFollowUp = async (followUp: any) => {
+    if (!episode) return
+    console.log('Adding follow-up:', followUp)
+    // TODO: Implement API call when backend endpoint is ready
+    setFollowUps([...followUps, followUp])
+    setShowFollowUpModal(false)
+    alert('Follow-up added (API integration pending)')
+  }
+
+  const handleEditFollowUp = async (followUp: any) => {
+    if (!episode) return
+    console.log('Editing follow-up:', followUp)
+    // TODO: Implement API call when backend endpoint is ready
+    const updated = followUps.map(fu => 
+      fu.followup_id === followUp.followup_id ? followUp : fu
+    )
+    setFollowUps(updated)
+    setEditingFollowUp(null)
+    setShowFollowUpModal(false)
+    alert('Follow-up updated (API integration pending)')
+  }
+
   if (!episode) return null
 
   const formatDate = (dateStr?: string) => {
@@ -395,6 +449,26 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
               }`}
             >
               Treatments ({treatments.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('investigations')}
+              className={`py-3 px-2 border-b-2 font-medium text-sm ${
+                activeTab === 'investigations'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Investigations ({investigations.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('followups')}
+              className={`py-3 px-2 border-b-2 font-medium text-sm ${
+                activeTab === 'followups'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Follow-ups ({followUps.length})
             </button>
           </div>
         </div>
@@ -1027,6 +1101,200 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
               )}
             </div>
           )}
+
+          {/* Investigations Tab */}
+          {activeTab === 'investigations' && (
+            <div>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-semibold text-gray-900">
+                  Investigations & Imaging
+                </h3>
+                <Button 
+                  onClick={() => setShowInvestigationModal(true)}
+                  size="sm"
+                >
+                  + Add Investigation
+                </Button>
+              </div>
+
+              {investigations.length === 0 ? (
+                <div className="text-center py-12 bg-gray-50 rounded-lg">
+                  <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <p className="mt-2 text-sm text-gray-500">No investigations recorded</p>
+                  <p className="text-xs text-gray-400">Add imaging, endoscopy, or laboratory investigations</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto border rounded-lg">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Investigation</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Result</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {investigations.map((inv) => (
+                        <tr key={inv.investigation_id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {inv.date ? formatDate(inv.date) : 'Not recorded'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                              {capitalize(inv.type)}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-900">
+                            {inv.subtype.split('_').map(w => capitalize(w)).join(' ')}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-900">
+                            {inv.result || 'Pending'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div className="flex space-x-2">
+                              <button
+                                onClick={() => {
+                                  setEditingInvestigation(inv)
+                                  setShowInvestigationModal(true)
+                                }}
+                                className="text-blue-600 hover:text-blue-900"
+                                title="Edit investigation"
+                              >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Follow-ups Tab */}
+          {activeTab === 'followups' && (
+            <div>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-semibold text-gray-900">
+                  Follow-up Visits
+                </h3>
+                <Button 
+                  onClick={() => setShowFollowUpModal(true)}
+                  size="sm"
+                >
+                  + Add Follow-up
+                </Button>
+              </div>
+
+              {followUps.length === 0 ? (
+                <div className="text-center py-12 bg-gray-50 rounded-lg">
+                  <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <p className="mt-2 text-sm text-gray-500">No follow-up visits recorded</p>
+                  <p className="text-xs text-gray-400">Track clinic appointments and surveillance visits</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {followUps.map((fu) => (
+                    <div key={fu.followup_id} className="border rounded-lg p-4 hover:bg-gray-50">
+                      <div className="flex justify-between items-start mb-3">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-medium text-gray-900">
+                              {fu.date ? formatDate(fu.date) : 'Date not recorded'}
+                            </span>
+                            <span className="px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">
+                              {fu.type.split('_').map(w => capitalize(w)).join(' ')}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-600">
+                            Seen by: {fu.clinician}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setEditingFollowUp(fu)
+                            setShowFollowUpModal(true)
+                          }}
+                          className="text-blue-600 hover:text-blue-900"
+                          title="Edit follow-up"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+                      </div>
+
+                      {fu.outcome && (
+                        <div className="mb-2">
+                          <span className="text-sm font-medium text-gray-700">Outcome: </span>
+                          <span className="text-sm text-gray-900">
+                            {fu.outcome.split('_').map(w => capitalize(w)).join(' ')}
+                          </span>
+                        </div>
+                      )}
+
+                      {fu.clinical_status && (
+                        <div className="mb-2">
+                          <p className="text-sm text-gray-700">{fu.clinical_status}</p>
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-3 gap-4 text-sm mt-3">
+                        {fu.cea_level && (
+                          <div>
+                            <span className="text-gray-500">CEA:</span>
+                            <span className="ml-1 font-medium">{fu.cea_level} ng/mL</span>
+                          </div>
+                        )}
+                        {fu.weight_kg && (
+                          <div>
+                            <span className="text-gray-500">Weight:</span>
+                            <span className="ml-1 font-medium">{fu.weight_kg} kg</span>
+                          </div>
+                        )}
+                        {fu.performance_status && (
+                          <div>
+                            <span className="text-gray-500">ECOG:</span>
+                            <span className="ml-1 font-medium">{fu.performance_status}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {fu.investigations_ordered && fu.investigations_ordered.length > 0 && (
+                        <div className="mt-3 pt-3 border-t">
+                          <p className="text-xs text-gray-500 mb-1">Investigations Ordered:</p>
+                          <div className="flex flex-wrap gap-1">
+                            {fu.investigations_ordered.map((inv, idx) => (
+                              <span key={idx} className="px-2 py-1 text-xs bg-blue-50 text-blue-700 rounded">
+                                {inv}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {fu.next_appointment && (
+                        <div className="mt-3 pt-3 border-t text-sm">
+                          <span className="text-gray-500">Next appointment: </span>
+                          <span className="font-medium">{formatDate(fu.next_appointment)}</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Footer */}
@@ -1098,6 +1366,36 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
               setViewingTreatment(null)
               setShowAddTreatment(true)
             }}
+          />
+        )}
+
+        {/* Investigation Modal */}
+        {showInvestigationModal && (
+          <InvestigationModal
+            episodeId={episode.episode_id}
+            patientId={episode.patient_id}
+            onSubmit={editingInvestigation ? handleEditInvestigation : handleAddInvestigation}
+            onCancel={() => {
+              setShowInvestigationModal(false)
+              setEditingInvestigation(null)
+            }}
+            mode={editingInvestigation ? 'edit' : 'create'}
+            initialData={editingInvestigation}
+          />
+        )}
+
+        {/* Follow-up Modal */}
+        {showFollowUpModal && (
+          <FollowUpModal
+            episodeId={episode.episode_id}
+            patientId={episode.patient_id}
+            onSubmit={editingFollowUp ? handleEditFollowUp : handleAddFollowUp}
+            onCancel={() => {
+              setShowFollowUpModal(false)
+              setEditingFollowUp(null)
+            }}
+            mode={editingFollowUp ? 'edit' : 'create'}
+            initialData={editingFollowUp}
           />
         )}
 
