@@ -155,40 +155,42 @@ export function HomePage() {
                 {stats.loading ? '—' : stats.totalEpisodes}
               </p>
               {!stats.loading && (
-                <div className="mt-3 pt-3 border-t border-gray-200 space-y-2">
-                  {/* Surgery Treatments */}
-                  <div>
-                    <div className="text-xs font-medium text-gray-700 mb-1">Surgery</div>
-                    <div className="grid grid-cols-4 gap-2">
-                      {stats.treatmentBreakdown
-                        .filter(item => item.treatment_type === 'surgery')
-                        .map((item, idx) => (
-                          <div key={idx} className="text-center">
-                            <div className="text-xs text-gray-500 capitalize">{item.treatment_type}</div>
-                            <div className="text-lg font-semibold text-gray-900">{item.count}</div>
-                          </div>
-                        ))}
-                      {stats.treatmentBreakdown.filter(item => item.treatment_type === 'surgery').length === 0 && (
-                        <div className="text-center col-span-4 text-sm text-gray-400">No surgical treatments</div>
-                      )}
+                <div className="mt-3 pt-3 border-t border-gray-200">
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Surgery Treatments */}
+                    <div>
+                      <div className="text-xs font-medium text-gray-700 mb-1">Surgery</div>
+                      <div className="grid grid-cols-2 gap-2">
+                        {stats.treatmentBreakdown
+                          .filter(item => item.treatment_type === 'surgery')
+                          .map((item, idx) => (
+                            <div key={idx} className="text-center">
+                              <div className="text-xs text-gray-500 capitalize">{item.treatment_type}</div>
+                              <div className="text-lg font-semibold text-gray-900">{item.count}</div>
+                            </div>
+                          ))}
+                        {stats.treatmentBreakdown.filter(item => item.treatment_type === 'surgery').length === 0 && (
+                          <div className="text-center col-span-2 text-sm text-gray-400">No surgical treatments</div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                  
-                  {/* Oncology Treatments */}
-                  <div>
-                    <div className="text-xs font-medium text-gray-700 mb-1">Oncology</div>
-                    <div className="grid grid-cols-4 gap-2">
-                      {stats.treatmentBreakdown
-                        .filter(item => ['chemotherapy', 'radiotherapy', 'immunotherapy'].includes(item.treatment_type))
-                        .map((item, idx) => (
-                          <div key={idx} className="text-center">
-                            <div className="text-xs text-gray-500 capitalize">{item.treatment_type}</div>
-                            <div className="text-lg font-semibold text-gray-900">{item.count}</div>
-                          </div>
-                        ))}
-                      {stats.treatmentBreakdown.filter(item => ['chemotherapy', 'radiotherapy', 'immunotherapy'].includes(item.treatment_type)).length === 0 && (
-                        <div className="text-center col-span-4 text-sm text-gray-400">No oncology treatments yet</div>
-                      )}
+                    
+                    {/* Oncology Treatments */}
+                    <div>
+                      <div className="text-xs font-medium text-gray-700 mb-1">Oncology</div>
+                      <div className="grid grid-cols-2 gap-2">
+                        {stats.treatmentBreakdown
+                          .filter(item => ['chemotherapy', 'radiotherapy', 'immunotherapy'].includes(item.treatment_type))
+                          .map((item, idx) => (
+                            <div key={idx} className="text-center">
+                              <div className="text-xs text-gray-500 capitalize">{item.treatment_type}</div>
+                              <div className="text-lg font-semibold text-gray-900">{item.count}</div>
+                            </div>
+                          ))}
+                        {stats.treatmentBreakdown.filter(item => ['chemotherapy', 'radiotherapy', 'immunotherapy'].includes(item.treatment_type)).length === 0 && (
+                          <div className="text-center col-span-2 text-sm text-gray-400">No oncology treatments yet</div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
