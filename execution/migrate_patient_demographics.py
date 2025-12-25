@@ -36,7 +36,8 @@ def migrate_patient_data(dry_run=False):
     print("="*80)
     
     # Load CSV
-    df = pd.read_csv('patients_export_new.csv')
+    csv_path = '/root/surg-db/patients_export_new.csv'
+    df = pd.read_csv(csv_path)
     print(f"Loaded {len(df)} patients from CSV")
     
     # Connect to database
@@ -158,7 +159,7 @@ def migrate_patient_data(dry_run=False):
         # Death information
         death_date = parse_date(row.get('DeathDat'))
         if death_date:
-            update['$set']['death_date'] = death_date
+            update['$set']['deceased_date'] = death_date
             update['$set']['deceased'] = True
             stats['death_date_added'] += 1
         
