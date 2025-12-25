@@ -5,10 +5,12 @@ Surgical Outcomes Database API
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
+from slowapi.errors import RateLimitExceeded
 
 from .config import settings
 from .database import Database
 from .routes import patients, episodes_v2, reports, auth, admin, clinicians, exports, codes, nhs_providers, audit, investigations
+from .middleware import limiter, rate_limit_exceeded_handler, RequestLoggingMiddleware
 
 
 @asynccontextmanager
@@ -26,6 +28,13 @@ app = FastAPI(
     version=settings.api_version,
     lifespan=lifespan
 )
+
+# Add rate limiter state
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
+
+# Request logging middleware (add first to log all requests)
+app.add_middleware(RequestLoggingMiddleware)
 
 # CORS middleware
 app.add_middleware(
