@@ -19,7 +19,7 @@ class PasswordChange(BaseModel):
 
 @router.get("", response_model=List[User])
 async def list_users(
-    current_user: User = Depends(require_admin),
+    current_user: dict = Depends(require_admin),
     db: AsyncIOMotorDatabase = Depends(get_database),
     role: str = None,
     is_active: bool = None
@@ -48,7 +48,7 @@ async def list_users(
 @router.post("", response_model=User, status_code=status.HTTP_201_CREATED)
 async def create_user(
     user_data: UserCreate,
-    current_user: User = Depends(require_admin),
+    current_user: dict = Depends(require_admin),
     db: AsyncIOMotorDatabase = Depends(get_database)
 ):
     """Create a new user (Admin only)"""
@@ -83,7 +83,7 @@ async def create_user(
 @router.get("/{user_id}", response_model=User)
 async def get_user(
     user_id: str,
-    current_user: User = Depends(require_admin),
+    current_user: dict = Depends(require_admin),
     db: AsyncIOMotorDatabase = Depends(get_database)
 ):
     """Get a user by ID (Admin only)"""
@@ -103,7 +103,7 @@ async def get_user(
 async def update_user(
     user_id: str,
     user_data: UserUpdate,
-    current_user: User = Depends(require_admin),
+    current_user: dict = Depends(require_admin),
     db: AsyncIOMotorDatabase = Depends(get_database)
 ):
     """Update a user (Admin only)"""
@@ -156,7 +156,7 @@ async def update_user(
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_user(
     user_id: str,
-    current_user: User = Depends(require_admin),
+    current_user: dict = Depends(require_admin),
     db: AsyncIOMotorDatabase = Depends(get_database)
 ):
     """Delete a user (Admin only)"""
@@ -175,7 +175,7 @@ async def delete_user(
 async def change_user_password(
     user_id: str,
     password_data: PasswordChange,
-    current_user: User = Depends(require_admin),
+    current_user: dict = Depends(require_admin),
     db: AsyncIOMotorDatabase = Depends(get_database)
 ):
     """Change a user's password (Admin only)"""

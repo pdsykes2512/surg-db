@@ -355,7 +355,7 @@ def create_episode_xml(episode: dict, patient: dict, treatments: list, tumours: 
 async def export_nboca_xml(
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
-    current_user: User = Depends(require_admin),
+    current_user: dict = Depends(require_admin),
     db: AsyncIOMotorDatabase = Depends(get_database)
 ):
     """
@@ -466,7 +466,7 @@ async def export_nboca_xml(
 
 @router.get("/data-completeness")
 async def check_data_completeness(
-    current_user: User = Depends(require_admin),
+    current_user: dict = Depends(require_admin),
     db: AsyncIOMotorDatabase = Depends(get_database)
 ):
     """
@@ -581,7 +581,7 @@ async def check_data_completeness(
 
 @router.get("/nboca-validator")
 async def validate_nboca_submission(
-    current_user: User = Depends(require_admin),
+    current_user: dict = Depends(require_admin),
     db: AsyncIOMotorDatabase = Depends(get_database)
 ):
     """

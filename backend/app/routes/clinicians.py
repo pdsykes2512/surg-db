@@ -16,7 +16,7 @@ router = APIRouter(prefix="/api/admin/clinicians", tags=["Admin - Clinician Mana
 async def list_clinicians(
     skip: int = 0,
     limit: int = 1000,
-    current_user: User = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
     db: AsyncIOMotorDatabase = Depends(get_database)
 ):
     """
@@ -35,7 +35,7 @@ async def list_clinicians(
 @router.post("", status_code=status.HTTP_201_CREATED)
 async def create_clinician(
     clinician_data: ClinicianCreate,
-    current_user: User = Depends(require_admin),
+    current_user: dict = Depends(require_admin),
     db: AsyncIOMotorDatabase = Depends(get_database)
 ):
     """
@@ -66,7 +66,7 @@ async def create_clinician(
 async def update_clinician(
     clinician_id: str,
     clinician_data: ClinicianUpdate,
-    current_user: User = Depends(require_admin),
+    current_user: dict = Depends(require_admin),
     db: AsyncIOMotorDatabase = Depends(get_database)
 ):
     """
@@ -106,7 +106,7 @@ async def update_clinician(
 @router.delete("/{clinician_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_clinician(
     clinician_id: str,
-    current_user: User = Depends(require_admin),
+    current_user: dict = Depends(require_admin),
     db: AsyncIOMotorDatabase = Depends(get_database)
 ):
     """

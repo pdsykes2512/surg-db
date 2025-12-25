@@ -16,7 +16,7 @@ router = APIRouter(prefix="/api/admin/surgeons", tags=["Admin - Surgeon Manageme
 async def list_surgeons(
     skip: int = 0,
     limit: int = 1000,
-    current_user: User = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
     db: AsyncIOMotorDatabase = Depends(get_database)
 ):
     """
@@ -34,7 +34,7 @@ async def list_surgeons(
 @router.post("", response_model=Surgeon, status_code=status.HTTP_201_CREATED)
 async def create_surgeon(
     surgeon_data: SurgeonCreate,
-    current_user: User = Depends(require_admin),
+    current_user: dict = Depends(require_admin),
     db: AsyncIOMotorDatabase = Depends(get_database)
 ):
     """
@@ -65,7 +65,7 @@ async def create_surgeon(
 async def update_surgeon(
     surgeon_id: str,
     surgeon_data: SurgeonUpdate,
-    current_user: User = Depends(require_admin),
+    current_user: dict = Depends(require_admin),
     db: AsyncIOMotorDatabase = Depends(get_database)
 ):
     """
@@ -105,7 +105,7 @@ async def update_surgeon(
 @router.delete("/{surgeon_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_surgeon(
     surgeon_id: str,
-    current_user: User = Depends(require_admin),
+    current_user: dict = Depends(require_admin),
     db: AsyncIOMotorDatabase = Depends(get_database)
 ):
     """

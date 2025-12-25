@@ -126,9 +126,9 @@ def require_role(required_roles: list[UserRole]):
 
 
 # Common role dependencies
-def require_admin(current_user: User = Depends(get_current_user)):
+def require_admin(current_user: dict = Depends(get_current_user)):
     """Require admin role"""
-    if current_user.role != UserRole.ADMIN:
+    if current_user["role"] != UserRole.ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required"
@@ -136,9 +136,9 @@ def require_admin(current_user: User = Depends(get_current_user)):
     return current_user
 
 
-def require_surgeon_or_admin(current_user: User = Depends(get_current_user)):
+def require_surgeon_or_admin(current_user: dict = Depends(get_current_user)):
     """Require surgeon or admin role"""
-    if current_user.role not in [UserRole.SURGEON, UserRole.ADMIN]:
+    if current_user["role"] not in [UserRole.SURGEON, UserRole.ADMIN]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Surgeon or admin access required"
@@ -146,11 +146,12 @@ def require_surgeon_or_admin(current_user: User = Depends(get_current_user)):
     return current_user
 
 
-def require_data_entry_or_higher(current_user: User = Depends(get_current_user)):
+def require_data_entry_or_higher(current_user: dict = Depends(get_current_user)):
     """Require data_entry, surgeon, or admin role"""
-    if current_user.role not in [UserRole.DATA_ENTRY, UserRole.SURGEON, UserRole.ADMIN]:
+    if current_user["role"] not in [UserRole.DATA_ENTRY, UserRole.SURGEON, UserRole.ADMIN]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Data entry access or higher required"
         )
+    return current_user
     return current_user
