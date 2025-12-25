@@ -6,6 +6,7 @@ from typing import Dict, Any, Optional, List
 from datetime import datetime, timedelta
 
 from ..database import Database
+from ..utils.mortality import calculate_mortality_30d, calculate_mortality_90d
 
 
 router = APIRouter(prefix="/api/reports", tags=["reports"])
@@ -16,9 +17,14 @@ async def get_summary_report() -> Dict[str, Any]:
     """Get overall surgical outcome statistics from treatments with yearly breakdown"""
     db = Database.get_database()
     treatments_collection = db.treatments
+    patients_collection = db.patients
     
     # Get all surgical treatments
     all_treatments = await treatments_collection.find({"treatment_type": "surgery"}).to_list(length=None)
+    
+    # Build patient_id -> deceased_date mapping
+    patients = await patients_collection.find({"deceased_date": {"$exists": True, "$ne": None}}).to_list(length=None)
+    patient_deceased_dates = {p['patient_id']: p['deceased_date'] for p in patients if p.get('deceased_date')}
     total_surgeries = len(all_treatments)
     
     # Helper function to calculate metrics for a list of treatments
@@ -38,8 +44,21 @@ async def get_summary_report() -> Dict[str, Any]:
         total = len(treatments)
         surgeries_with_complications = sum(1 for t in treatments if t.get('complications'))
         readmissions = sum(1 for t in treatments if t.get('readmission_30d'))
-        mortality_30d_count = sum(1 for t in treatments if t.get('mortality_30d'))
-        mortality_90d_count = sum(1 for t in treatments if t.get('mortality_90d'))
+        
+        # Calculate mortality dynamically from deceased_date
+        mortality_30d_count = 0
+        mortality_90d_count = 0
+        for t in treatments:
+            patient_id = t.get('patient_id')
+            treatment_date = t.get('treatment_date')
+            deceased_date = patient_deceased_dates.get(patient_id)
+            
+            if treatment_date and deceased_date:
+                if calculate_mortality_30d(treatment_date, deceased_date):
+                    mortality_30d_count += 1
+                if calculate_mortality_90d(treatment_date, deceased_date):
+                    mortality_90d_count += 1
+        
         return_to_theatre = sum(1 for t in treatments if t.get('return_to_theatre'))
         escalation_of_care = sum(1 for t in treatments if t.get('icu_admission'))
         
@@ -120,6 +139,11 @@ async def get_surgeon_performance() -> Dict[str, Any]:
     treatments_collection = db.treatments
     episodes_collection = db.episodes
     clinicians_collection = db.clinicians
+    patients_collection = db.patients
+    
+    # Build patient_id -> deceased_date mapping
+    patients = await patients_collection.find({"deceased_date": {"$exists": True, "$ne": None}}).to_list(length=None)
+    patient_deceased_dates = {p['patient_id']: p['deceased_date'] for p in patients if p.get('deceased_date')}
     
     # Get all current clinicians (active surgeons)
     clinicians = await clinicians_collection.find({"clinical_role": "surgeon"}).to_list(length=None)
@@ -197,10 +221,18 @@ async def get_surgeon_performance() -> Dict[str, Any]:
             stats['surgeries_with_complications'] += 1
         if treatment.get('readmission_30d'):
             stats['readmissions'] += 1
-        if treatment.get('mortality_30d'):
-            stats['mortality_30day'] += 1
-        if treatment.get('mortality_90d'):
-            stats['mortality_90day'] += 1
+        
+        # Calculate mortality dynamically from deceased_date
+        patient_id = treatment.get('patient_id')
+        treatment_date = treatment.get('treatment_date')
+        deceased_date = patient_deceased_dates.get(patient_id)
+        
+        if treatment_date and deceased_date:
+            if calculate_mortality_30d(treatment_date, deceased_date):
+                stats['mortality_30day'] += 1
+            if calculate_mortality_90d(treatment_date, deceased_date):
+                stats['mortality_90day'] += 1
+        
         if treatment.get('return_to_theatre'):
             stats['return_to_theatre_count'] += 1
         if treatment.get('icu_admission'):
