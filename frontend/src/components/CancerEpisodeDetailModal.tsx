@@ -6,7 +6,7 @@ import { TumourSummaryModal } from './TumourSummaryModal'
 import { TreatmentSummaryModal } from './TreatmentSummaryModal'
 import { InvestigationModal } from './InvestigationModal'
 import { FollowUpModal } from './FollowUpModal'
-import { formatStatus, formatTreatmentType, formatSurgeon, capitalize, formatTreatmentPlan, formatCodedValue, formatAnatomicalSite, formatClinicalTNM, formatPathologicalTNM } from '../utils/formatters'
+import { formatStatus, formatTreatmentType, formatSurgeon, capitalize, formatTreatmentPlan, formatCodedValue, formatAnatomicalSite, formatClinicalTNM, formatPathologicalTNM, formatInvestigationType } from '../utils/formatters'
 import { calculateStage, getStageColor, formatStage } from '../utils/cancerStaging'
 
 interface Treatment {
@@ -123,6 +123,7 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
         setTreatments(data.treatments || [])
         setTumours(data.tumours || [])
         setInvestigations(data.investigations || [])
+        setFollowUps(data.follow_ups || [])
       }
     } catch (error) {
       console.error('Failed to load treatments:', error)
@@ -325,21 +326,17 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
     
     try {
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
-      const response = await fetch(
-        `${API_URL}/investigations`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          },
-          body: JSON.stringify(investigation)
-        }
-      )
+      const response = await fetch(`${API_URL}/investigations`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify(investigation)
+      })
       
       if (response.ok) {
-        const newInvestigation = await response.json()
-        setInvestigations([...investigations, newInvestigation])
+        await loadTreatments() // Reloads investigations too
         setShowInvestigationModal(false)
       } else {
         const error = await response.json()
@@ -352,12 +349,12 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
   }
 
   const handleEditInvestigation = async (investigation: any) => {
-    if (!episode) return
+    if (!editingInvestigation || !episode) return
     
     try {
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
       const response = await fetch(
-        `${API_URL}/investigations/${investigation.investigation_id}`,
+        `${API_URL}/investigations/${editingInvestigation.investigation_id}`,
         {
           method: 'PUT',
           headers: {
@@ -369,51 +366,26 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
       )
       
       if (response.ok) {
-        const updatedInvestigation = await response.json()
-        const updated = investigations.map(inv => 
-          inv.investigation_id === investigation.investigation_id ? updatedInvestigation : inv
-        )
-        setInvestigations(updated)
+        await loadTreatments() // Reloads investigations too
         setEditingInvestigation(null)
         setShowInvestigationModal(false)
       } else {
         const error = await response.json()
-        const errorMsg = typeof error.detail === 'string' 
-          ? error.detail 
-          : error.detail?.message || JSON.stringify(error.detail) || 'Unknown error'
-        alert(`Failed to update investigation: ${errorMsg}`)
+        console.error('Investigation update error:', error)
+        
+        // Handle validation errors (422)
+        if (error.detail && Array.isArray(error.detail)) {
+          const errorMessages = error.detail.map((err: any) => 
+            `${err.loc?.join('.')} - ${err.msg}`
+          ).join(', ')
+          alert(`Failed to update investigation: ${errorMessages}`)
+        } else {
+          alert(`Failed to update investigation: ${error.detail || JSON.stringify(error)}`)
+        }
       }
     } catch (error) {
       console.error('Failed to update investigation:', error)
       alert('Failed to update investigation')
-    }
-  }
-
-  const handleDeleteInvestigation = async (investigationId: string) => {
-    if (!episode) return
-    
-    try {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
-      const response = await fetch(
-        `${API_URL}/investigations/${investigationId}`,
-        {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        }
-      )
-      
-      if (response.ok) {
-        // Remove from local state
-        setInvestigations(investigations.filter(inv => inv.investigation_id !== investigationId))
-      } else {
-        const error = await response.json()
-        alert(`Failed to delete investigation: ${error.detail || 'Unknown error'}`)
-      }
-    } catch (error) {
-      console.error('Failed to delete investigation:', error)
-      alert('Failed to delete investigation')
     }
   }
 
@@ -1238,14 +1210,7 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
                             </span>
                           </td>
                           <td className="px-6 py-4 text-sm text-gray-900">
-                            {inv.subtype.split('_').map((w: string) => {
-                              // Handle medical abbreviations
-                              const upper = w.toUpperCase()
-                              if (['CT', 'MRI', 'PET', 'US', 'USS', 'CXR', 'AXR', 'CEA'].includes(upper)) {
-                                return upper
-                              }
-                              return capitalize(w)
-                            }).join(' ')}
+                            {formatInvestigationType(inv.subtype)}
                           </td>
                           <td className="px-6 py-4 text-sm text-gray-900">
                             {inv.result || '—'}
@@ -1263,20 +1228,6 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
                               >
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                </svg>
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  if (window.confirm('Are you sure you want to delete this investigation?')) {
-                                    handleDeleteInvestigation(inv.investigation_id)
-                                  }
-                                }}
-                                className="text-red-600 hover:text-red-900"
-                                title="Delete investigation"
-                              >
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                 </svg>
                               </button>
                             </div>
@@ -1483,7 +1434,6 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
         {/* Investigation Modal */}
         {showInvestigationModal && (
           <InvestigationModal
-            key={editingInvestigation?.investigation_id || 'new'}
             episodeId={episode.episode_id}
             patientId={episode.patient_id}
             onSubmit={editingInvestigation ? handleEditInvestigation : handleAddInvestigation}
@@ -1493,7 +1443,6 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
             }}
             mode={editingInvestigation ? 'edit' : 'create'}
             initialData={editingInvestigation}
-            existingInvestigations={investigations}
           />
         )}
 

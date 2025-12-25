@@ -505,7 +505,7 @@ export function ReportsPage() {
                 {Object.entries(summary.urgency_breakdown).map(([urgency, count]) => (
                   <div key={urgency} className="text-center">
                     <p className="text-2xl font-bold text-gray-900">{count}</p>
-                    <p className="text-sm text-gray-500">{urgency}</p>
+                    <p className="text-sm text-gray-500 capitalize">{urgency}</p>
                   </div>
                 ))}
               </div>

@@ -325,3 +325,27 @@ export const formatPathologicalTNM = (
   
   return `pT${tFormatted} pN${nFormatted} pM${mFormatted}`
 }
+
+/**
+ * Format investigation subtype with proper acronym capitalization
+ * Handles medical acronyms like CT, MRI, PET, etc.
+ */
+export const formatInvestigationType = (subtype: string | undefined | null): string => {
+  if (!subtype) return '—'
+  
+  // Medical acronyms that should be fully uppercase
+  const acronyms = ['CT', 'MRI', 'PET', 'US', 'XR', 'MRCP', 'ERCP', 'EUS', 'OGD', 'CT-CAP']
+  
+  // Split by underscore and process each word
+  const words = subtype.split('_').map(word => {
+    const upperWord = word.toUpperCase()
+    // Check if this word is a known acronym
+    if (acronyms.includes(upperWord)) {
+      return upperWord
+    }
+    // Otherwise capitalize normally
+    return capitalize(word)
+  })
+  
+  return words.join(' ')
+}
