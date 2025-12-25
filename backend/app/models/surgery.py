@@ -78,54 +78,16 @@ class Intraoperative(BaseModel):
     # Colorectal-specific: Stoma
     stoma_created: bool = Field(False, description="Whether a stoma was created")
     stoma_type: Optional[str] = Field(None, description="Type of stoma: ileostomy_temporary/ileostomy_permanent/colostomy_temporary/colostomy_permanent")
-    planned_reversal_date: Optional[Union[datetime, date, str]] = Field(None, description="Planned date for temporary stoma reversal")
-    stoma_closure_date: Optional[Union[datetime, date, str]] = Field(None, description="Actual date when stoma was closed")
-    reverses_stoma_from_treatment_id: Optional[str] = Field(None, description="Treatment ID of the original surgery that created the stoma being reversed")
+    stoma_closure_date: Optional[Union[datetime, date, str]] = Field(None, description="Date when stoma was closed")
     # Colorectal-specific: Anastomosis
     anastomosis_performed: bool = Field(False, description="Whether an anastomosis was performed")
-    anastomosis_type: Optional[str] = Field(None, description="Type of anastomosis: hand_sewn/stapled/end_to_end/end_to_side/side_to_side/side_to_end")
     anastomosis_height_cm: Optional[float] = Field(None, ge=0, description="Height of anastomosis from anal verge in cm")
     anterior_resection_type: Optional[str] = Field(None, description="Type of anterior resection: high/low")
-    
-    @field_validator('planned_reversal_date', mode='before')
-    @classmethod
-    def parse_planned_reversal_date(cls, v):
-        return parse_date_string(v)
     
     @field_validator('stoma_closure_date', mode='before')
     @classmethod
     def parse_closure_date(cls, v):
         return parse_date_string(v)
-    
-    @model_validator(mode='after')
-    def validate_stoma_fields(self):
-        # Validate temporary stomas have planned reversal date within 2 years
-        if self.stoma_created and self.stoma_type and 'temporary' in self.stoma_type:
-            if self.planned_reversal_date and self.treatment_date:
-                from datetime import datetime, timedelta
-                
-                # Parse dates if they're strings
-                treatment_dt = self.treatment_date
-                if isinstance(treatment_dt, str):
-                    treatment_dt = datetime.fromisoformat(treatment_dt.replace('Z', '+00:00'))
-                elif isinstance(treatment_dt, date) and not isinstance(treatment_dt, datetime):
-                    treatment_dt = datetime.combine(treatment_dt, datetime.min.time())
-                
-                planned_dt = self.planned_reversal_date
-                if isinstance(planned_dt, str):
-                    planned_dt = datetime.fromisoformat(planned_dt.replace('Z', '+00:00'))
-                elif isinstance(planned_dt, date) and not isinstance(planned_dt, datetime):
-                    planned_dt = datetime.combine(planned_dt, datetime.min.time())
-                
-                # Check if planned reversal is within 2 years
-                max_reversal_date = treatment_dt + timedelta(days=730)  # 2 years
-                if planned_dt > max_reversal_date:
-                    raise ValueError(
-                        f"Temporary stoma reversal should be planned within 2 years of creation. "
-                        f"Treatment date: {treatment_dt.date()}, Max reversal date: {max_reversal_date.date()}"
-                    )
-        
-        return self
 
 
 class TNMStaging(BaseModel):
@@ -174,9 +136,6 @@ class IBDSpecific(BaseModel):
     indication_for_surgery: Optional[str] = None
     stoma_created: bool = False
     stoma_type: Optional[str] = None
-    planned_reversal_date: Optional[Union[datetime, date, str]] = None
-    reverses_stoma_from_treatment_id: Optional[str] = None
-    anastomosis_type: Optional[str] = None
 
 
 class HerniaSpecific(BaseModel):
@@ -230,10 +189,10 @@ class Outcomes(BaseModel):
     readmission_30day: bool = False
     readmission_date: Optional[datetime] = None
     readmission_reason: Optional[str] = None
-    
-    # Mortality tracking (boolean fields for reporting, auto-calculated from patient deceased_date)
     mortality_30day: bool = False
     mortality_90day: bool = False
+    date_of_death: Optional[datetime] = None
+    cause_of_death: Optional[str] = None
 
 
 class FollowUpAppointment(BaseModel):

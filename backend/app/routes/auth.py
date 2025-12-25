@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
@@ -12,12 +12,15 @@ from ..auth import (
     get_current_user,
     ACCESS_TOKEN_EXPIRE_MINUTES
 )
+from ..middleware import limiter, AUTH_LIMIT
 
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 
 
 @router.post("/login", response_model=Token)
+@limiter.limit(AUTH_LIMIT)
 async def login(
+    request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: AsyncIOMotorDatabase = Depends(get_database)
 ):
@@ -65,7 +68,9 @@ async def get_current_user_info(current_user: dict = Depends(get_current_user)):
 
 
 @router.post("/register", response_model=User, status_code=status.HTTP_201_CREATED)
+@limiter.limit(AUTH_LIMIT)
 async def register(
+    request: Request,
     user_data: UserCreate,
     db: AsyncIOMotorDatabase = Depends(get_database)
 ):

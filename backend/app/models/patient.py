@@ -40,7 +40,6 @@ class Demographics(BaseModel):
     bmi: Optional[float] = Field(None, ge=0, le=100)
     weight_kg: Optional[float] = Field(None, ge=0, le=500)
     height_cm: Optional[float] = Field(None, ge=0, le=300)
-    deceased_date: Optional[str] = Field(None, description="Date of death in YYYY-MM-DD format")
 
 
 class MedicalHistory(BaseModel):
