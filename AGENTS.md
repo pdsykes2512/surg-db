@@ -55,6 +55,12 @@ You operate within a 3-layer architecture that separates concerns to maximize re
 
 ## Operating Principles
 
+**0. Check recent changes first** **BEFORE starting any work, read `RECENT_CHANGES.md`** to understand what was done in previous sessions. This prevents:
+- Re-implementing features that already exist
+- Breaking working functionality
+- Duplicating code that was already added
+- Reverting fixes that were previously applied
+
 **1. Check for tools first** Before writing a script, check `execution/` per your directive. Only create new scripts if none exist.
 
 **2. Self-anneal when things break** - Read error message and stack trace  
@@ -64,7 +70,14 @@ You operate within a 3-layer architecture that separates concerns to maximize re
 
 **3. Update directives as you learn** Directives are living documents. When you discover API constraints, better approaches, common errors, or timing expectations—update the directive. But don't create or overwrite directives without asking unless explicitly told to. Directives are your instruction set and must be preserved (and improved upon over time, not extemporaneously used and then discarded).
 
-**4. Version Control & Environment** Initialize all environments as GitHub repositories using the GitHub API. You must strictly follow these Git best practices to maintain a revertible and clean history:
+**4. Document your changes** At the end of each session, update `RECENT_CHANGES.md` with:
+- What was changed and why
+- Files affected
+- How to test/verify the changes
+- Important notes for future sessions
+This maintains continuity across AI chat sessions.
+
+**5. Version Control & Environment** Initialize all environments as GitHub repositories using the GitHub API. You must strictly follow these Git best practices to maintain a revertible and clean history:
 - **Atomic Commits:** Commit often with small, logical units of work. Do not bundle unrelated changes (e.g., do not mix refactoring with new features).
 - **Semantic Messages:** Use clear commit messages following the `type: description` format (e.g., `feat: add scraper script`, `fix: handle API timeout`).
 - **Feature Branches:** Never commit directly to `main` or `master`. Create specific branches for each directive or task (e.g., `feat/add-google-sheets-integration`) and merge only when the task is complete and tested.
@@ -85,7 +98,8 @@ Errors are learning opportunities. When something breaks:
 
 **Directory structure:** - `.tmp/` (or `~/.tmp/`) - All intermediate files (dossiers, scraped data, temp exports, **log files**). Never commit, always regenerated.  
 - `execution/` - Python scripts (the deterministic tools) and startup scripts  
-- `directives/` - SOPs in Markdown (the instruction set)  
+- `directives/` - SOPs in Markdown (the instruction set)
+- `RECENT_CHANGES.md` - **READ THIS FIRST** - Log of recent changes across AI sessions (prevents duplicate work and breaking fixes)  
 - `.env` - Environment variables and API keys  
 - `credentials.json`, `token.json` - Google OAuth credentials (required files, in `.gitignore`)
 
