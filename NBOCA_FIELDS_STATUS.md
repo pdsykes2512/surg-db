@@ -119,6 +119,13 @@ All NBOCA mandatory and recommended fields for bowel cancer audit have been impl
 | Drains Placed | ✅ | `treatments.drains_placed` | Boolean |
 | Complexity | ✅ | `treatments.complexity` | routine/complex |
 | Anesthesia Type | ✅ | `treatments.anesthesia_type` | general/regional |
+| 30-Day Mortality | ✅ | Computed from `patients.deceased_date` | Dynamically calculated |
+| 90-Day Mortality | ✅ | Computed from `patients.deceased_date` | Dynamically calculated |
+| 1-Year Mortality | ✅ | Computed from `patients.deceased_date` | Dynamically calculated |
+| Return to Theatre | ✅ | `treatments.return_to_theatre` | Boolean + reason |
+| 30-Day Readmission | ✅ | `treatments.readmission_30day` | Boolean + reason |
+
+**Mortality Calculation**: Mortality is computed dynamically by comparing `patients.deceased_date` with `treatments.treatment_date`. This ensures a single source of truth and automatic updates when deceased dates are recorded.
 
 ---
 
@@ -216,11 +223,12 @@ Returns percentage completeness for:
 ## What's NOT Yet Implemented
 
 ### 1. Outcome Tracking
-- 30-day mortality ⚠️
-- 90-day mortality ⚠️
-- Anastomotic leak rates ⚠️
-- Reoperation rates ⚠️
-- Readmission tracking ⚠️
+- ✅ 30-day mortality (computed dynamically from `patients.deceased_date`)
+- ✅ 90-day mortality (computed dynamically from `patients.deceased_date`)
+- ✅ 1-year mortality (computed dynamically from `patients.deceased_date`)
+- ⚠️ Anastomotic leak rates (need structured complication tracking)
+- ⚠️ Reoperation rates (return to theatre tracked but needs aggregated reporting)
+- ⚠️ Readmission analysis (30-day readmission tracked, needs reporting dashboard)
 
 ### 2. Additional Treatment Types
 - Chemotherapy regimens (partially implemented)
