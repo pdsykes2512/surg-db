@@ -211,10 +211,13 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
     // Colorectal-specific: Stoma
     stoma_created: false,
     stoma_type: '',
+    planned_reversal_date: '',
     stoma_closure_date: '',
+    reverses_stoma_from_treatment_id: '',
     
     // Colorectal-specific: Anastomosis
     anastomosis_performed: false,
+    anastomosis_type: '',
     anastomosis_height_cm: '',
     anterior_resection_type: '',
     
@@ -341,10 +344,13 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
       // Colorectal-specific: Stoma
       treatment.stoma_created = formData.stoma_created
       if (formData.stoma_type) treatment.stoma_type = formData.stoma_type
+      if (formData.planned_reversal_date) treatment.planned_reversal_date = formData.planned_reversal_date
       if (formData.stoma_closure_date) treatment.stoma_closure_date = formData.stoma_closure_date
+      if (formData.reverses_stoma_from_treatment_id) treatment.reverses_stoma_from_treatment_id = formData.reverses_stoma_from_treatment_id
       
       // Colorectal-specific: Anastomosis
       treatment.anastomosis_performed = formData.anastomosis_performed
+      if (formData.anastomosis_type) treatment.anastomosis_type = formData.anastomosis_type
       if (formData.anastomosis_height_cm) treatment.anastomosis_height_cm = parseFloat(formData.anastomosis_height_cm)
       if (formData.anterior_resection_type) treatment.anterior_resection_type = formData.anterior_resection_type
       
@@ -883,30 +889,66 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
                   </label>
                   
                   {formData.stoma_created && (
-                    <div className="grid grid-cols-2 gap-4 ml-6">
+                    <div className="space-y-4 ml-6">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Stoma Type *
+                          </label>
+                          <SearchableSelect
+                            value={formData.stoma_type}
+                            onChange={(value) => setFormData({ ...formData, stoma_type: value })}
+                            options={[
+                              { value: 'ileostomy_temporary', label: 'Ileostomy (Temporary)' },
+                              { value: 'ileostomy_permanent', label: 'Ileostomy (Permanent)' },
+                              { value: 'colostomy_temporary', label: 'Colostomy (Temporary)' },
+                              { value: 'colostomy_permanent', label: 'Colostomy (Permanent)' }
+                            ]}
+                            getOptionValue={(opt) => opt.value}
+                            getOptionLabel={(opt) => opt.label}
+                            placeholder="Select type..."
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Link to Reversal Surgery
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.reverses_stoma_from_treatment_id}
+                            onChange={(e) => setFormData({ ...formData, reverses_stoma_from_treatment_id: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
+                            placeholder="Treatment ID of original stoma"
+                          />
+                          <p className="mt-1 text-xs text-gray-500">
+                            If this surgery reverses a previous stoma, enter the treatment ID
+                          </p>
+                        </div>
+                      </div>
+                      
+                      {formData.stoma_type?.includes('temporary') && (
+                        <div className="grid grid-cols-2 gap-4">
+                          <DateInput
+                            label="Planned Reversal Date"
+                            value={formData.planned_reversal_date}
+                            onChange={(e) => setFormData({ ...formData, planned_reversal_date: e.target.value })}
+                          />
+                          <div className="text-xs text-gray-500 flex items-center">
+                            <svg className="w-4 h-4 mr-1 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            Should be within 2 years of surgery date
+                          </div>
+                        </div>
+                      )}
+                      
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Stoma Type
-                        </label>
-                        <SearchableSelect
-                          value={formData.stoma_type}
-                          onChange={(value) => setFormData({ ...formData, stoma_type: value })}
-                          options={[
-                            { value: 'ileostomy_temporary', label: 'Ileostomy (Temporary)' },
-                            { value: 'ileostomy_permanent', label: 'Ileostomy (Permanent)' },
-                            { value: 'colostomy_temporary', label: 'Colostomy (Temporary)' },
-                            { value: 'colostomy_permanent', label: 'Colostomy (Permanent)' }
-                          ]}
-                          getOptionValue={(opt) => opt.value}
-                          getOptionLabel={(opt) => opt.label}
-                          placeholder="Select type..."
+                        <DateInput
+                          label="Actual Stoma Closure Date (if already closed)"
+                          value={formData.stoma_closure_date}
+                          onChange={(e) => setFormData({ ...formData, stoma_closure_date: e.target.value })}
                         />
                       </div>
-                      <DateInput
-                        label="Stoma Closure Date (if applicable)"
-                        value={formData.stoma_closure_date}
-                        onChange={(e) => setFormData({ ...formData, stoma_closure_date: e.target.value })}
-                      />
                     </div>
                   )}
                 </div>
@@ -925,6 +967,26 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
                   
                   {formData.anastomosis_performed && (
                     <div className="grid grid-cols-2 gap-4 ml-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Anastomosis Type
+                        </label>
+                        <SearchableSelect
+                          value={formData.anastomosis_type}
+                          onChange={(value) => setFormData({ ...formData, anastomosis_type: value })}
+                          options={[
+                            { value: 'hand_sewn', label: 'Hand-Sewn' },
+                            { value: 'stapled', label: 'Stapled' },
+                            { value: 'end_to_end', label: 'End-to-End' },
+                            { value: 'end_to_side', label: 'End-to-Side' },
+                            { value: 'side_to_side', label: 'Side-to-Side' },
+                            { value: 'side_to_end', label: 'Side-to-End' }
+                          ]}
+                          getOptionValue={(opt) => opt.value}
+                          getOptionLabel={(opt) => opt.label}
+                          placeholder="Select type..."
+                        />
+                      </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Height from Anal Verge (cm)

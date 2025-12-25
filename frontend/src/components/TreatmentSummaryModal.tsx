@@ -179,20 +179,38 @@ export function TreatmentSummaryModal({ treatment, onClose, onEdit }: TreatmentS
                       label="Stoma Created" 
                       value={
                         treatment.stoma_created ? (
-                          <div>
-                            <span className="font-semibold">Yes</span>
-                            {treatment.stoma_type && (
-                              <span className="ml-2">
-                                ({treatment.stoma_type.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())})
-                              </span>
+                          <div className="space-y-1">
+                            <div>
+                              <span className="font-semibold">Yes</span>
+                              {treatment.stoma_type && (
+                                <span className="ml-2">
+                                  ({treatment.stoma_type.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())})
+                                </span>
+                              )}
+                            </div>
+                            {treatment.planned_reversal_date && (
+                              <div className="text-sm text-gray-600">
+                                Planned Reversal: {formatDate(treatment.planned_reversal_date)}
+                              </div>
                             )}
                             {treatment.stoma_closure_date && (
-                              <span className="ml-2 text-gray-600">
-                                — Closed: {formatDate(treatment.stoma_closure_date)}
-                              </span>
+                              <div className="text-sm text-gray-600">
+                                Actual Closure: {formatDate(treatment.stoma_closure_date)}
+                              </div>
                             )}
                           </div>
                         ) : 'No'
+                      }
+                    />
+                  )}
+                  
+                  {treatment.reverses_stoma_from_treatment_id && (
+                    <Field 
+                      label="Reversal Surgery" 
+                      value={
+                        <div className="text-sm">
+                          This surgery reverses stoma from treatment: <span className="font-mono">{treatment.reverses_stoma_from_treatment_id}</span>
+                        </div>
                       }
                     />
                   )}
@@ -203,15 +221,22 @@ export function TreatmentSummaryModal({ treatment, onClose, onEdit }: TreatmentS
                       label="Anastomosis" 
                       value={
                         treatment.anastomosis_performed ? (
-                          <div>
-                            <span className="font-semibold">Yes</span>
+                          <div className="space-y-1">
+                            <div><span className="font-semibold">Yes</span></div>
+                            {treatment.anastomosis_type && (
+                              <div className="text-sm">
+                                Type: {treatment.anastomosis_type.split('_').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join('-')}
+                              </div>
+                            )}
                             {treatment.anastomosis_height_cm !== undefined && (
-                              <span className="ml-2">— {treatment.anastomosis_height_cm} cm from anal verge</span>
+                              <div className="text-sm">
+                                Height: {treatment.anastomosis_height_cm} cm from anal verge
+                              </div>
                             )}
                             {treatment.anterior_resection_type && (
-                              <span className="ml-2">
-                                ({treatment.anterior_resection_type.replace(/_/g, ' ').toUpperCase()})
-                              </span>
+                              <div className="text-sm">
+                                Resection: {treatment.anterior_resection_type.replace(/_/g, ' ').toUpperCase()}
+                              </div>
                             )}
                           </div>
                         ) : 'No'

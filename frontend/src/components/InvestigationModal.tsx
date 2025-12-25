@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from './Button'
 import { DateInput } from './DateInput'
 
@@ -9,6 +9,7 @@ interface InvestigationModalProps {
   onCancel: () => void
   mode?: 'create' | 'edit'
   initialData?: any
+  existingInvestigations?: any[]
 }
 
 const generateInvestigationId = (patientId: string, type: string, count: number) => {
@@ -28,6 +29,8 @@ const IMAGING_SUBTYPES = [
   { value: 'ct_chest', label: 'CT Chest' },
   { value: 'ct_abdomen', label: 'CT Abdomen/Pelvis' },
   { value: 'ct_tap', label: 'CT Thorax/Abdomen/Pelvis' },
+  { value: 'ct_colonography', label: 'CT Colonography' },
+  { value: 'mri_pelvis_rectum', label: 'MRI Pelvis/Rectum' },
   { value: 'mri_primary', label: 'MRI Primary Tumour' },
   { value: 'mri_liver', label: 'MRI Liver' },
   { value: 'mri_brain', label: 'MRI Brain' },
@@ -60,25 +63,59 @@ const LABORATORY_SUBTYPES = [
   { value: 'histopathology', label: 'Histopathology' }
 ]
 
-export function InvestigationModal({ episodeId, patientId, onSubmit, onCancel, mode = 'create', initialData }: InvestigationModalProps) {
+export function InvestigationModal({ episodeId, patientId, onSubmit, onCancel, mode = 'create', initialData, existingInvestigations = [] }: InvestigationModalProps) {
   const [formData, setFormData] = useState({
-    investigation_id: initialData?.investigation_id || '',
-    type: initialData?.type || 'imaging',
-    subtype: initialData?.subtype || '',
-    date: initialData?.date || '',
-    result: initialData?.result || '',
-    findings: initialData?.findings || {},
-    notes: initialData?.notes || '',
-    report_url: initialData?.report_url || ''
+    investigation_id: '',
+    type: 'imaging',
+    subtype: '',
+    date: '',
+    result: '',
+    findings: {},
+    notes: '',
+    report_url: ''
   })
+
+  // Update form data when initialData changes (for edit mode)
+  useEffect(() => {
+    if (mode === 'edit' && initialData) {
+      console.log('Loading investigation data:', initialData)
+      setFormData({
+        investigation_id: initialData.investigation_id || '',
+        type: initialData.type || 'imaging',
+        subtype: initialData.subtype || '',
+        date: initialData.date || '',
+        result: initialData.result || '',
+        findings: initialData.findings || {},
+        notes: initialData.notes || '',
+        report_url: initialData.report_url || ''
+      })
+    } else if (mode === 'create') {
+      // Reset to default values for create mode
+      setFormData({
+        investigation_id: '',
+        type: 'imaging',
+        subtype: '',
+        date: '',
+        result: '',
+        findings: {},
+        notes: '',
+        report_url: ''
+      })
+    }
+  }, [mode, initialData])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     
+    // Calculate count for new investigation ID
+    const sameTypeCount = mode === 'create' 
+      ? existingInvestigations.filter(inv => inv.type === formData.type).length
+      : 0
+    
     const investigation = {
       ...formData,
       investigation_id: mode === 'create' 
-        ? generateInvestigationId(patientId, formData.type, 0) // TODO: Get proper count
+        ? generateInvestigationId(patientId, formData.type, sameTypeCount)
         : formData.investigation_id,
       patient_id: patientId,
       episode_id: episodeId
@@ -157,7 +194,7 @@ export function InvestigationModal({ episodeId, patientId, onSubmit, onCancel, m
             </label>
             <DateInput
               value={formData.date}
-              onChange={(value) => setFormData({ ...formData, date: value })}
+              onChange={(e) => setFormData({ ...formData, date: e.target.value })}
               required
             />
           </div>
@@ -165,7 +202,7 @@ export function InvestigationModal({ episodeId, patientId, onSubmit, onCancel, m
           {/* Result */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Primary Result/Finding *
+              Primary Result/Finding
             </label>
             <input
               type="text"
@@ -173,7 +210,6 @@ export function InvestigationModal({ episodeId, patientId, onSubmit, onCancel, m
               onChange={(e) => setFormData({ ...formData, result: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               placeholder="e.g., T3N1 disease, No evidence of metastases"
-              required
             />
           </div>
 

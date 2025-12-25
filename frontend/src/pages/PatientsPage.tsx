@@ -43,6 +43,7 @@ interface PatientFormData {
     postcode?: string;
     bmi?: number;
     weight_kg?: number;
+    deceased_date?: string;
     height_cm?: number;
   };
   medical_history: {
@@ -75,6 +76,7 @@ export function PatientsPage() {
       gender: 'male',
       ethnicity: '',
       postcode: '',
+      deceased_date: '',
     },
     medical_history: {
       conditions: [],
@@ -162,6 +164,7 @@ export function PatientsPage() {
         bmi: patient.demographics.bmi,
         weight_kg: patient.demographics.weight_kg,
         height_cm: patient.demographics.height_cm,
+        deceased_date: patient.demographics.deceased_date || '',
       },
       medical_history: {
         conditions: [],
@@ -373,6 +376,18 @@ export function PatientsPage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     value={formData.demographics.date_of_birth}
                     onChange={(e) => handleInputChange('demographics.date_of_birth', e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Deceased Date
+                  </label>
+                  <input
+                    type="date"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={formData.demographics.deceased_date || ''}
+                    onChange={(e) => handleInputChange('demographics.deceased_date', e.target.value)}
                   />
                 </div>
 

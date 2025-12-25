@@ -538,7 +538,8 @@ class ACPDBMigratorV4:
                         "postcode": str(row["Postcode"]) if not pd.isna(row.get("Postcode")) else None,
                         "bmi": float(row["BMI"]) if not pd.isna(row.get("BMI")) and row.get("BMI") != "" else None,
                         "weight_kg": float(row["Weight"]) if not pd.isna(row.get("Weight")) and row.get("Weight") != "" else None,
-                        "height_cm": float(row["Height"]) if not pd.isna(row.get("Height")) and row.get("Height") != "" else None
+                        "height_cm": float(row["Height"]) if not pd.isna(row.get("Height")) and row.get("Height") != "" else None,
+                        "deceased_date": self.parse_dob(row.get("DeathDat"))
                     },
                     "medical_history": {
                         "conditions": [],

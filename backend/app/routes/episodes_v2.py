@@ -2,7 +2,7 @@
 New Episode API routes for condition-based care (cancer, IBD, benign)
 Replaces surgery-centric episodes with flexible condition-specific episodes
 """
-from fastapi import APIRouter, HTTPException, status, Query
+from fastapi import APIRouter, HTTPException, status, Query, Depends, Request
 from typing import List, Optional
 from datetime import datetime
 from bson import ObjectId
@@ -11,20 +11,27 @@ from ..models.episode import (
     Episode, EpisodeCreate, EpisodeUpdate,
     ConditionType, CancerType
 )
-from ..database import get_episodes_collection, get_patients_collection, get_treatments_collection, get_tumours_collection, get_clinicians_collection
+from ..database import get_episodes_collection, get_patients_collection, get_treatments_collection, get_tumours_collection, get_clinicians_collection, get_investigations_collection, get_audit_logs_collection
+from ..utils.audit import log_action
+from ..auth import get_current_user
 
 
 router = APIRouter(prefix="/api/episodes", tags=["episodes"])
 
 
 @router.post("/", response_model=Episode, status_code=status.HTTP_201_CREATED)
-async def create_episode(episode: EpisodeCreate):
+async def create_episode(
+    episode: EpisodeCreate,
+    request: Request,
+    current_user: dict = Depends(get_current_user)
+):
     """Create a new episode record (cancer, IBD, or benign)"""
     try:
         episodes_collection = await get_episodes_collection()
         treatments_collection = await get_treatments_collection()
         tumours_collection = await get_tumours_collection()
         patients_collection = await get_patients_collection()
+        audit_collection = await get_audit_logs_collection()
         
         # Verify patient exists
         patient = await patients_collection.find_one({"record_number": episode.patient_id})
@@ -56,6 +63,8 @@ async def create_episode(episode: EpisodeCreate):
         episode_dict = episode.model_dump()
         episode_dict['created_at'] = now
         episode_dict['last_modified_at'] = now
+        episode_dict['created_by'] = current_user["username"]
+        episode_dict['updated_by'] = current_user["username"]
         
         # Extract treatments and tumours before inserting episode
         treatments = episode_dict.pop('treatments', [])
@@ -91,6 +100,24 @@ async def create_episode(episode: EpisodeCreate):
         created_episode = await episodes_collection.find_one({"_id": episode_oid})
         if created_episode:
             created_episode["_id"] = str(created_episode["_id"])
+        
+        # Log audit entry
+        await log_action(
+            audit_collection,
+            user_id=current_user["user_id"],
+            username=current_user["username"],
+            action="create",
+            entity_type="episode",
+            entity_id=episode.episode_id,
+            entity_name=f"Episode {episode.episode_id}",
+            details={
+                "patient_id": episode.patient_id,
+                "condition_type": episode.condition_type.value,
+                "cancer_type": episode.cancer_type.value if episode.cancer_type else None
+            },
+            request=request
+        )
+        
         return Episode(**created_episode)
     except HTTPException:
         raise
@@ -249,10 +276,11 @@ async def list_episodes(
 
 @router.get("/{episode_id}")
 async def get_episode(episode_id: str):
-    """Get a specific episode by ID (includes treatments and tumours from separate collections)"""
+    """Get a specific episode by ID (includes treatments, tumours, and investigations from separate collections)"""
     episodes_collection = await get_episodes_collection()
     treatments_collection = await get_treatments_collection()
     tumours_collection = await get_tumours_collection()
+    investigations_collection = await get_investigations_collection()
     clinicians_collection = await get_clinicians_collection()
     
     episode = await episodes_collection.find_one({"episode_id": episode_id})
@@ -271,6 +299,10 @@ async def get_episode(episode_id: str):
     tumour_ids = episode.get("tumour_ids", [])
     tumours_cursor = tumours_collection.find({"tumour_id": {"$in": tumour_ids}}) if tumour_ids else []
     tumours = await tumours_cursor.to_list(length=None) if tumour_ids else []
+    
+    # Fetch investigations by episode_id
+    investigations_cursor = investigations_collection.find({"episode_id": episode_id})
+    investigations = await investigations_cursor.to_list(length=None)
     
     # Build a map of all clinicians for efficient lookup
     all_clinicians = await clinicians_collection.find({}).to_list(length=None)
@@ -301,19 +333,29 @@ async def get_episode(episode_id: str):
     for tumour in tumours:
         tumour["_id"] = str(tumour["_id"])
     
-    # Include treatments and tumours in response
+    for investigation in investigations:
+        investigation["_id"] = str(investigation["_id"])
+    
+    # Include treatments, tumours, and investigations in response
     episode["treatments"] = treatments
     episode["tumours"] = tumours
+    episode["investigations"] = investigations
     
     # Return raw dict without Pydantic validation to support flexible episode structure
     return episode
 
 
 @router.put("/{episode_id}")
-async def update_episode(episode_id: str, update_data: dict):
+async def update_episode(
+    episode_id: str,
+    update_data: dict,
+    request: Request,
+    current_user: dict = Depends(get_current_user)
+):
     """Update an existing episode"""
     try:
         collection = await get_episodes_collection()
+        audit_collection = await get_audit_logs_collection()
         
         # Check if episode exists
         existing = await collection.find_one({"episode_id": episode_id})
@@ -327,8 +369,9 @@ async def update_episode(episode_id: str, update_data: dict):
         fields_to_remove = ['_id', 'episode_id', 'patient_id', 'created_at', 'created_by', 'treatments', 'tumours']
         update_dict = {k: v for k, v in update_data.items() if k not in fields_to_remove and v is not None}
         
-        # Set last_modified_at timestamp
+        # Set last_modified_at timestamp and updated_by
         update_dict['last_modified_at'] = datetime.utcnow()
+        update_dict['updated_by'] = current_user["username"]
         
         # Update episode
         await collection.update_one(
@@ -339,6 +382,19 @@ async def update_episode(episode_id: str, update_data: dict):
         # Retrieve and return updated episode
         updated_episode = await collection.find_one({"episode_id": episode_id})
         updated_episode["_id"] = str(updated_episode["_id"])
+        
+        # Log audit entry
+        await log_action(
+            audit_collection,
+            user_id=current_user["user_id"],
+            username=current_user["username"],
+            action="update",
+            entity_type="episode",
+            entity_id=episode_id,
+            entity_name=f"Episode {episode_id}",
+            details={"fields_updated": list(update_dict.keys())},
+            request=request
+        )
         
         # Return raw dict without Pydantic validation to support flexible episode structure
         return updated_episode
@@ -352,32 +408,62 @@ async def update_episode(episode_id: str, update_data: dict):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update episode: {str(e)}"
         )
-        print(traceback.format_exc())
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update episode: {str(e)}"
-        )
 
 
 @router.delete("/{episode_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_episode(episode_id: str):
+async def delete_episode(
+    episode_id: str,
+    request: Request,
+    current_user: dict = Depends(get_current_user)
+):
     """Delete an episode"""
     collection = await get_episodes_collection()
+    audit_collection = await get_audit_logs_collection()
     
-    result = await collection.delete_one({"episode_id": episode_id})
-    if result.deleted_count == 0:
+    # Check if episode exists and capture info before deletion
+    existing = await collection.find_one({"episode_id": episode_id})
+    if not existing:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Episode {episode_id} not found"
         )
+    
+    # Capture episode info before deletion
+    episode_info = {
+        "episode_id": episode_id,
+        "patient_id": existing.get("patient_id"),
+        "condition_type": existing.get("condition_type")
+    }
+    
+    # Delete the episode
+    result = await collection.delete_one({"episode_id": episode_id})
+    
+    # Log audit entry
+    await log_action(
+        audit_collection,
+        user_id=current_user["user_id"],
+        username=current_user["username"],
+        action="delete",
+        entity_type="episode",
+        entity_id=episode_id,
+        entity_name=f"Episode {episode_id}",
+        details=episode_info,
+        request=request
+    )
 
 
 @router.post("/{episode_id}/treatments", response_model=dict)
-async def add_treatment_to_episode(episode_id: str, treatment: dict):
+async def add_treatment_to_episode(
+    episode_id: str,
+    treatment: dict,
+    request: Request,
+    current_user: dict = Depends(get_current_user)
+):
     """Add a treatment (surgery, chemo, etc.) to an episode"""
     try:
         episodes_collection = await get_episodes_collection()
         treatments_collection = await get_treatments_collection()
+        audit_collection = await get_audit_logs_collection()
         
         # Check if episode exists
         episode = await episodes_collection.find_one({"episode_id": episode_id})
@@ -392,6 +478,8 @@ async def add_treatment_to_episode(episode_id: str, treatment: dict):
         treatment['patient_id'] = episode.get('patient_id')
         treatment['created_at'] = datetime.utcnow()
         treatment['last_modified_at'] = datetime.utcnow()
+        treatment['created_by'] = current_user["username"]
+        treatment['updated_by'] = current_user["username"]
         
         # Generate treatment_id if not provided
         if 'treatment_id' not in treatment:
@@ -410,6 +498,24 @@ async def add_treatment_to_episode(episode_id: str, treatment: dict):
         created_treatment = await treatments_collection.find_one({"_id": result.inserted_id})
         if created_treatment:
             created_treatment["_id"] = str(created_treatment["_id"])
+        
+        # Log audit entry
+        await log_action(
+            audit_collection,
+            user_id=current_user["user_id"],
+            username=current_user["username"],
+            action="create",
+            entity_type="treatment",
+            entity_id=treatment['treatment_id'],
+            entity_name=f"Treatment {treatment.get('treatment_type', 'Unknown')}",
+            details={
+                "episode_id": episode_id,
+                "patient_id": episode.get('patient_id'),
+                "treatment_type": treatment.get('treatment_type')
+            },
+            request=request
+        )
+        
         return created_treatment
     except HTTPException:
         raise
@@ -424,11 +530,18 @@ async def add_treatment_to_episode(episode_id: str, treatment: dict):
 
 
 @router.put("/{episode_id}/treatments/{treatment_id}", response_model=dict)
-async def update_treatment_in_episode(episode_id: str, treatment_id: str, treatment: dict):
+async def update_treatment_in_episode(
+    episode_id: str,
+    treatment_id: str,
+    treatment: dict,
+    request: Request,
+    current_user: dict = Depends(get_current_user)
+):
     """Update a specific treatment in an episode"""
     try:
         episodes_collection = await get_episodes_collection()
         treatments_collection = await get_treatments_collection()
+        audit_collection = await get_audit_logs_collection()
         
         # Check if episode exists
         episode = await episodes_collection.find_one({"episode_id": episode_id})
@@ -454,6 +567,7 @@ async def update_treatment_in_episode(episode_id: str, treatment_id: str, treatm
         if '_id' in treatment:
             del treatment['_id']
         treatment['last_modified_at'] = datetime.utcnow()
+        treatment['updated_by'] = current_user["username"]
         await treatments_collection.update_one(
             {"treatment_id": treatment_id, "episode_id": episode["episode_id"]},
             {"$set": treatment}
@@ -472,6 +586,23 @@ async def update_treatment_in_episode(episode_id: str, treatment_id: str, treatm
         })
         if updated_treatment:
             updated_treatment["_id"] = str(updated_treatment["_id"])
+        
+        # Log audit entry
+        await log_action(
+            audit_collection,
+            user_id=current_user["user_id"],
+            username=current_user["username"],
+            action="update",
+            entity_type="treatment",
+            entity_id=treatment_id,
+            entity_name=f"Treatment {treatment.get('treatment_type', 'Unknown')}",
+            details={
+                "episode_id": episode_id,
+                "fields_updated": list(treatment.keys())
+            },
+            request=request
+        )
+        
         return updated_treatment
     except HTTPException:
         raise
@@ -587,11 +718,17 @@ async def get_patient_episode_timeline(patient_id: str):
 # ============== TUMOUR MANAGEMENT ENDPOINTS ==============
 
 @router.post("/{episode_id}/tumours", response_model=dict)
-async def add_tumour_to_episode(episode_id: str, tumour: dict):
+async def add_tumour_to_episode(
+    episode_id: str,
+    tumour: dict,
+    request: Request,
+    current_user: dict = Depends(get_current_user)
+):
     """Add a tumour site to an episode (supports multiple primaries/metastases)"""
     try:
         episodes_collection = await get_episodes_collection()
         tumours_collection = await get_tumours_collection()
+        audit_collection = await get_audit_logs_collection()
         
         # Check if episode exists
         episode = await episodes_collection.find_one({"episode_id": episode_id})
@@ -606,6 +743,8 @@ async def add_tumour_to_episode(episode_id: str, tumour: dict):
         tumour['patient_id'] = episode.get('patient_id')
         tumour['created_at'] = datetime.utcnow()
         tumour['last_modified_at'] = datetime.utcnow()
+        tumour['created_by'] = current_user["username"]
+        tumour['updated_by'] = current_user["username"]
         
         # Generate tumour_id if not provided
         if 'tumour_id' not in tumour:
@@ -624,6 +763,24 @@ async def add_tumour_to_episode(episode_id: str, tumour: dict):
         created_tumour = await tumours_collection.find_one({"_id": result.inserted_id})
         if created_tumour:
             created_tumour["_id"] = str(created_tumour["_id"])
+        
+        # Log audit entry
+        await log_action(
+            audit_collection,
+            user_id=current_user["user_id"],
+            username=current_user["username"],
+            action="create",
+            entity_type="tumour",
+            entity_id=tumour['tumour_id'],
+            entity_name=f"Tumour {tumour.get('site', 'Unknown')}",
+            details={
+                "episode_id": episode_id,
+                "patient_id": episode.get('patient_id'),
+                "site": tumour.get('site')
+            },
+            request=request
+        )
+        
         return created_tumour
     except HTTPException:
         raise
@@ -638,11 +795,18 @@ async def add_tumour_to_episode(episode_id: str, tumour: dict):
 
 
 @router.put("/{episode_id}/tumours/{tumour_id}", response_model=dict)
-async def update_tumour_in_episode(episode_id: str, tumour_id: str, tumour: dict):
+async def update_tumour_in_episode(
+    episode_id: str,
+    tumour_id: str,
+    tumour: dict,
+    request: Request,
+    current_user: dict = Depends(get_current_user)
+):
     """Update a specific tumour in an episode"""
     try:
         episodes_collection = await get_episodes_collection()
         tumours_collection = await get_tumours_collection()
+        audit_collection = await get_audit_logs_collection()
         
         # Check if episode exists
         episode = await episodes_collection.find_one({"episode_id": episode_id})
@@ -668,6 +832,7 @@ async def update_tumour_in_episode(episode_id: str, tumour_id: str, tumour: dict
         if '_id' in tumour:
             del tumour['_id']
         tumour['last_modified_at'] = datetime.utcnow()
+        tumour['updated_by'] = current_user["username"]
         await tumours_collection.update_one(
             {"tumour_id": tumour_id, "episode_id": episode["episode_id"]},
             {"$set": tumour}
@@ -686,6 +851,23 @@ async def update_tumour_in_episode(episode_id: str, tumour_id: str, tumour: dict
         })
         if updated_tumour:
             updated_tumour["_id"] = str(updated_tumour["_id"])
+        
+        # Log audit entry
+        await log_action(
+            audit_collection,
+            user_id=current_user["user_id"],
+            username=current_user["username"],
+            action="update",
+            entity_type="tumour",
+            entity_id=tumour_id,
+            entity_name=f"Tumour {tumour.get('site', 'Unknown')}",
+            details={
+                "episode_id": episode_id,
+                "fields_updated": list(tumour.keys())
+            },
+            request=request
+        )
+        
         return updated_tumour
     except HTTPException:
         raise
@@ -700,11 +882,17 @@ async def update_tumour_in_episode(episode_id: str, tumour_id: str, tumour: dict
 
 
 @router.delete("/{episode_id}/tumours/{tumour_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_tumour_from_episode(episode_id: str, tumour_id: str):
+async def delete_tumour_from_episode(
+    episode_id: str,
+    tumour_id: str,
+    request: Request,
+    current_user: dict = Depends(get_current_user)
+):
     """Delete a tumour from an episode"""
     try:
         episodes_collection = await get_episodes_collection()
         tumours_collection = await get_tumours_collection()
+        audit_collection = await get_audit_logs_collection()
         
         # Check if episode exists
         episode = await episodes_collection.find_one({"episode_id": episode_id})
@@ -713,6 +901,12 @@ async def delete_tumour_from_episode(episode_id: str, tumour_id: str):
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Episode {episode_id} not found"
             )
+        
+        # Get tumour info before deletion
+        existing_tumour = await tumours_collection.find_one({
+            "tumour_id": tumour_id,
+            "episode_id": str(episode["_id"])
+        })
         
         # Delete tumour from separate collection
         result = await tumours_collection.delete_one({
@@ -731,6 +925,23 @@ async def delete_tumour_from_episode(episode_id: str, tumour_id: str):
             {"episode_id": episode_id},
             {"$set": {"last_modified_at": datetime.utcnow()}}
         )
+        
+        # Log audit entry
+        if existing_tumour:
+            await log_action(
+                audit_collection,
+                user_id=current_user["user_id"],
+                username=current_user["username"],
+                action="delete",
+                entity_type="tumour",
+                entity_id=tumour_id,
+                entity_name=f"Tumour {existing_tumour.get('site', 'Unknown')}",
+                details={
+                    "episode_id": episode_id,
+                    "site": existing_tumour.get("site")
+                },
+                request=request
+            )
     except HTTPException:
         raise
     except Exception as e:
@@ -743,11 +954,17 @@ async def delete_tumour_from_episode(episode_id: str, tumour_id: str):
         )
 
 @router.delete("/{episode_id}/treatments/{treatment_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_treatment_from_episode(episode_id: str, treatment_id: str):
+async def delete_treatment_from_episode(
+    episode_id: str,
+    treatment_id: str,
+    request: Request,
+    current_user: dict = Depends(get_current_user)
+):
     """Delete a treatment from an episode"""
     try:
         episodes_collection = await get_episodes_collection()
         treatments_collection = await get_treatments_collection()
+        audit_collection = await get_audit_logs_collection()
         
         # Check if episode exists
         episode = await episodes_collection.find_one({"episode_id": episode_id})
@@ -756,6 +973,12 @@ async def delete_treatment_from_episode(episode_id: str, treatment_id: str):
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Episode {episode_id} not found"
             )
+        
+        # Get treatment info before deletion
+        existing_treatment = await treatments_collection.find_one({
+            "treatment_id": treatment_id,
+            "episode_id": str(episode["_id"])
+        })
         
         # Delete treatment from separate collection
         result = await treatments_collection.delete_one({
@@ -774,6 +997,23 @@ async def delete_treatment_from_episode(episode_id: str, treatment_id: str):
             {"episode_id": episode_id},
             {"$set": {"last_modified_at": datetime.utcnow()}}
         )
+        
+        # Log audit entry
+        if existing_treatment:
+            await log_action(
+                audit_collection,
+                user_id=current_user["user_id"],
+                username=current_user["username"],
+                action="delete",
+                entity_type="treatment",
+                entity_id=treatment_id,
+                entity_name=f"Treatment {existing_treatment.get('treatment_type', 'Unknown')}",
+                details={
+                    "episode_id": episode_id,
+                    "treatment_type": existing_treatment.get("treatment_type")
+                },
+                request=request
+            )
     except HTTPException:
         raise
     except Exception as e:

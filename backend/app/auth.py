@@ -72,7 +72,7 @@ async def authenticate_user(db: AsyncIOMotorDatabase, email: str, password: str)
 async def get_current_user(
     token: str = Depends(oauth2_scheme),
     db: AsyncIOMotorDatabase = Depends(get_database)
-) -> User:
+) -> dict:
     """Get the current authenticated user from JWT token"""
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -98,17 +98,19 @@ async def get_current_user(
         {"$set": {"last_login": datetime.utcnow()}}
     )
     
-    return User(
-        _id=user.id,
-        email=user.email,
-        full_name=user.full_name,
-        role=user.role,
-        is_active=user.is_active,
-        department=user.department,
-        job_title=user.job_title,
-        created_at=user.created_at,
-        last_login=datetime.utcnow()
-    )
+    # Return dict with keys expected by audit logging
+    return {
+        "user_id": user.id,
+        "username": user.email,  # Using email as username
+        "full_name": user.full_name,
+        "email": user.email,
+        "role": user.role,
+        "is_active": user.is_active,
+        "department": user.department,
+        "job_title": user.job_title,
+        "created_at": user.created_at,
+        "last_login": datetime.utcnow()
+    }
 
 
 def require_role(required_roles: list[UserRole]):

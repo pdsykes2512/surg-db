@@ -8,7 +8,7 @@ from contextlib import asynccontextmanager
 
 from .config import settings
 from .database import Database
-from .routes import patients, episodes_v2, reports, auth, admin, clinicians, exports, codes, nhs_providers
+from .routes import patients, episodes_v2, reports, auth, admin, clinicians, exports, codes, nhs_providers, audit, investigations
 
 
 @asynccontextmanager
@@ -47,6 +47,8 @@ app.include_router(clinicians.router)
 app.include_router(exports.router)
 app.include_router(codes.router)  # ICD-10 and OPCS-4 validation/lookup
 app.include_router(nhs_providers.router)  # NHS provider lookup via ODS API
+app.include_router(audit.router)  # Audit logging and activity tracking
+app.include_router(investigations.router)  # Clinical investigations and imaging
 
 
 @app.get("/")

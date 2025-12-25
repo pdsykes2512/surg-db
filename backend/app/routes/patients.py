@@ -7,16 +7,24 @@ from datetime import datetime
 from bson import ObjectId
 
 from ..models.patient import Patient, PatientCreate, PatientUpdate
-from ..database import get_patients_collection, get_episodes_collection
+from ..database import get_patients_collection, get_episodes_collection, get_audit_logs_collection
+from ..utils.audit import log_action
+from ..auth import get_current_user
+from fastapi import Depends, Request
 
 
 router = APIRouter(prefix="/api/patients", tags=["patients"])
 
 
 @router.post("/", response_model=Patient, status_code=status.HTTP_201_CREATED)
-async def create_patient(patient: PatientCreate):
+async def create_patient(
+    patient: PatientCreate,
+    request: Request,
+    current_user: dict = Depends(get_current_user)
+):
     """Create a new patient"""
     collection = await get_patients_collection()
+    audit_collection = await get_audit_logs_collection()
     
     # Check if record_number already exists
     existing = await collection.find_one({"record_number": patient.record_number})
@@ -36,6 +44,20 @@ async def create_patient(patient: PatientCreate):
     # Retrieve and return created patient
     created_patient = await collection.find_one({"_id": result.inserted_id})
     created_patient["_id"] = str(created_patient["_id"])
+    
+    # Log audit entry
+    await log_action(
+        audit_collection,
+        user_id=current_user["user_id"],
+        username=current_user["username"],
+        action="create",
+        entity_type="patient",
+        entity_id=created_patient["patient_id"],
+        entity_name=f"Patient {created_patient['patient_id']}",
+        details={"nhs_number": created_patient.get("nhs_number")},
+        request=request
+    )
+    
     return Patient(**created_patient)
 
 
@@ -130,9 +152,15 @@ async def get_patient(patient_id: str):
 
 
 @router.put("/{patient_id}", response_model=Patient)
-async def update_patient(patient_id: str, patient_update: PatientUpdate):
+async def update_patient(
+    patient_id: str,
+    patient_update: PatientUpdate,
+    request: Request,
+    current_user: dict = Depends(get_current_user)
+):
     """Update a patient"""
     collection = await get_patients_collection()
+    audit_collection = await get_audit_logs_collection()
     
     # Check if patient exists
     existing = await collection.find_one({"patient_id": patient_id})
@@ -146,10 +174,23 @@ async def update_patient(patient_id: str, patient_update: PatientUpdate):
     update_data = patient_update.model_dump(exclude_unset=True)
     if update_data:
         update_data["updated_at"] = datetime.utcnow()
-        update_data["updated_by"] = "system"  # TODO: Replace with actual user from auth
+        update_data["updated_by"] = current_user["username"]
         await collection.update_one(
             {"patient_id": patient_id},
             {"$set": update_data}
+        )
+        
+        # Log audit entry
+        await log_action(
+            audit_collection,
+            user_id=current_user["user_id"],
+            username=current_user["username"],
+            action="update",
+            entity_type="patient",
+            entity_id=patient_id,
+            entity_name=f"Patient {patient_id}",
+            details={"fields_updated": list(update_data.keys())},
+            request=request
         )
     
     # Return updated patient
@@ -159,16 +200,43 @@ async def update_patient(patient_id: str, patient_update: PatientUpdate):
 
 
 @router.delete("/{patient_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_patient(patient_id: str):
+async def delete_patient(
+    patient_id: str,
+    request: Request,
+    current_user: dict = Depends(get_current_user)
+):
     """Delete a patient"""
     collection = await get_patients_collection()
+    audit_collection = await get_audit_logs_collection()
     
-    result = await collection.delete_one({"patient_id": patient_id})
-    
-    if result.deleted_count == 0:
+    # Check if patient exists and capture info before deletion
+    existing = await collection.find_one({"patient_id": patient_id})
+    if not existing:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Patient {patient_id} not found"
         )
+    
+    # Capture patient info before deletion
+    patient_info = {
+        "patient_id": patient_id,
+        "nhs_number": existing.get("demographics", {}).get("nhs_number")
+    }
+    
+    # Delete the patient
+    result = await collection.delete_one({"patient_id": patient_id})
+    
+    # Log audit entry
+    await log_action(
+        audit_collection,
+        user_id=current_user["user_id"],
+        username=current_user["username"],
+        action="delete",
+        entity_type="patient",
+        entity_id=patient_id,
+        entity_name=f"Patient {patient_id}",
+        details=patient_info,
+        request=request
+    )
     
     return None

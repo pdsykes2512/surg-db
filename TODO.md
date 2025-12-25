@@ -13,23 +13,31 @@
 - ✅ Toast notifications for UX feedback
 - ✅ Reports & Analytics page with real data visualization
 - ✅ Patient-centric episode workflow (click patient to view their episodes)
+- ✅ Comprehensive audit logging system across all CRUD operations
+- ✅ Investigation tracking (imaging, endoscopy, laboratory)
+- ✅ Follow-up visit management
 
 ## High Priority
 
 ### Surgery Recording Enhancements (CRITICAL)
-- [ ] **Record of anastomosis in surgery section**
-  - Add anastomosis field (yes/no) to surgery/treatment model
-  - Add anastomosis type (e.g., hand-sewn, stapled, end-to-end, side-to-side)
-  - Include location of anastomosis in form
-  - NBOCA requirement for anastomotic leak tracking
-- [ ] **Record of stoma formation and status**
-  - Add stoma creation field (yes/no) to surgery model
-  - Add stoma type (ileostomy/colostomy/other)
-  - Add stoma intent field: temporary vs permanent
-  - For temporary stomas: add planned reversal date field
-  - Add validation: temporary stoma must have reversal date within 2 years
-  - Track actual reversal date when it occurs
-  - Link reversal surgery to original stoma creation
+- **Stoma Formation and Status** ✅ (Complete)
+  - ✅ Add stoma creation field (yes/no) to surgery model
+  - ✅ Add stoma type (ileostomy/colostomy with temporary/permanent designation)
+  - ✅ Add stoma closure date tracking
+  - ✅ Frontend form fields implemented in AddTreatmentModal
+  - ✅ Add validation: temporary stoma should have closure date within 2 years
+  - ✅ Add planned reversal date field (separate from actual closure date)
+  - ✅ Link reversal surgery to original stoma creation
+  - ✅ Display in TreatmentSummaryModal with planned and actual dates
+
+- **Anastomosis Recording** ✅ (Complete)
+  - ✅ Add anastomosis field (yes/no) to surgery model
+  - ✅ Add anastomosis type field (hand-sewn, stapled, end-to-end, side-to-side, etc.)
+  - ✅ Add anastomosis height from anal verge (cm) field
+  - ✅ Frontend form fields implemented in AddTreatmentModal
+  - ✅ Display in TreatmentSummaryModal
+  - [ ] Add anastomosis location field (more detailed than just height)
+  - [ ] NBOCA requirement for anastomotic leak tracking
 
 ### NBOCA COSD Compliance (NEW - Critical for Bowel Cancer)
 - [x] **Phase 1: Critical Fields** (see NBOCA_FIELDS_STATUS.md)
@@ -85,7 +93,33 @@
 - ✅ Validate COSD mandatory fields
 - ✅ Fix RTT data from CSV source using NHS number matching (execution/fix_rtt_from_csv.py)
 - ✅ Create data migration guide for reproducible fixes (DATABASE_MIGRATION_SUMMARY.md)
+- ✅ Fix investigation date format inconsistencies (converted 17,564 datetime objects to strings)
 - [ ] Update DATA_MIGRATION_GUIDE.md with fix_rtt_from_csv.py script details
+
+### Audit Logging & Activity Tracking
+- ✅ Create audit log data model and API endpoints
+- ✅ Implement audit logging for patient CRUD operations
+- ✅ Implement audit logging for episode CRUD operations
+- ✅ Implement audit logging for treatment CRUD operations
+- ✅ Implement audit logging for tumour CRUD operations
+- ✅ Implement audit logging for investigation CRUD operations
+- ✅ Display recent activity on HomePage from audit logs
+- ✅ Add user context (user_id, username, IP address, user-agent) to audit entries
+- ✅ Add audit API endpoints (recent activity, user history, entity history, statistics)
+
+### Investigation & Follow-up Management
+- ✅ Create investigation data model (imaging, endoscopy, laboratory)
+- ✅ Import historical investigation data from Access database (17,564 records)
+- ✅ Build investigation modal for create/edit operations
+- ✅ Add investigations tab to episode detail modal
+- ✅ Implement investigation delete functionality
+- ✅ Add investigation API integration for updates
+- ✅ Fix investigation form data population issues
+- ✅ Add CT Colonography to imaging investigation types
+- ✅ Make investigation result field optional
+- ✅ Create follow-up visit tracking system
+- ✅ Build follow-up modal for recording clinic visits
+- ✅ Add follow-ups tab to episode detail modal
 
 ## Medium Priority
 
@@ -98,13 +132,16 @@
 - [ ] Create keyboard shortcuts for common actions
 
 ### Episode Features
+- ✅ Investigation tracking integrated into episodes
+- ✅ Follow-up visit tracking integrated into episodes
 - [ ] Add file upload for surgical notes/images
 - [ ] Implement episode timeline view
 - [ ] Add complication tracking with severity levels
 - [ ] Create follow-up appointment scheduler
-- [ ] Build episode audit log
+- ✅ Build episode audit log (via comprehensive audit system)
 
 ### Security & Performance
+- ✅ Implement audit logging for security tracking
 - [ ] Add rate limiting to API endpoints
 - [ ] Implement API request logging
 - [ ] Add database query optimization
@@ -139,7 +176,7 @@
 ## Technical Debt
 
 - [ ] Refactor API error handling for consistency
-- [ ] Standardize date/time formats across application
+- ✅ Standardize date/time formats across application (investigation dates fixed)
 - [ ] Review and optimize database indexes
 - [ ] Clean up unused dependencies
 - [ ] Improve TypeScript type coverage
@@ -152,13 +189,13 @@
 - [ ] Advanced search with filters
 - [ ] Data visualization with charts (Chart.js/D3)
 - [ ] Real-time collaboration features
-- [ ] Audit trail for all data changes
+- ✅ Audit trail for all data changes (comprehensive audit logging implemented)
 - [ ] Version control for episode records
 
 ## Notes
 
 - Episodes (previously "Surgeries") terminology updated throughout
-- Current branch: `feat/app-scaffold`
+- Current branch: `main`
 - Database: MongoDB with optimized indexes
 - Authentication: JWT with 4 roles (admin, surgeon, data_entry, viewer)
 

@@ -85,17 +85,17 @@ export function HomePage() {
   useEffect(() => {
     const fetchRecentActivity = async () => {
       try {
-        // Fetch recent cancer episodes sorted by last_modified_at (last 5 edited)
+        // Fetch user's recent activity from audit log
         const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
-        const response = await fetch(`${API_URL}/episodes/?limit=5&sort_by=last_modified_at`, {
+        const response = await fetch(`${API_URL}/audit/recent?limit=10`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
           }
         })
         
         if (response.ok) {
-          const episodes = await response.json()
-          setRecentActivity(episodes)
+          const activities = await response.json()
+          setRecentActivity(activities)
         }
       } catch (error) {
         console.error('Failed to fetch recent activity:', error)
@@ -107,9 +107,16 @@ export function HomePage() {
     fetchRecentActivity()
   }, [])
 
-  const handleActivityClick = (episode: any) => {
-    // Navigate to episodes page with the episode ID in state to open edit modal
-    navigate('/episodes', { state: { editEpisodeId: episode.episode_id } })
+  const handleActivityClick = (activity: any) => {
+    // Navigate based on entity type
+    if (activity.entity_type === 'episode') {
+      navigate('/episodes')
+    } else if (activity.entity_type === 'patient') {
+      navigate('/patients')
+    } else if (activity.entity_type === 'treatment' || activity.entity_type === 'tumour' || activity.entity_type === 'investigation') {
+      // These are part of episodes, navigate to episodes
+      navigate('/episodes')
+    }
   }
 
   const formatRelativeTime = (dateStr: string) => {
@@ -290,39 +297,37 @@ export function HomePage() {
             </div>
           ) : (
             <div className="space-y-3">
-              {recentActivity.map((episode) => (
+              {recentActivity.map((activity, index) => (
                 <button
-                  key={episode.episode_id}
-                  onClick={() => handleActivityClick(episode)}
+                  key={activity.log_id || index}
+                  onClick={() => handleActivityClick(activity)}
                   className="w-full text-left p-3 rounded-lg hover:bg-blue-50 transition-colors border border-gray-200"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center space-x-2">
-                        <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                          {formatCancerType(episode.cancer_type)}
+                        <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
+                          activity.action === 'create' ? 'bg-green-100 text-green-800' :
+                          activity.action === 'update' ? 'bg-blue-100 text-blue-800' :
+                          activity.action === 'delete' ? 'bg-red-100 text-red-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {activity.action.toUpperCase()}
                         </span>
-                        <span className="text-sm font-medium text-gray-900 truncate">
-                          {episode.episode_id}
+                        <span className="text-xs text-gray-500">
+                          {activity.entity_type.replace('_', ' ')}
                         </span>
                       </div>
-                      <p className="text-sm text-gray-600 mt-1">
-                        Patient: <span className="font-medium">{episode.patient_id}</span>
+                      <p className="text-sm text-gray-900 mt-1 font-medium">
+                        {activity.message}
                       </p>
-                      {episode.lead_clinician && (
-                        <p className="text-xs text-gray-500 mt-0.5">
-                          Clinician: {episode.lead_clinician}
-                        </p>
-                      )}
-                      {episode.last_modified_by && (
-                        <p className="text-xs text-gray-500 mt-0.5">
-                          Modified by: {episode.last_modified_by}
-                        </p>
-                      )}
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        {activity.entity_id}
+                      </p>
                     </div>
                     <div className="ml-4 flex-shrink-0 text-right">
                       <p className="text-xs text-gray-500">
-                        {formatRelativeTime(episode.last_modified_at)}
+                        {formatRelativeTime(activity.timestamp)}
                       </p>
                     </div>
                   </div>
