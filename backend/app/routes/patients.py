@@ -7,8 +7,9 @@ from datetime import datetime
 from bson import ObjectId
 
 from ..models.patient import Patient, PatientCreate, PatientUpdate
-from ..database import get_patients_collection, get_episodes_collection, get_audit_logs_collection
+from ..database import get_patients_collection, get_episodes_collection, get_audit_logs_collection, Database
 from ..utils.audit import log_action
+from ..utils.update_mortality_flags import update_mortality_flags_for_patient
 from ..auth import get_current_user
 from fastapi import Depends, Request
 
@@ -179,6 +180,16 @@ async def update_patient(
             {"patient_id": patient_id},
             {"$set": update_data}
         )
+        
+        # If deceased_date was updated, automatically update mortality flags on treatments
+        if "deceased_date" in update_data:
+            db = Database.get_database()
+            deceased_date = update_data.get("deceased_date")
+            updated_treatments = await update_mortality_flags_for_patient(
+                db, patient_id, deceased_date
+            )
+            if updated_treatments > 0:
+                print(f"Auto-updated mortality flags for {updated_treatments} treatments")
         
         # Log audit entry
         await log_action(
