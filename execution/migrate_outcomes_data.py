@@ -233,7 +233,7 @@ def migrate_outcomes(dry_run=False):
                 
                 # 30-day mortality
                 if 0 <= days_to_death <= 30:
-                    update['mortality_30d'] = True
+                    update['mortality_30day'] = True
                     stats['mortality_30d_added'] += 1
                     if 'complications' not in update:
                         update['complications'] = True
@@ -241,7 +241,7 @@ def migrate_outcomes(dry_run=False):
                 
                 # 90-day mortality
                 if 0 <= days_to_death <= 90:
-                    update['mortality_90d'] = True
+                    update['mortality_90day'] = True
                     stats['mortality_90d_added'] += 1
             except:
                 pass  # Skip if date parsing fails
@@ -304,8 +304,8 @@ def show_stats():
     return_theatre = treatments.count_documents({'return_to_theatre': True})
     complications = treatments.count_documents({'complications': True})
     readmissions = treatments.count_documents({'readmission_30d': True})
-    mortality_30d = treatments.count_documents({'mortality_30d': True})
-    mortality_90d = treatments.count_documents({'mortality_90d': True})
+    mortality_30d = treatments.count_documents({'mortality_30day': True})
+    mortality_90d = treatments.count_documents({'mortality_90day': True})
     
     print(f"Total surgeries: {total}")
     print(f"Return to theatre: {return_theatre} ({return_theatre/total*100:.1f}%)")
