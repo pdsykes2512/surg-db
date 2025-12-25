@@ -230,10 +230,6 @@ class Outcomes(BaseModel):
     readmission_30day: bool = False
     readmission_date: Optional[datetime] = None
     readmission_reason: Optional[str] = None
-    mortality_30day: bool = False
-    mortality_90day: bool = False
-    date_of_death: Optional[datetime] = None
-    cause_of_death: Optional[str] = None
 
 
 class FollowUpAppointment(BaseModel):

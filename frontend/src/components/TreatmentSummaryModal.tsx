@@ -349,10 +349,40 @@ export function TreatmentSummaryModal({ treatment, onClose, onEdit }: TreatmentS
           )}
 
           {/* Outcomes */}
-          {(treatment.length_of_stay !== undefined || treatment.mortality_30d !== undefined) && (
+          {(treatment.length_of_stay !== undefined || treatment.mortality_30d !== undefined || treatment.mortality_90d !== undefined || treatment.days_to_death !== undefined) && (
             <Section title="Outcomes">
               <Field label="Length of Stay" value={treatment.length_of_stay ? `${treatment.length_of_stay} days` : undefined} />
-              <Field label="30-Day Mortality" value={treatment.mortality_30d !== undefined ? (treatment.mortality_30d ? 'Yes' : 'No') : undefined} />
+              
+              {treatment.days_to_death !== undefined && treatment.days_to_death !== null && (
+                <Field 
+                  label="Mortality" 
+                  value={
+                    <div className="space-y-1">
+                      <div className="text-red-600 font-semibold">
+                        Deceased {treatment.days_to_death} days after treatment
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        30-day mortality: <span className={treatment.mortality_30d ? "text-red-600 font-semibold" : ""}>{treatment.mortality_30d ? 'Yes' : 'No'}</span>
+                        {' • '}
+                        90-day mortality: <span className={treatment.mortality_90d ? "text-red-600 font-semibold" : ""}>{treatment.mortality_90d ? 'Yes' : 'No'}</span>
+                        {treatment.mortality_1year !== undefined && (
+                          <>
+                            {' • '}
+                            1-year mortality: <span className={treatment.mortality_1year ? "text-red-600 font-semibold" : ""}>{treatment.mortality_1year ? 'Yes' : 'No'}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  }
+                />
+              )}
+              
+              {treatment.days_to_death === null && treatment.mortality_30d !== undefined && (
+                <>
+                  <Field label="30-Day Mortality" value={treatment.mortality_30d !== undefined ? (treatment.mortality_30d ? 'Yes' : 'No') : undefined} />
+                  <Field label="90-Day Mortality" value={treatment.mortality_90d !== undefined ? (treatment.mortality_90d ? 'Yes' : 'No') : undefined} />
+                </>
+              )}
             </Section>
           )}
 

@@ -13,6 +13,7 @@ from ..models.episode import (
 )
 from ..database import get_episodes_collection, get_patients_collection, get_treatments_collection, get_tumours_collection, get_clinicians_collection, get_investigations_collection, get_audit_logs_collection
 from ..utils.audit import log_action
+from ..utils.mortality import enrich_treatment_with_mortality
 from ..auth import get_current_user
 
 
@@ -282,6 +283,7 @@ async def get_episode(episode_id: str):
     tumours_collection = await get_tumours_collection()
     investigations_collection = await get_investigations_collection()
     clinicians_collection = await get_clinicians_collection()
+    patients_collection = await get_patients_collection()
     
     episode = await episodes_collection.find_one({"episode_id": episode_id})
     if not episode:
@@ -289,6 +291,10 @@ async def get_episode(episode_id: str):
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Episode {episode_id} not found"
         )
+    
+    # Get patient to check deceased date for mortality calculations
+    patient = await patients_collection.find_one({"patient_id": episode.get("patient_id")})
+    deceased_date = patient.get("deceased_date") if patient else None
     
     # Fetch treatments using treatment_ids array
     treatment_ids = episode.get("treatment_ids", [])
@@ -329,6 +335,9 @@ async def get_episode(episode_id: str):
         if "anaesthetist" in treatment and treatment["anaesthetist"]:
             anaesthetist_id = treatment["anaesthetist"]
             treatment["anaesthetist_name"] = clinician_map.get(anaesthetist_id, anaesthetist_id)
+        
+        # Enrich with computed mortality fields
+        treatment = enrich_treatment_with_mortality(treatment, deceased_date)
     
     for tumour in tumours:
         tumour["_id"] = str(tumour["_id"])
