@@ -21,6 +21,7 @@ interface Patient {
     bmi?: number;
     weight_kg?: number;
     height_cm?: number;
+    deceased_date?: string;
   };
   medical_history?: {
     conditions: string[];

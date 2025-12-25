@@ -8,11 +8,24 @@ interface SummaryReport {
   total_surgeries: number
   complication_rate: number
   readmission_rate: number
-  mortality_rate: number
+  mortality_30d_rate: number
+  mortality_90d_rate: number
   return_to_theatre_rate: number
   escalation_rate: number
-  avg_length_of_stay_days: number
-  urgency_breakdown: Record<string, number>
+  median_length_of_stay_days: number
+  yearly_breakdown?: {
+    [year: string]: {
+      total_surgeries: number
+      complication_rate: number
+      readmission_rate: number
+      mortality_30d_rate: number
+      mortality_90d_rate: number
+      return_to_theatre_rate: number
+      escalation_rate: number
+      median_length_of_stay_days: number
+    }
+  }
+  urgency_breakdown?: Record<string, number>
 }
 
 interface SurgeonPerformance {
@@ -20,9 +33,11 @@ interface SurgeonPerformance {
   total_surgeries: number
   complication_rate: number
   readmission_rate: number
-  mortality_rate: number
-  median_duration: number
-  median_los: number
+  return_to_theatre_rate: number
+  mortality_30d_rate: number
+  mortality_90d_rate: number
+  median_duration: number | null
+  median_los: number | null
 }
 
 interface FieldStat {
