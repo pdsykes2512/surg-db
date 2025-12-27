@@ -89,6 +89,39 @@ export function PatientModal({ patient, onClose, onSubmit, onDelete, loading = f
   });
   const [validationError, setValidationError] = useState<string>('');
 
+  // Auto-calculate BMI when height or weight changes
+  useEffect(() => {
+    const weight = formData.demographics.weight_kg;
+    const height_cm = formData.demographics.height_cm;
+
+    if (weight && height_cm) {
+      // BMI = weight (kg) / height (m)²
+      const height_m = height_cm / 100;
+      const bmi = weight / (height_m * height_m);
+
+      // Update BMI if it's different (avoid infinite loops)
+      const roundedBmi = Math.round(bmi * 10) / 10; // Round to 1 decimal place
+      if (formData.demographics.bmi !== roundedBmi) {
+        setFormData(prev => ({
+          ...prev,
+          demographics: {
+            ...prev.demographics,
+            bmi: roundedBmi
+          }
+        }));
+      }
+    } else if (formData.demographics.bmi !== undefined) {
+      // Clear BMI if height or weight is missing
+      setFormData(prev => ({
+        ...prev,
+        demographics: {
+          ...prev.demographics,
+          bmi: undefined
+        }
+      }));
+    }
+  }, [formData.demographics.weight_kg, formData.demographics.height_cm]);
+
   useEffect(() => {
     if (patient) {
       setFormData({
@@ -405,16 +438,15 @@ export function PatientModal({ patient, onClose, onSubmit, onDelete, loading = f
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    BMI
+                    BMI (auto-calculated)
                   </label>
                   <input
                     type="number"
                     step="0.1"
-                    min="10"
-                    max="80"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 cursor-not-allowed"
                     value={formData.demographics.bmi || ''}
-                    onChange={(e) => handleInputChange('demographics.bmi', e.target.value ? parseFloat(e.target.value) : undefined)}
+                    readOnly
+                    disabled
                   />
                 </div>
               </div>
