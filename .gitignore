@@ -1,6 +1,11 @@
 # Temporary files (regenerated intermediates)
 .tmp/
 
+# Data files (exports and sensitive data)
+data/
+*.csv
+acpdb/
+
 # Environment variables and secrets
 .env
 
