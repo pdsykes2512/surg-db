@@ -15,6 +15,59 @@ This file tracks significant changes made to the surg-db application. **Update t
 
 ---
 
+## 2025-12-27 - Fix Episode Modal Not Displaying Investigations, Tumours, and Treatments
+
+**Changed by:** AI Session  
+**Issue:** The cancer episode details modal showed empty tabs for investigations, tumours, and treatments despite data existing in the database. API calls were failing silently with 404 errors because the wrong URL path was being constructed.
+
+**Root Cause:** The December 27 API URL fix was **incorrect**. The logic was:
+```typescript
+// WRONG: This produces the wrong URL!
+const API_URL = import.meta.env.VITE_API_URL === '/api' ? '' : (...)
+// Result: `${API_URL}/episodes/${id}` becomes `/episodes/${id}` instead of `/api/episodes/${id}`
+```
+
+When `VITE_API_URL=/api`, setting `API_URL` to empty string `''` caused URLs like `/episodes/E-123` instead of `/api/episodes/E-123`. The Vite proxy expects `/api/*` paths, not bare `/episodes/*` paths.
+
+**Correct Solution:**
+```typescript
+// CORRECT: Always use /api as the base path
+const API_URL = import.meta.env.VITE_API_URL || '/api'
+// Result: `${API_URL}/episodes/${id}` becomes `/api/episodes/${id}` ✓
+```
+
+**Changes:**
+1. Fixed all 10 instances of `API_URL` construction in `CancerEpisodeDetailModal.tsx`
+2. Changed from `=== '/api' ? '' :` pattern to simple `|| '/api'` pattern
+3. Added debug console.log statements to `loadTreatments()` function for troubleshooting
+4. Verified backend API endpoint `/api/episodes/{episode_id}` returns correct data with treatments/tumours/investigations arrays
+
+**Files affected:**
+- `frontend/src/components/modals/CancerEpisodeDetailModal.tsx` (10 API_URL fixes)
+- `frontend/src/pages/HomePage.tsx` (1 fix)
+- `frontend/src/pages/ReportsPage.tsx` (1 fix for /reports endpoint)
+- `frontend/src/pages/EpisodesPage.tsx` (2 fixes)
+- `frontend/src/components/search/NHSProviderSelect.tsx` (2 fixes)
+- `frontend/src/components/modals/TumourModal.tsx` (1 fix)
+- `frontend/src/components/modals/AddTreatmentModal.tsx` (1 fix)
+- **NOT CHANGED** (already correct): `AdminPage.tsx`, `SurgeonSearch.tsx`, `AuthContext.tsx`, `ReportsPage.tsx` (API_BASE for downloads)
+
+**Testing:**
+1. Open any cancer episode details modal
+2. Switch to Tumours tab - should show tumour data
+3. Switch to Treatments tab - should show treatment data
+4. Switch to Investigations tab - should show investigation data
+5. Check browser console for successful API calls: "Loading episode data from: /api/episodes/E-..."
+
+**Notes:**
+- This reveals that the previous "fix" for API URL construction was fundamentally flawed
+- ALL other files that were "fixed" on Dec 27 may have the same bug and should be reviewed
+- The correct pattern is: `const API_URL = import.meta.env.VITE_API_URL || '/api'`
+- Never use empty string for API_URL when VITE_API_URL is '/api'
+- The Vite proxy configuration (in vite.config.ts) expects `/api/*` paths
+
+---
+
 ## 2025-12-27 - Fix Patients with Future Birth Dates Causing Pagination Errors
 
 **Changed by:** AI Session  

@@ -204,8 +204,8 @@ export function EpisodesPage() {
     if (!editingEpisode) return
 
     try {
-      // Use empty string for relative URLs when VITE_API_URL is /api (uses Vite proxy)
-      const API_URL = import.meta.env.VITE_API_URL === '/api' ? '' : (import.meta.env.VITE_API_URL || 'http://localhost:8000/api')
+      // Use /api for relative URLs (uses Vite proxy)
+      const API_URL = import.meta.env.VITE_API_URL || '/api'
       const response = await fetch(`${API_URL}/episodes/${editingEpisode.episode_id}`, {
         method: 'PUT',
         headers: {

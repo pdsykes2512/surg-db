@@ -91,8 +91,8 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
     const fetchProviderName = async () => {
       if (episode?.provider_first_seen) {
         try {
-          // Use empty string for relative URLs when VITE_API_URL is /api (uses Vite proxy)
-          const API_URL = import.meta.env.VITE_API_URL === '/api' ? '' : (import.meta.env.VITE_API_URL || 'http://localhost:8000/api')
+          // Use /api for relative URLs (uses Vite proxy)
+          const API_URL = import.meta.env.VITE_API_URL || '/api'
           const response = await fetch(`${API_URL}/nhs-providers/${episode.provider_first_seen}`)
           if (response.ok) {
             const provider = await response.json()
@@ -126,19 +126,30 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
     
     try {
       setLoading(true)
-      // Use empty string for relative URLs when VITE_API_URL is /api (uses Vite proxy)
-      const API_URL = import.meta.env.VITE_API_URL === '/api' ? '' : (import.meta.env.VITE_API_URL || 'http://localhost:8000/api')
-      const response = await fetch(`${API_URL}/episodes/${episode.episode_id}`, {
+      // Use /api for relative URLs when VITE_API_URL is /api (uses Vite proxy)
+      const API_URL = import.meta.env.VITE_API_URL || '/api'
+      const url = `${API_URL}/episodes/${episode.episode_id}`
+      console.log('Loading episode data from:', url)
+      const response = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       })
+      console.log('Response status:', response.status, response.ok)
       if (response.ok) {
         const data = await response.json()
+        console.log('Episode data received:', {
+          treatments: data.treatments?.length || 0,
+          tumours: data.tumours?.length || 0,
+          investigations: data.investigations?.length || 0,
+          followUps: data.follow_ups?.length || 0
+        })
         setTreatments(data.treatments || [])
         setTumours(data.tumours || [])
         setInvestigations(data.investigations || [])
         setFollowUps(data.follow_ups || [])
+      } else {
+        console.error('Failed to load episode data:', response.status, await response.text())
       }
     } catch (error) {
       console.error('Failed to load treatments:', error)
@@ -150,8 +161,8 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
   const handleAddTreatment = async (treatment: any) => {
     if (!episode) return
     try {
-      // Use empty string for relative URLs when VITE_API_URL is /api (uses Vite proxy)
-      const API_URL = import.meta.env.VITE_API_URL === '/api' ? '' : (import.meta.env.VITE_API_URL || 'http://localhost:8000/api')
+      // Use /api for relative URLs (uses Vite proxy)
+      const API_URL = import.meta.env.VITE_API_URL || '/api'
       const response = await fetch(
         `${API_URL}/episodes/${episode.episode_id}/treatments`,
         {
@@ -181,8 +192,8 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
     if (!editingTreatment || !episode) return
     
     try {
-      // Use empty string for relative URLs when VITE_API_URL is /api (uses Vite proxy)
-      const API_URL = import.meta.env.VITE_API_URL === '/api' ? '' : (import.meta.env.VITE_API_URL || 'http://localhost:8000/api')
+      // Use /api for relative URLs (uses Vite proxy)
+      const API_URL = import.meta.env.VITE_API_URL || '/api'
       const response = await fetch(
         `${API_URL}/episodes/${episode.episode_id}/treatments/${editingTreatment.treatment_id}`,
         {
@@ -212,8 +223,8 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
   const handleAddTumour = async (tumour: any) => {
     if (!episode) return
     try {
-      // Use empty string for relative URLs when VITE_API_URL is /api (uses Vite proxy)
-      const API_URL = import.meta.env.VITE_API_URL === '/api' ? '' : (import.meta.env.VITE_API_URL || 'http://localhost:8000/api')
+      // Use /api for relative URLs (uses Vite proxy)
+      const API_URL = import.meta.env.VITE_API_URL || '/api'
       const response = await fetch(
         `${API_URL}/episodes/${episode.episode_id}/tumours`,
         {
@@ -243,8 +254,8 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
     if (!editingTumour || !episode) return
     
     try {
-      // Use empty string for relative URLs when VITE_API_URL is /api (uses Vite proxy)
-      const API_URL = import.meta.env.VITE_API_URL === '/api' ? '' : (import.meta.env.VITE_API_URL || 'http://localhost:8000/api')
+      // Use /api for relative URLs (uses Vite proxy)
+      const API_URL = import.meta.env.VITE_API_URL || '/api'
       const response = await fetch(
         `${API_URL}/episodes/${episode.episode_id}/tumours/${editingTumour.tumour_id}`,
         {
@@ -280,8 +291,8 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
     if (!deleteTumourConfirmation.tumour || !episode) return
     
     try {
-      // Use empty string for relative URLs when VITE_API_URL is /api (uses Vite proxy)
-      const API_URL = import.meta.env.VITE_API_URL === '/api' ? '' : (import.meta.env.VITE_API_URL || 'http://localhost:8000/api')
+      // Use /api for relative URLs (uses Vite proxy)
+      const API_URL = import.meta.env.VITE_API_URL || '/api'
       const response = await fetch(
         `${API_URL}/episodes/${episode.episode_id}/tumours/${deleteTumourConfirmation.tumour.tumour_id}`,
         {
@@ -315,8 +326,8 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
     if (!deleteTreatmentConfirmation.treatment || !episode) return
     
     try {
-      // Use empty string for relative URLs when VITE_API_URL is /api (uses Vite proxy)
-      const API_URL = import.meta.env.VITE_API_URL === '/api' ? '' : (import.meta.env.VITE_API_URL || 'http://localhost:8000/api')
+      // Use /api for relative URLs (uses Vite proxy)
+      const API_URL = import.meta.env.VITE_API_URL || '/api'
       const response = await fetch(
         `${API_URL}/episodes/${episode.episode_id}/treatments/${deleteTreatmentConfirmation.treatment.treatment_id}`,
         {
@@ -346,8 +357,8 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
     if (!episode) return
     
     try {
-      // Use empty string for relative URLs when VITE_API_URL is /api (uses Vite proxy)
-      const API_URL = import.meta.env.VITE_API_URL === '/api' ? '' : (import.meta.env.VITE_API_URL || 'http://localhost:8000/api')
+      // Use /api for relative URLs (uses Vite proxy)
+      const API_URL = import.meta.env.VITE_API_URL || '/api'
       const response = await fetch(`${API_URL}/investigations`, {
         method: 'POST',
         headers: {
@@ -374,8 +385,8 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
     if (!editingInvestigation || !episode) return
     
     try {
-      // Use empty string for relative URLs when VITE_API_URL is /api (uses Vite proxy)
-      const API_URL = import.meta.env.VITE_API_URL === '/api' ? '' : (import.meta.env.VITE_API_URL || 'http://localhost:8000/api')
+      // Use /api for relative URLs (uses Vite proxy)
+      const API_URL = import.meta.env.VITE_API_URL || '/api'
       const response = await fetch(
         `${API_URL}/investigations/${editingInvestigation.investigation_id}`,
         {
