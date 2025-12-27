@@ -133,6 +133,48 @@ EOF
 
 **Result**: All 7,957 treatments set to RHU.
 
+### 5.3 Fix Return to Theatre (RTT) Data
+
+**Problem**: Return to theatre data needs to be imported from CSV `re_op` field.
+
+**Expected**: 1.6% RTT rate (126 cases based on CSV).
+
+**Key Details**:
+- CSV field: `re_op` (0 = no RTT, 1 = yes RTT)
+- Matching strategy: Join surgeries_export_new.csv with patients_export_new.csv on Hosp_No to get NHS_No, then match to treatments using patient_id and treatment_date
+
+```bash
+cd /root/surg-db/execution/data-fixes
+python3 fix_rtt_from_csv.py
+```
+
+**Process**:
+1. Loads surgeries_export_new.csv and patients_export_new.csv
+2. Joins CSVs on Hosp_No to get NHS_No for each surgery
+3. Builds NHS number → patient_id lookup from database
+4. For each CSV record:
+   - Cleans NHS number (handles float conversion)
+   - Looks up patient_id from NHS number
+   - Parses surgery date to match treatment_date format (YYYY-MM-DD)
+   - Finds matching treatment by patient_id + treatment_date
+   - Sets `return_to_theatre` field to True/False based on re_op value
+5. Verifies results against CSV totals
+
+**Result**: ~126 treatments (1.6%) marked with return_to_theatre = True.
+
+**Verification Output**:
+```
+MongoDB RTT = True:  126 (1.6%)
+MongoDB RTT = False: 7,831 (98.4%)
+✓ MATCH: MongoDB RTT count matches CSV
+```
+
+**Notes**:
+- Matching relies on accurate NHS numbers in both CSV and database
+- Treatment dates must match exactly (YYYY-MM-DD format)
+- Records without NHS number or surgery date are skipped
+- Script shows first 5 RTT cases for verification
+
 ---
 
 ## Step 6: Episode Lead Clinician Linking
@@ -235,6 +277,15 @@ This ensures the frontend uses the remote backend URL instead of hardcoded local
 
 **Note**: Do NOT use `Comp` field or readmission flags for complication rate.
 
+### Return to Theatre Source
+- **Field**: `re_op`
+- **Values**:
+  - 0 = No RTT
+  - 1 = Yes RTT
+- **Population**: 100% (all records)
+- **Expected Rate**: 1.6% (126 cases)
+- **Usage**: Authoritative source for return_to_theatre field
+
 ---
 
 ## Migration Scripts Summary
@@ -246,6 +297,7 @@ This ensures the frontend uses the remote backend URL instead of hardcoded local
 | `fix_treatment_dates_from_csv.py` | Update dates from Surgery field | 6,087 |
 | `fix_urgency_from_csv.py` | Correct urgency using ModeOp | 6,013 |
 | `fix_complications_from_csv.py` | Fix complications (exclude readmissions) | 7,756 |
+| `fix_rtt_from_csv.py` | Fix return to theatre using re_op field | ~7,957 (126 RTT) |
 
 ---
 
@@ -316,11 +368,11 @@ db.treatments.aggregate([
    mongodump --db surgdb --out /backup/surgdb_$(date +%Y%m%d)
    ```
 
-4. **CSV Authority**: The `surgeries_export_new.csv` file is the authoritative source for dates, urgency, and complications. Always reference it when fixing data quality issues.
+4. **CSV Authority**: The `surgeries_export_new.csv` file is the authoritative source for dates, urgency, complications, and return to theatre data. Always reference it when fixing data quality issues.
 
 5. **Legacy Data**: Some treatments retain legacy surgeon names (surnames only) that don't match current clinicians. This is expected and the UI handles it gracefully.
 
 ---
 
 ## Last Updated
-December 23, 2025
+December 27, 2025

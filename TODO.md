@@ -115,7 +115,7 @@
 - ✅ Fix RTT data from CSV source using NHS number matching (execution/fix_rtt_from_csv.py)
 - ✅ Create data migration guide for reproducible fixes (DATABASE_MIGRATION_SUMMARY.md)
 - ✅ Fix investigation date format inconsistencies (converted 17,564 datetime objects to strings)
-- [ ] Update DATA_MIGRATION_GUIDE.md with fix_rtt_from_csv.py script details
+- ✅ Update DATA_MIGRATION_GUIDE.md with fix_rtt_from_csv.py script details
 
 ### Audit Logging & Activity Tracking
 - ✅ Create audit log data model and API endpoints
@@ -156,9 +156,7 @@
 - ✅ Investigation tracking integrated into episodes
 - ✅ Follow-up visit tracking integrated into episodes
 - [ ] Add file upload for surgical notes/images
-- [ ] Implement episode timeline view
-- [ ] Add complication tracking with severity levels
-- [ ] Create follow-up appointment scheduler
+- ✅ Add complication tracking with severity levels (Complete - Clavien-Dindo grading I-V, anastomotic leak severity A-C)
 - ✅ Build episode audit log (via comprehensive audit system)
 
 ### Security & Performance
@@ -177,7 +175,7 @@
   - ✅ Comprehensive documentation in directives/database_backup_system.md
 - [ ] Implement session timeout handling
 - [ ] Add HTTPS/SSL configuration guide
-- [ ] **Implement database encryption at rest (MongoDB encryption)**
+- ✅ **Implement database encryption at rest (MongoDB encryption)**
 
 ## Low Priority
 
