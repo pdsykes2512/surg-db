@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { SearchableSelect } from './SearchableSelect'
-import api from '../services/api'
+import { SearchableSelect } from '../common/SearchableSelect'
+import api from '../../services/api'
 
 interface Patient {
   patient_id: string

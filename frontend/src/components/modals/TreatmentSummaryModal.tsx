@@ -1,6 +1,6 @@
-import { formatDate, formatTreatmentType, formatSurgeon, formatAnatomicalSite } from '../utils/formatters'
-import { formatTrustName } from '../utils/nhsTrusts'
-import { Button } from './Button'
+import { formatDate, formatTreatmentType, formatSurgeon, formatAnatomicalSite } from '../../utils/formatters'
+import { formatTrustName } from '../../utils/nhsTrusts'
+import { Button } from '../common/Button'
 
 interface TreatmentSummaryModalProps {
   treatment: any

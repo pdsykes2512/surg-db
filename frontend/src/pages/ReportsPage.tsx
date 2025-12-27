@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
-import { PageHeader } from '../components/PageHeader'
-import { Card } from '../components/Card'
-import { Button } from '../components/Button'
-import { Table, TableHeader, TableBody, TableRow, TableHeadCell, TableCell } from '../components/Table'
+import { PageHeader } from '../components/common/PageHeader'
+import { Card } from '../components/common/Card'
+import { Button } from '../components/common/Button'
+import { Table, TableHeader, TableBody, TableRow, TableHeadCell, TableCell } from '../components/common/Table'
 import { apiService } from '../services/api'
 
 interface SummaryReport {

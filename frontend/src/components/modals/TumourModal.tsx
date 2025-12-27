@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
-import { Button } from './Button'
-import { DateInput } from './DateInput'
-import { SearchableSelect } from './SearchableSelect'
-import { calculateStage, formatStage, getStageColor } from '../utils/cancerStaging'
+import { Button } from '../common/Button'
+import { DateInput } from '../common/DateInput'
+import { SearchableSelect } from '../common/SearchableSelect'
+import { calculateStage, formatStage, getStageColor } from '../../utils/cancerStaging'
 
 interface TumourModalProps {
   episodeId: string

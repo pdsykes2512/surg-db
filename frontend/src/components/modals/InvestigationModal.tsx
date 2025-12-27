@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Button } from './Button'
-import { DateInput } from './DateInput'
+import { Button } from '../common/Button'
+import { DateInput } from '../common/DateInput'
 
 interface InvestigationModalProps {
   episodeId: string

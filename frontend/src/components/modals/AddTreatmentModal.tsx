@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
-import { Button } from './Button'
-import { DateInput } from './DateInput'
-import { SurgeonSearch } from './SurgeonSearch'
-import { SearchableSelect } from './SearchableSelect'
-import { NHSProviderSelect } from './NHSProviderSelect'
+import { Button } from '../common/Button'
+import { DateInput } from '../common/DateInput'
+import { SurgeonSearch } from '../search/SurgeonSearch'
+import { SearchableSelect } from '../common/SearchableSelect'
+import { NHSProviderSelect } from '../search/NHSProviderSelect'
 
 interface AddTreatmentModalProps {
   episodeId: string

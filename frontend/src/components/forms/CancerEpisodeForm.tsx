@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react'
-import { Button } from './Button'
-import { DateInput } from './DateInput'
-import { PatientSearch } from './PatientSearch'
-import { SurgeonSearch } from './SurgeonSearch'
-import { SearchableSelect } from './SearchableSelect'
-import { NHSProviderSelect } from './NHSProviderSelect'
-import { TumourModal } from './TumourModal'
-import { AddTreatmentModal } from './AddTreatmentModal'
-import { formatCancerType, formatAnatomicalSite } from '../utils/formatters'
+import { Button } from '../common/Button'
+import { DateInput } from '../common/DateInput'
+import { PatientSearch } from '../search/PatientSearch'
+import { SurgeonSearch } from '../search/SurgeonSearch'
+import { SearchableSelect } from '../common/SearchableSelect'
+import { NHSProviderSelect } from '../search/NHSProviderSelect'
+import { TumourModal } from '../modals/TumourModal'
+import { AddTreatmentModal } from '../modals/AddTreatmentModal'
+import { formatCancerType, formatAnatomicalSite } from '../../utils/formatters'
 
 interface CancerEpisodeFormProps {
   onSubmit: (data: any) => void

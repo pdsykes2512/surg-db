@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Button } from './Button'
+import { Button } from '../common/Button'
 
 interface EpisodeFormProps {
   onSubmit: (data: any) => void

@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import axios from 'axios'
 import { useAuth } from '../contexts/AuthContext'
-import { PageHeader } from '../components/PageHeader'
-import { Card } from '../components/Card'
-import { Button } from '../components/Button'
-import { Table, TableHeader, TableBody, TableRow, TableHeadCell, TableCell } from '../components/Table'
+import { PageHeader } from '../components/common/PageHeader'
+import { Card } from '../components/common/Card'
+import { Button } from '../components/common/Button'
+import { Table, TableHeader, TableBody, TableRow, TableHeadCell, TableCell } from '../components/common/Table'
 
 const API_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:8000'
 

@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { Button } from './Button'
+import { Button } from '../common/Button'
 import { AddTreatmentModal } from './AddTreatmentModal'
 import { TumourModal } from './TumourModal'
 import { TumourSummaryModal } from './TumourSummaryModal'
 import { TreatmentSummaryModal } from './TreatmentSummaryModal'
 import { InvestigationModal } from './InvestigationModal'
 import { FollowUpModal } from './FollowUpModal'
-import { formatStatus, formatTreatmentType, formatSurgeon, capitalize, formatTreatmentPlan, formatCodedValue, formatAnatomicalSite, formatClinicalTNM, formatPathologicalTNM, formatInvestigationType } from '../utils/formatters'
-import { calculateStage, getStageColor, formatStage } from '../utils/cancerStaging'
+import { formatStatus, formatTreatmentType, formatSurgeon, capitalize, formatTreatmentPlan, formatCodedValue, formatAnatomicalSite, formatClinicalTNM, formatPathologicalTNM, formatInvestigationType } from '../../utils/formatters'
+import { calculateStage, getStageColor, formatStage } from '../../utils/cancerStaging'
 
 interface Treatment {
   treatment_id: string

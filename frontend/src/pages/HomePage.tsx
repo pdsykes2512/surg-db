@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { PageHeader } from '../components/PageHeader'
-import { Card } from '../components/Card'
+import { PageHeader } from '../components/common/PageHeader'
+import { Card } from '../components/common/Card'
 import { formatDate } from '../utils/formatters'
 import api from '../services/api'
 

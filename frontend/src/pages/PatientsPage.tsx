@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PageHeader } from '../components/PageHeader'
-import { Card } from '../components/Card'
-import { Button } from '../components/Button'
-import { PatientModal } from '../components/PatientModal'
-import { Table, TableHeader, TableBody, TableRow, TableHeadCell, TableCell } from '../components/Table'
-import { Pagination } from '../components/Pagination'
+import { PageHeader } from '../components/common/PageHeader'
+import { Card } from '../components/common/Card'
+import { Button } from '../components/common/Button'
+import { PatientModal } from '../components/modals/PatientModal'
+import { Table, TableHeader, TableBody, TableRow, TableHeadCell, TableCell } from '../components/common/Table'
+import { Pagination } from '../components/common/Pagination'
 import { usePagination } from '../hooks/usePagination'
 import api from '../services/api';
 import { formatDate } from '../utils/formatters';

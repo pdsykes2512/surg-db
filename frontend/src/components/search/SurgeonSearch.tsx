@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { SearchableSelect } from './SearchableSelect'
+import { SearchableSelect } from '../common/SearchableSelect'
 
 interface Surgeon {
   _id: string

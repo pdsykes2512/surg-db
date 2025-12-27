@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { Button } from './Button'
+import { Button } from '../common/Button'
 
 interface Patient {
   _id: string;

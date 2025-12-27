@@ -5,8 +5,8 @@ import { EpisodesPage } from './pages/EpisodesPage'
 import { ReportsPage } from './pages/ReportsPage'
 import { LoginPage } from './pages/LoginPage'
 import { AdminPage } from './pages/AdminPage'
-import { ProtectedRoute } from './components/ProtectedRoute'
-import { Layout } from './components/Layout'
+import { ProtectedRoute } from './components/layout/ProtectedRoute'
+import { Layout } from './components/layout/Layout'
 
 function App() {
 

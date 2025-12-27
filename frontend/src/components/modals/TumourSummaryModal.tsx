@@ -1,6 +1,6 @@
-import { capitalize, formatAnatomicalSite, formatClinicalTNM, formatPathologicalTNM } from '../utils/formatters'
-import { calculateStage, formatStage } from '../utils/cancerStaging'
-import { Button } from './Button'
+import { capitalize, formatAnatomicalSite, formatClinicalTNM, formatPathologicalTNM } from '../../utils/formatters'
+import { calculateStage, formatStage } from '../../utils/cancerStaging'
+import { Button } from '../common/Button'
 
 interface TumourSummaryModalProps {
   tumour: any
