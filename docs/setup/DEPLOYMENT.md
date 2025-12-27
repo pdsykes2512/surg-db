@@ -318,6 +318,145 @@ sudo certbot --nginx -d yourdomain.com -d www.yourdomain.com -d api.yourdomain.c
 sudo certbot renew --dry-run
 ```
 
+### Alternative: Using Caddy as Reverse Proxy
+
+Caddy is a modern, automatic HTTPS web server that's simpler to configure than Nginx. It automatically obtains and renews SSL certificates.
+
+#### 1. Install Caddy
+
+```bash
+# Install Caddy (Ubuntu/Debian)
+sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https curl
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
+sudo apt update
+sudo apt install caddy
+```
+
+#### 2. Configure Caddy
+
+```bash
+# Create Caddyfile
+sudo nano /etc/caddy/Caddyfile
+```
+
+Add the following configuration:
+
+```caddy
+# Backend API
+api.yourdomain.com {
+    reverse_proxy localhost:8000 {
+        # Health check
+        health_uri /api/health
+        health_interval 30s
+        health_timeout 5s
+
+        # Headers
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+    }
+
+    # Enable compression
+    encode gzip
+
+    # Security headers
+    header {
+        X-Frame-Options "SAMEORIGIN"
+        X-Content-Type-Options "nosniff"
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Permissions-Policy "geolocation=(), microphone=(), camera=()"
+    }
+
+    # Logging
+    log {
+        output file /var/log/caddy/api-access.log
+        format json
+    }
+}
+
+# Frontend
+yourdomain.com, www.yourdomain.com {
+    root * /home/surgapp/surg-db/frontend/dist
+
+    # Try files first, fallback to index.html for SPA routing
+    try_files {path} /index.html
+    file_server
+
+    # Cache static assets
+    @static {
+        path *.js *.css *.png *.jpg *.jpeg *.gif *.ico *.svg *.woff *.woff2 *.ttf *.eot
+    }
+    header @static Cache-Control "public, max-age=31536000, immutable"
+
+    # Enable compression
+    encode gzip
+
+    # Security headers
+    header {
+        X-Frame-Options "SAMEORIGIN"
+        X-Content-Type-Options "nosniff"
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy "strict-origin-when-cross-origin"
+    }
+
+    # Logging
+    log {
+        output file /var/log/caddy/frontend-access.log
+        format json
+    }
+}
+```
+
+#### 3. Start Caddy
+
+```bash
+# Create log directory
+sudo mkdir -p /var/log/caddy
+sudo chown caddy:caddy /var/log/caddy
+
+# Test configuration
+sudo caddy validate --config /etc/caddy/Caddyfile
+
+# Restart Caddy
+sudo systemctl restart caddy
+sudo systemctl enable caddy
+
+# Check status
+sudo systemctl status caddy
+```
+
+#### 4. View Caddy Logs
+
+```bash
+# Access logs
+sudo tail -f /var/log/caddy/frontend-access.log
+sudo tail -f /var/log/caddy/api-access.log
+
+# System logs
+sudo journalctl -u caddy -f
+```
+
+#### Advantages of Caddy
+
+- **Automatic HTTPS**: Obtains and renews certificates automatically
+- **Simpler Configuration**: More readable than Nginx
+- **HTTP/2 and HTTP/3**: Enabled by default
+- **Modern Defaults**: Secure defaults out of the box
+- **No External Tools**: No need for certbot
+
+#### Caddy vs Nginx Comparison
+
+| Feature | Caddy | Nginx |
+|---------|-------|-------|
+| Auto HTTPS | ✅ Automatic | ❌ Requires certbot |
+| Configuration | Simple, readable | More verbose |
+| HTTP/3 | ✅ Built-in | Requires extra build |
+| Community | Growing | Very large |
+| Performance | Excellent | Excellent |
+| Learning Curve | Easy | Moderate |
+
 ## Security Hardening
 
 ### 1. Firewall Configuration
