@@ -89,7 +89,7 @@ export function PatientModal({ patient, onClose, onSubmit, onDelete, loading = f
   });
   const [validationError, setValidationError] = useState<string>('');
 
-  // Auto-calculate BMI when height or weight changes
+  // Auto-calculate BMI when height or weight changes (only if both are present)
   useEffect(() => {
     const weight = formData.demographics.weight_kg;
     const height_cm = formData.demographics.height_cm;
@@ -110,16 +110,8 @@ export function PatientModal({ patient, onClose, onSubmit, onDelete, loading = f
           }
         }));
       }
-    } else if (formData.demographics.bmi !== undefined) {
-      // Clear BMI if height or weight is missing
-      setFormData(prev => ({
-        ...prev,
-        demographics: {
-          ...prev.demographics,
-          bmi: undefined
-        }
-      }));
     }
+    // Note: Do NOT clear BMI when height/weight are missing - allow manual entry
   }, [formData.demographics.weight_kg, formData.demographics.height_cm]);
 
   useEffect(() => {
@@ -438,15 +430,22 @@ export function PatientModal({ patient, onClose, onSubmit, onDelete, loading = f
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    BMI (auto-calculated)
+                    BMI {formData.demographics.weight_kg && formData.demographics.height_cm ? '(auto-calculated)' : ''}
                   </label>
                   <input
                     type="number"
                     step="0.1"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 cursor-not-allowed"
+                    min="10"
+                    max="80"
+                    className={`w-full px-3 py-2 border border-gray-300 rounded-md ${
+                      formData.demographics.weight_kg && formData.demographics.height_cm
+                        ? 'bg-gray-50 cursor-not-allowed'
+                        : 'focus:outline-none focus:ring-2 focus:ring-blue-500'
+                    }`}
                     value={formData.demographics.bmi || ''}
-                    readOnly
-                    disabled
+                    onChange={(e) => handleInputChange('demographics.bmi', e.target.value ? parseFloat(e.target.value) : undefined)}
+                    readOnly={!!(formData.demographics.weight_kg && formData.demographics.height_cm)}
+                    disabled={!!(formData.demographics.weight_kg && formData.demographics.height_cm)}
                   />
                 </div>
               </div>
