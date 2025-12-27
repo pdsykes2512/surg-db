@@ -109,14 +109,47 @@ export function HomePage() {
   }, [])
 
   const handleActivityClick = (activity: any) => {
-    // Navigate based on entity type
+    // Navigate based on entity type and pass state to open appropriate modal
     if (activity.entity_type === 'episode') {
-      navigate('/episodes')
+      // Navigate to episodes page and open episode detail modal
+      navigate('/episodes', {
+        state: {
+          openEpisode: activity.entity_id,
+          action: activity.action
+        }
+      })
     } else if (activity.entity_type === 'patient') {
-      navigate('/patients')
-    } else if (activity.entity_type === 'treatment' || activity.entity_type === 'tumour' || activity.entity_type === 'investigation') {
-      // These are part of episodes, navigate to episodes
-      navigate('/episodes')
+      // Navigate to patients page and open patient detail
+      navigate('/patients', {
+        state: {
+          openPatient: activity.entity_id,
+          action: activity.action
+        }
+      })
+    } else if (activity.entity_type === 'treatment') {
+      // Navigate to episodes and open treatment modal
+      navigate('/episodes', {
+        state: {
+          openTreatment: activity.entity_id,
+          action: activity.action
+        }
+      })
+    } else if (activity.entity_type === 'tumour') {
+      // Navigate to episodes and open tumour modal
+      navigate('/episodes', {
+        state: {
+          openTumour: activity.entity_id,
+          action: activity.action
+        }
+      })
+    } else if (activity.entity_type === 'investigation') {
+      // Navigate to episodes and open investigation modal
+      navigate('/episodes', {
+        state: {
+          openInvestigation: activity.entity_id,
+          action: activity.action
+        }
+      })
     }
   }
 

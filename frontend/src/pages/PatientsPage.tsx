@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { PageHeader } from '../components/common/PageHeader'
 import { Card } from '../components/common/Card'
 import { Button } from '../components/common/Button'
@@ -64,6 +64,7 @@ interface PatientFormData {
 
 export function PatientsPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [showModal, setShowModal] = useState(false);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(false);
@@ -120,6 +121,20 @@ export function PatientsPage() {
 
     return () => clearTimeout(timeoutId);
   }, [searchTerm, loadPatients]);
+
+  // Handle opening patient modal from navigation state (from HomePage activity)
+  useEffect(() => {
+    const state = location.state as { openPatient?: string }
+
+    if (state?.openPatient && patients.length > 0) {
+      const patient = patients.find(p => p.patient_id === state.openPatient)
+      if (patient) {
+        handleEdit(patient)
+        // Clear the state to avoid reopening on refresh
+        navigate(location.pathname, { replace: true, state: {} })
+      }
+    }
+  }, [location.state, patients, location.pathname, navigate]);
 
   // Removed unused handleInputChange, formatNHSNumber, and handleNHSNumberChange functions
 

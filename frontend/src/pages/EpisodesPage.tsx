@@ -133,19 +133,68 @@ export function EpisodesPage() {
     return () => clearTimeout(timeoutId)
   }, [searchTerm, loadEpisodes])
 
-  // Handle opening edit modal from navigation state
+  // Handle opening modals from navigation state (from HomePage activity or direct navigation)
   useEffect(() => {
-    const state = location.state as { editEpisodeId?: string }
-    if (state?.editEpisodeId && episodes.length > 0) {
+    const state = location.state as {
+      editEpisodeId?: string
+      openEpisode?: string
+      openTreatment?: string
+      openTumour?: string
+      openInvestigation?: string
+    }
+
+    if (!episodes.length) return
+
+    // Handle editing an episode
+    if (state?.editEpisodeId) {
       const episode = episodes.find(ep => ep.episode_id === state.editEpisodeId)
       if (episode) {
         setEditingEpisode(episode)
         setShowModal(true)
-        // Clear the state to avoid reopening on refresh
         navigate(location.pathname, { replace: true, state: {} })
       }
     }
-  }, [location.state, episodes, navigate, location.pathname])
+
+    // Handle opening an episode detail modal
+    if (state?.openEpisode) {
+      const episode = episodes.find(ep => ep.episode_id === state.openEpisode)
+      if (episode) {
+        setSelectedEpisode(episode)
+        setShowDetailModal(true)
+        navigate(location.pathname, { replace: true, state: {} })
+      }
+    }
+
+    // Handle opening treatment modal - need to find episode containing this treatment
+    if (state?.openTreatment) {
+      // First try to find the episode by loading the treatment and getting its episode_id
+      const loadTreatmentAndOpenModal = async () => {
+        try {
+          const response = await api.get(`/episodes/treatments/${state.openTreatment}`)
+          const treatment = response.data
+
+          // Find the episode this treatment belongs to
+          const episode = episodes.find(ep => ep.episode_id === treatment.episode_id)
+          if (episode) {
+            setSelectedEpisode(episode)
+            setShowDetailModal(true)
+            navigate(location.pathname, { replace: true, state: {} })
+          }
+        } catch (error) {
+          console.error('Failed to load treatment:', error)
+          showToast('Failed to load treatment details', 'error')
+        }
+      }
+      loadTreatmentAndOpenModal()
+    }
+
+    // Handle opening tumour/investigation modals similarly if needed
+    // For now, they will open the episode detail modal
+    if (state?.openTumour || state?.openInvestigation) {
+      // These are shown within episode detail modal, so just show that
+      navigate(location.pathname, { replace: true, state: {} })
+    }
+  }, [location.state, episodes, navigate, location.pathname, showToast])
 
   const handleCreate = async (data: any) => {
     try {
