@@ -62,8 +62,13 @@ interface PatientModalProps {
 }
 
 export function PatientModal({ patient, onClose, onSubmit, onDelete, loading = false }: PatientModalProps) {
+  // Generate a 6-character hex patient ID for new patients
+  const generatePatientId = () => {
+    return Math.random().toString(16).substring(2, 8).toUpperCase();
+  };
+
   const [formData, setFormData] = useState<PatientFormData>({
-    patient_id: '',
+    patient_id: patient ? patient.patient_id : generatePatientId(),
     mrn: '',
     nhs_number: '',
     demographics: {
@@ -199,20 +204,16 @@ export function PatientModal({ patient, onClose, onSubmit, onDelete, loading = f
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Record Number <span className="text-red-500">*</span>
+                    Patient ID
                   </label>
                   <input
                     type="text"
-                    required
-                    pattern="^\d{8}$|^IW\d{6}$"
-                    title="Must be 8 digits or IW followed by 6 digits"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-600 cursor-not-allowed"
                     value={formData.patient_id}
-                    onChange={(e) => handleInputChange('patient_id', e.target.value)}
-                    readOnly={!!patient}
-                    disabled={!!patient}
+                    readOnly
+                    disabled
                   />
-                  <p className="mt-1 text-xs text-gray-500">Format: 8 digits or IW + 6 digits (e.g., 12345678 or IW123456)</p>
+                  <p className="mt-1 text-xs text-gray-500">Auto-generated internal database identifier</p>
                 </div>
 
                 <div>
