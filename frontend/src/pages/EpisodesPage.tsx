@@ -159,33 +159,42 @@ export function EpisodesPage() {
       }
     }
 
-    // Handle opening an episode detail modal
+    // Handle opening an episode detail modal - fetch directly from API
     if (state?.openEpisode) {
-      const episode = episodes.find(ep => ep.episode_id === state.openEpisode)
-      if (episode) {
-        setSelectedEpisode(episode)
-        setShowDetailModal(true)
-        navigate(location.pathname, { replace: true, state: {} })
+      const loadEpisodeAndOpenModal = async () => {
+        try {
+          // Fetch the full episode data directly from API (don't rely on loaded episodes)
+          const episodeResponse = await api.get(`/episodes/${state.openEpisode}`)
+          const episode = episodeResponse.data
+
+          setSelectedEpisode(episode)
+          setShowDetailModal(true)
+          navigate(location.pathname, { replace: true, state: {} })
+        } catch (error) {
+          console.error('Failed to load episode:', error)
+          showToast('Failed to load episode details', 'error')
+        }
       }
+      loadEpisodeAndOpenModal()
     }
 
-    // Handle opening treatment modal - need to find episode containing this treatment
+    // Handle opening treatment modal - fetch treatment and its episode
     if (state?.openTreatment) {
-      // First try to find the episode by loading the treatment and getting its episode_id
       const loadTreatmentAndOpenModal = async () => {
         try {
-          const response = await api.get(`/episodes/treatments/${state.openTreatment}`)
-          const treatment = response.data
+          // Fetch the treatment to get its episode_id
+          const treatmentResponse = await api.get(`/episodes/treatments/${state.openTreatment}`)
+          const treatment = treatmentResponse.data
 
-          // Find the episode this treatment belongs to
-          const episode = episodes.find(ep => ep.episode_id === treatment.episode_id)
-          if (episode) {
-            setSelectedEpisode(episode)
-            setModalInitialTab('treatments')
-            setModalInitialTreatmentId(state.openTreatment)
-            setShowDetailModal(true)
-            navigate(location.pathname, { replace: true, state: {} })
-          }
+          // Fetch the full episode data directly from API (don't rely on loaded episodes)
+          const episodeResponse = await api.get(`/episodes/${treatment.episode_id}`)
+          const episode = episodeResponse.data
+
+          setSelectedEpisode(episode)
+          setModalInitialTab('treatments')
+          setModalInitialTreatmentId(state.openTreatment)
+          setShowDetailModal(true)
+          navigate(location.pathname, { replace: true, state: {} })
         } catch (error) {
           console.error('Failed to load treatment:', error)
           showToast('Failed to load treatment details', 'error')
@@ -194,24 +203,23 @@ export function EpisodesPage() {
       loadTreatmentAndOpenModal()
     }
 
-    // Handle opening tumour modal - need to find episode containing this tumour
+    // Handle opening tumour modal - fetch tumour and its episode
     if (state?.openTumour) {
       const loadTumourAndOpenModal = async () => {
         try {
-          // Try to find which episode contains this tumour
-          for (const episode of episodes) {
-            const response = await api.get(`/episodes/${episode.episode_id}`)
-            const data = response.data
-            if (data.tumours?.some((t: any) => t.tumour_id === state.openTumour)) {
-              setSelectedEpisode(episode)
-              setModalInitialTab('tumours')
-              setModalInitialTumourId(state.openTumour)
-              setShowDetailModal(true)
-              navigate(location.pathname, { replace: true, state: {} })
-              return
-            }
-          }
-          showToast('Tumour not found', 'error')
+          // Fetch the tumour to get its episode_id
+          const tumourResponse = await api.get(`/episodes/tumours/${state.openTumour}`)
+          const tumour = tumourResponse.data
+
+          // Fetch the full episode data directly from API (don't rely on loaded episodes)
+          const episodeResponse = await api.get(`/episodes/${tumour.episode_id}`)
+          const episode = episodeResponse.data
+
+          setSelectedEpisode(episode)
+          setModalInitialTab('tumours')
+          setModalInitialTumourId(state.openTumour)
+          setShowDetailModal(true)
+          navigate(location.pathname, { replace: true, state: {} })
         } catch (error) {
           console.error('Failed to load tumour:', error)
           showToast('Failed to load tumour details', 'error')
@@ -220,24 +228,23 @@ export function EpisodesPage() {
       loadTumourAndOpenModal()
     }
 
-    // Handle opening investigation modal - need to find episode containing this investigation
+    // Handle opening investigation modal - fetch investigation and its episode
     if (state?.openInvestigation) {
       const loadInvestigationAndOpenModal = async () => {
         try {
-          // Try to find which episode contains this investigation
-          for (const episode of episodes) {
-            const response = await api.get(`/episodes/${episode.episode_id}`)
-            const data = response.data
-            if (data.investigations?.some((i: any) => i.investigation_id === state.openInvestigation)) {
-              setSelectedEpisode(episode)
-              setModalInitialTab('investigations')
-              setModalInitialInvestigationId(state.openInvestigation)
-              setShowDetailModal(true)
-              navigate(location.pathname, { replace: true, state: {} })
-              return
-            }
-          }
-          showToast('Investigation not found', 'error')
+          // Fetch the investigation to get its episode_id
+          const investigationResponse = await api.get(`/episodes/investigations/${state.openInvestigation}`)
+          const investigation = investigationResponse.data
+
+          // Fetch the full episode data directly from API (don't rely on loaded episodes)
+          const episodeResponse = await api.get(`/episodes/${investigation.episode_id}`)
+          const episode = episodeResponse.data
+
+          setSelectedEpisode(episode)
+          setModalInitialTab('investigations')
+          setModalInitialInvestigationId(state.openInvestigation)
+          setShowDetailModal(true)
+          navigate(location.pathname, { replace: true, state: {} })
         } catch (error) {
           console.error('Failed to load investigation:', error)
           showToast('Failed to load investigation details', 'error')

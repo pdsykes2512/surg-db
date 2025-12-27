@@ -262,6 +262,46 @@ async def get_treatment_by_id(treatment_id: str):
     return treatment
 
 
+@router.get("/tumours/{tumour_id}")
+async def get_tumour_by_id(tumour_id: str):
+    """Get a specific tumour by its tumour_id"""
+    tumours_collection = await get_tumours_collection()
+
+    # Find the tumour
+    tumour = await tumours_collection.find_one({"tumour_id": tumour_id})
+
+    if not tumour:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Tumour {tumour_id} not found"
+        )
+
+    # Convert ObjectId to string
+    tumour["_id"] = str(tumour["_id"])
+
+    return tumour
+
+
+@router.get("/investigations/{investigation_id}")
+async def get_investigation_by_id(investigation_id: str):
+    """Get a specific investigation by its investigation_id"""
+    investigations_collection = await get_investigations_collection()
+
+    # Find the investigation
+    investigation = await investigations_collection.find_one({"investigation_id": investigation_id})
+
+    if not investigation:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Investigation {investigation_id} not found"
+        )
+
+    # Convert ObjectId to string
+    investigation["_id"] = str(investigation["_id"])
+
+    return investigation
+
+
 @router.get("/")
 async def list_episodes(
     skip: int = 0,
