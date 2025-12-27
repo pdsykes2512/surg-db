@@ -1,5 +1,7 @@
 # TODO - Surgical Outcomes Database
 
+> **IMPORTANT:** When completing tasks from this list, mark them as complete (✅) and update the "Last Updated" date at the bottom. This ensures continuity across AI sessions and prevents duplicate work.
+
 ## Current Status
 - ✅ Backend API with FastAPI and MongoDB
 - ✅ Frontend with React, TypeScript, and Tailwind CSS
@@ -30,14 +32,33 @@
   - ✅ Link reversal surgery to original stoma creation
   - ✅ Display in TreatmentSummaryModal with planned and actual dates
 
-- **Anastomosis Recording** ✅ (Complete)
+- **Anastomosis Recording** ✅ (Complete - 2025-12-27)
   - ✅ Add anastomosis field (yes/no) to surgery model
-  - ✅ Add anastomosis type field (hand-sewn, stapled, end-to-end, side-to-side, etc.)
+  - ✅ Add anastomosis type field (hand-sewn/stapled/hybrid)
+  - ✅ Add anastomosis configuration (end-to-end/end-to-side/side-to-side/side-to-end)
+  - ✅ Add anastomosis location field (colorectal/coloanal/ileocolic/ileorectal/colocolic/ileoanal_pouch/other)
   - ✅ Add anastomosis height from anal verge (cm) field
+  - ✅ Add defunctioning/protective stoma tracking
   - ✅ Frontend form fields implemented in AddTreatmentModal
   - ✅ Display in TreatmentSummaryModal
-  - [ ] Add anastomosis location field (more detailed than just height)
-  - [ ] NBOCA requirement for anastomotic leak tracking
+  - ✅ **Comprehensive Anastomotic Leak Tracking (NBOCA Compliant)**
+    - ✅ ISGPS severity grading (A/B/C) with descriptions
+    - ✅ Date identified and days post-surgery calculation
+    - ✅ Presentation method (clinical/radiological/endoscopic/at_reoperation)
+    - ✅ Clinical signs checklist (fever, tachycardia, peritonitis, sepsis, ileus, pain)
+    - ✅ CT findings (free fluid, gas, contrast leak, collection)
+    - ✅ Endoscopy findings (defect, dehiscence, ischemia)
+    - ✅ Management strategy (conservative/drainage/endoscopic/reoperation)
+    - ✅ Reoperation tracking (procedure type and date)
+    - ✅ ICU admission and length of stay
+    - ✅ Total hospital stay tracking
+    - ✅ Protective stoma presence indicator
+    - ✅ Mortality tracking
+    - ✅ Resolution status and date
+    - ✅ Additional notes field
+    - ✅ Backend AnastomoticLeak model with all fields
+    - ✅ Frontend comprehensive UI with conditional rendering
+    - ✅ Integrated into post-operative complications section
 
 ### NBOCA COSD Compliance (NEW - Critical for Bowel Cancer)
 - [x] **Phase 1: Critical Fields** (see NBOCA_FIELDS_STATUS.md)
@@ -145,7 +166,15 @@
 - ✅ Add rate limiting to API endpoints
 - ✅ Implement API request logging
 - ✅ Add database query optimization
-- [ ] Create data backup strategy
+- ✅ **Create data backup strategy** (Complete - 2025-12-27)
+  - ✅ Automated daily backups at 2 AM with cron job
+  - ✅ Retention policy: 30d daily, 3m weekly, 1y monthly
+  - ✅ Manual backup script with notes support
+  - ✅ Restoration script with safety checks
+  - ✅ Cleanup script for applying retention policy
+  - ✅ Web UI in Admin page for backup management
+  - ✅ Backend API with 7 endpoints for backup operations
+  - ✅ Comprehensive documentation in directives/database_backup_system.md
 - [ ] Implement session timeout handling
 - [ ] Add HTTPS/SSL configuration guide
 - [ ] **Implement database encryption at rest (MongoDB encryption)**
@@ -198,6 +227,7 @@
 - Current branch: `main`
 - Database: MongoDB with optimized indexes
 - Authentication: JWT with 4 roles (admin, surgeon, data_entry, viewer)
+- **Backup System:** Daily automated backups with web UI management in Admin → Backups tab
 
 ---
-Last Updated: December 24, 2025
+Last Updated: December 27, 2025

@@ -242,11 +242,11 @@ export function InvestigationModal({ episodeId, patientId, onSubmit, onCancel, m
           </div>
         </form>
 
-        <div className="flex justify-end gap-3 p-6 border-t bg-gray-50">
-          <Button variant="outline" onClick={onCancel}>
+        <div className="flex justify-between items-center p-6 border-t bg-gray-50">
+          <Button variant="secondary" onClick={onCancel}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit}>
+          <Button variant="primary" onClick={handleSubmit}>
             {mode === 'create' ? 'Add Investigation' : 'Save Changes'}
           </Button>
         </div>

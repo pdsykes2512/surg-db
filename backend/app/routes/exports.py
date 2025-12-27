@@ -432,8 +432,8 @@ async def export_nboca_xml(
     records = ET.SubElement(root, "Records")
     
     for episode in episodes:
-        # Fetch patient details using patient_id (which is the record_number, not ObjectId)
-        patient = await db.patients.find_one({"record_number": episode["patient_id"]})
+        # Fetch patient details using patient_id
+        patient = await db.patients.find_one({"patient_id": episode["patient_id"]})
         if not patient:
             continue
         

@@ -81,8 +81,12 @@ class Intraoperative(BaseModel):
     stoma_closure_date: Optional[Union[datetime, date, str]] = Field(None, description="Date when stoma was closed")
     # Colorectal-specific: Anastomosis
     anastomosis_performed: bool = Field(False, description="Whether an anastomosis was performed")
+    anastomosis_type: Optional[str] = Field(None, description="Type: hand_sewn/stapled/hybrid")
+    anastomosis_configuration: Optional[str] = Field(None, description="Configuration: end_to_end/end_to_side/side_to_side/side_to_end")
     anastomosis_height_cm: Optional[float] = Field(None, ge=0, description="Height of anastomosis from anal verge in cm")
+    anastomosis_location: Optional[str] = Field(None, description="Anatomical location: colorectal/coloanal/ileocolic/ileorectal/other")
     anterior_resection_type: Optional[str] = Field(None, description="Type of anterior resection: high/low")
+    defunctioning_stoma: bool = Field(False, description="Whether a defunctioning/protective stoma was created for this anastomosis")
     
     @field_validator('stoma_closure_date', mode='before')
     @classmethod
@@ -177,11 +181,46 @@ class Complication(BaseModel):
     resolved: bool = False
 
 
+class AnastomoticLeak(BaseModel):
+    """Detailed anastomotic leak tracking for NBOCA compliance"""
+    occurred: bool = False
+    severity: Optional[str] = Field(None, description="Grade: A (asymptomatic)/B (requiring intervention but not reop)/C (requiring reoperation)")
+    date_identified: Optional[datetime] = None
+    days_post_surgery: Optional[int] = Field(None, ge=0, description="Number of days after surgery")
+    presentation: Optional[str] = Field(None, description="How detected: clinical/radiological/endoscopic/at_reoperation")
+    clinical_signs: List[str] = Field(default_factory=list, description="e.g., fever, tachycardia, peritonitis, sepsis")
+    
+    # Investigation findings
+    ct_finding: Optional[str] = Field(None, description="CT findings: free_fluid/gas/contrast_leak/collection/none")
+    endoscopy_finding: Optional[str] = Field(None, description="Endoscopy findings: defect_visible/dehiscence/ischemia/normal")
+    
+    # Management
+    management: Optional[str] = Field(None, description="conservative/percutaneous_drainage/endoscopic_intervention/reoperation")
+    reoperation_performed: bool = False
+    reoperation_procedure: Optional[str] = Field(None, description="Procedure: washout/resection/stoma_formation/anastomotic_revision")
+    reoperation_date: Optional[datetime] = None
+    
+    # Outcomes
+    icu_admission: bool = False
+    icu_length_of_stay_days: Optional[int] = Field(None, ge=0)
+    total_hospital_stay_days: Optional[int] = Field(None, ge=0, description="Total days from original surgery to discharge after leak")
+    mortality: bool = False
+    resolved: bool = False
+    resolution_date: Optional[datetime] = None
+    
+    # NBOCA specific
+    defunctioning_stoma_present: Optional[bool] = Field(None, description="Was there a protective stoma at time of leak?")
+    notes: Optional[str] = None
+
+
 class PostoperativeEvents(BaseModel):
     """Postoperative events and complications"""
     return_to_theatre: Optional[ReturnToTheatre] = Field(default_factory=ReturnToTheatre)
     escalation_of_care: Optional[EscalationOfCare] = Field(default_factory=EscalationOfCare)
     complications: List[Complication] = Field(default_factory=list)
+    
+    # Specific tracking for anastomotic leak (NBOCA requirement)
+    anastomotic_leak: Optional[AnastomoticLeak] = Field(default_factory=AnastomoticLeak, description="Detailed anastomotic leak tracking")
 
 
 class Outcomes(BaseModel):

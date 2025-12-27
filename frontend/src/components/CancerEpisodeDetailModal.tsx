@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { Button } from './Button'
 import { AddTreatmentModal } from './AddTreatmentModal'
 import { TumourModal } from './TumourModal'
@@ -72,6 +73,18 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
   const [deleteTumourConfirmText, setDeleteTumourConfirmText] = useState('')
   const [deleteTreatmentConfirmation, setDeleteTreatmentConfirmation] = useState<{ show: boolean; treatment: Treatment | null }>({ show: false, treatment: null })
   const [deleteTreatmentConfirmText, setDeleteTreatmentConfirmText] = useState('')
+
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    document.body.style.overflow = 'hidden'
+    document.body.style.margin = '0'
+    document.body.style.padding = '0'
+    return () => {
+      document.body.style.overflow = ''
+      document.body.style.margin = ''
+      document.body.style.padding = ''
+    }
+  }, [])
 
   // Fetch provider name when episode changes
   useEffect(() => {
@@ -446,8 +459,15 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
     return colors[type] || 'bg-gray-100 text-gray-800'
   }
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+  let modalRoot = document.getElementById('modal-root')
+  if (!modalRoot) {
+    modalRoot = document.createElement('div')
+    modalRoot.setAttribute('id', 'modal-root')
+    document.body.appendChild(modalRoot)
+  }
+
+  return createPortal(
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4" style={{ margin: 0 }}>
       <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full h-[85vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-3 flex justify-between items-center">
@@ -1250,7 +1270,7 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
                 </h3>
                 <Button 
                   onClick={() => setShowFollowUpModal(true)}
-                  size="sm"
+                  size="small"
                 >
                   + Add Follow-up
                 </Button>
@@ -1275,7 +1295,7 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
                               {fu.date ? formatDate(fu.date) : 'Date not recorded'}
                             </span>
                             <span className="px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">
-                              {fu.type.split('_').map(w => capitalize(w)).join(' ')}
+                              {fu.type.split('_').map((w: string) => capitalize(w)).join(' ')}
                             </span>
                           </div>
                           <p className="text-sm text-gray-600">
@@ -1300,7 +1320,7 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
                         <div className="mb-2">
                           <span className="text-sm font-medium text-gray-700">Outcome: </span>
                           <span className="text-sm text-gray-900">
-                            {fu.outcome.split('_').map(w => capitalize(w)).join(' ')}
+                            {fu.outcome.split('_').map((w: string) => capitalize(w)).join(' ')}
                           </span>
                         </div>
                       )}
@@ -1336,7 +1356,7 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
                         <div className="mt-3 pt-3 border-t">
                           <p className="text-xs text-gray-500 mb-1">Investigations Ordered:</p>
                           <div className="flex flex-wrap gap-1">
-                            {fu.investigations_ordered.map((inv, idx) => (
+                            {fu.investigations_ordered.map((inv: string, idx: number) => (
                               <span key={idx} className="px-2 py-1 text-xs bg-blue-50 text-blue-700 rounded">
                                 {inv}
                               </span>
@@ -1365,7 +1385,7 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
             Close
           </Button>
           {onEdit && (
-            <Button onClick={() => {
+            <Button variant="primary" onClick={() => {
               onEdit(episode)
               onClose()
             }}>
@@ -1621,6 +1641,7 @@ export function CancerEpisodeDetailModal({ episode, onClose, onEdit }: CancerEpi
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    modalRoot
   )
 }

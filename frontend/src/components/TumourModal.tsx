@@ -859,7 +859,7 @@ export function TumourModal({ episodeId, onSubmit, onCancel, mode = 'create', in
           </div>
 
           {/* Actions */}
-          <div className="sticky bottom-0 bg-white border-t px-6 py-4 flex justify-end space-x-3">
+          <div className="sticky bottom-0 bg-white border-t px-6 py-4 flex justify-between items-center">
             <Button type="button" variant="secondary" onClick={onCancel}>
               Cancel
             </Button>

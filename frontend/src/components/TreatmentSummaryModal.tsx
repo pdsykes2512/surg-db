@@ -407,7 +407,7 @@ export function TreatmentSummaryModal({ treatment, onClose, onEdit }: TreatmentS
           <Button variant="secondary" onClick={onClose}>
             Close
           </Button>
-          <Button onClick={onEdit}>
+          <Button variant="primary" onClick={onEdit}>
             Edit Treatment
           </Button>
         </div>

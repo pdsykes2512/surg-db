@@ -260,7 +260,7 @@ export function TumourSummaryModal({ tumour, onClose, onEdit }: TumourSummaryMod
           <Button variant="secondary" onClick={onClose}>
             Close
           </Button>
-          <Button onClick={onEdit}>
+          <Button variant="primary" onClick={onEdit}>
             Edit Tumour
           </Button>
         </div>

@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '../components/PageHeader'
 import { Card } from '../components/Card'
 import { Button } from '../components/Button'
+import { PatientModal } from '../components/PatientModal'
+import { Table, TableHeader, TableBody, TableRow, TableHeadCell, TableCell } from '../components/Table'
 import api from '../services/api';
 import { formatDate } from '../utils/formatters';
 
@@ -59,7 +61,7 @@ interface PatientFormData {
 
 export function PatientsPage() {
   const navigate = useNavigate();
-  const [showForm, setShowForm] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -68,26 +70,6 @@ export function PatientsPage() {
   const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState<{ show: boolean; patient: Patient | null }>({ show: false, patient: null });
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
-  
-  const [formData, setFormData] = useState<PatientFormData>({
-    patient_id: '',
-    nhs_number: '',
-    demographics: {
-      date_of_birth: '',
-      gender: 'male',
-      ethnicity: '',
-      postcode: '',
-      deceased_date: '',
-    },
-    medical_history: {
-      conditions: [],
-      previous_surgeries: [],
-      medications: [],
-      allergies: [],
-      smoking_status: 'never',
-      alcohol_use: 'none',
-    },
-  });
 
   const loadPatients = useCallback(async (search?: string) => {
     try {
@@ -115,74 +97,16 @@ export function PatientsPage() {
     return () => clearTimeout(timeoutId);
   }, [searchTerm, loadPatients]);
 
-  const handleInputChange = (field: string, value: any) => {
-    const keys = field.split('.');
-    setFormData(prev => {
-      const updated = { ...prev };
-      let current: any = updated;
-      for (let i = 0; i < keys.length - 1; i++) {
-        current = current[keys[i]];
-      }
-      current[keys[keys.length - 1]] = value;
-      return updated;
-    });
-  };
-
-  const formatNHSNumber = (value: string) => {
-    // Remove all non-digit characters
-    const digits = value.replace(/\D/g, '');
-    
-    // Limit to 10 digits
-    const limitedDigits = digits.slice(0, 10);
-    
-    // Add spaces after 3rd and 6th digit
-    let formatted = limitedDigits;
-    if (limitedDigits.length > 6) {
-      formatted = `${limitedDigits.slice(0, 3)} ${limitedDigits.slice(3, 6)} ${limitedDigits.slice(6)}`;
-    } else if (limitedDigits.length > 3) {
-      formatted = `${limitedDigits.slice(0, 3)} ${limitedDigits.slice(3)}`;
-    }
-    
-    return formatted;
-  };
-
-  const handleNHSNumberChange = (value: string) => {
-    const formatted = formatNHSNumber(value);
-    handleInputChange('nhs_number', formatted);
-  };
+  // Removed unused handleInputChange, formatNHSNumber, and handleNHSNumberChange functions
 
   const handleEdit = (patient: Patient) => {
     setEditingPatient(patient);
-    setFormData({
-      patient_id: patient.patient_id,
-      nhs_number: patient.nhs_number,
-      demographics: {
-        date_of_birth: patient.demographics.date_of_birth,
-        gender: patient.demographics.gender,
-        ethnicity: patient.demographics.ethnicity || '',
-        postcode: patient.demographics.postcode || '',
-        age: patient.demographics.age,
-        bmi: patient.demographics.bmi,
-        weight_kg: patient.demographics.weight_kg,
-        height_cm: patient.demographics.height_cm,
-        deceased_date: patient.demographics.deceased_date || '',
-      },
-      medical_history: {
-        conditions: [],
-        previous_surgeries: [],
-        medications: [],
-        allergies: [],
-        smoking_status: 'never',
-        alcohol_use: 'none',
-      },
-    });
-    setShowForm(true);
+    setShowModal(true);
     setError('');
     setSuccess('');
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (data: PatientFormData) => {
     setError('');
     setSuccess('');
     
@@ -190,33 +114,15 @@ export function PatientsPage() {
       setLoading(true);
       if (editingPatient) {
         // Update existing patient
-        await api.put(`/patients/${editingPatient.patient_id}`, formData);
+        await api.put(`/patients/${editingPatient.patient_id}`, data);
         setSuccess('Patient updated successfully');
       } else {
         // Create new patient
-        await api.post('/patients', formData);
+        await api.post('/patients', data);
         setSuccess('Patient created successfully');
       }
-      setShowForm(false);
+      setShowModal(false);
       setEditingPatient(null);
-      setFormData({
-        patient_id: '',
-        nhs_number: '',
-        demographics: {
-          date_of_birth: '',
-          gender: 'male',
-          ethnicity: '',
-          postcode: '',
-        },
-        medical_history: {
-          conditions: [],
-          previous_surgeries: [],
-          medications: [],
-          allergies: [],
-          smoking_status: 'never',
-          alcohol_use: 'none',
-        },
-      });
       loadPatients();
     } catch (err: any) {
       setError(err.response?.data?.detail || `Failed to ${editingPatient ? 'update' : 'create'} patient`);
@@ -228,6 +134,8 @@ export function PatientsPage() {
   const handleDeleteClick = (patient: Patient) => {
     setDeleteConfirmation({ show: true, patient });
     setDeleteConfirmText('');
+    // Close the edit modal so delete confirmation appears on top
+    setShowModal(false);
   };
 
   const handleDeleteConfirm = async () => {
@@ -273,35 +181,10 @@ export function PatientsPage() {
           </svg>
         }
         action={
-          !showForm ? (
-            <Button variant="primary" onClick={() => {
-              setEditingPatient(null);
-              setShowForm(true);
-            }}>+ Add Patient</Button>
-          ) : (
-            <Button variant="secondary" onClick={() => {
-              setShowForm(false);
-              setEditingPatient(null);
-              setFormData({
-                patient_id: '',
-                nhs_number: '',
-                demographics: {
-                  date_of_birth: '',
-                  gender: 'male',
-                  ethnicity: '',
-                  postcode: '',
-                },
-                medical_history: {
-                  conditions: [],
-                  previous_surgeries: [],
-                  medications: [],
-                  allergies: [],
-                  smoking_status: 'never',
-                  alcohol_use: 'none',
-                },
-              });
-            }}>Cancel</Button>
-          )
+          <Button variant="primary" onClick={() => {
+            setEditingPatient(null);
+            setShowModal(true);
+          }}>+ Add Patient</Button>
         }
       />
 
@@ -315,237 +198,6 @@ export function PatientsPage() {
         <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg text-green-700">
           {success}
         </div>
-      )}
-
-      {showForm && (
-        <Card>
-          <h2 className="text-xl font-semibold mb-4">{editingPatient ? 'Edit Patient' : 'New Patient'}</h2>
-          <form onSubmit={handleSubmit}>
-            {/* Basic Information */}
-            <div className="mb-6">
-              <h3 className="text-lg font-medium mb-3 text-gray-700">Basic Information</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Record Number <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    pattern="^\d{8}$|^IW\d{6}$"
-                    title="Must be 8 digits or IW followed by 6 digits"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={formData.patient_id}
-                    onChange={(e) => handleInputChange('patient_id', e.target.value)}
-                    readOnly={!!editingPatient}
-                    disabled={!!editingPatient}
-                  />
-                  <p className="mt-1 text-xs text-gray-500">Format: 8 digits or IW + 6 digits (e.g., 12345678 or IW123456)</p>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    NHS Number <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    title="NHS Number will be formatted as XXX XXX XXXX"
-                    placeholder="123 456 7890"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={formData.nhs_number}
-                    onChange={(e) => handleNHSNumberChange(e.target.value)}
-                    readOnly={!!editingPatient}
-                    disabled={!!editingPatient}
-                  />
-                  <p className="mt-1 text-xs text-gray-500">Format: XXX XXX XXXX (e.g., 123 456 7890)</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Demographics */}
-            <div className="mb-6">
-              <h3 className="text-lg font-medium mb-3 text-gray-700">Demographics</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Date of Birth <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={formData.demographics.date_of_birth}
-                    onChange={(e) => handleInputChange('demographics.date_of_birth', e.target.value)}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Deceased Date
-                  </label>
-                  <input
-                    type="date"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={formData.demographics.deceased_date || ''}
-                    onChange={(e) => handleInputChange('demographics.deceased_date', e.target.value)}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Gender <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={formData.demographics.gender}
-                    onChange={(e) => handleInputChange('demographics.gender', e.target.value)}
-                  >
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Postcode
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={formData.demographics.postcode}
-                    onChange={(e) => handleInputChange('demographics.postcode', e.target.value)}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Ethnicity
-                  </label>
-                  <select
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={formData.demographics.ethnicity}
-                    onChange={(e) => handleInputChange('demographics.ethnicity', e.target.value)}
-                  >
-                    <option value="">Select ethnicity</option>
-                    <optgroup label="White">
-                      <option value="English, Welsh, Scottish, Northern Irish or British">English, Welsh, Scottish, Northern Irish or British</option>
-                      <option value="Irish">Irish</option>
-                      <option value="Gypsy or Irish Traveller">Gypsy or Irish Traveller</option>
-                      <option value="Roma">Roma</option>
-                      <option value="Any other White background">Any other White background</option>
-                    </optgroup>
-                    <optgroup label="Mixed or Multiple ethnic groups">
-                      <option value="White and Black Caribbean">White and Black Caribbean</option>
-                      <option value="White and Black African">White and Black African</option>
-                      <option value="White and Asian">White and Asian</option>
-                      <option value="Any other Mixed or Multiple ethnic background">Any other Mixed or Multiple ethnic background</option>
-                    </optgroup>
-                    <optgroup label="Asian or Asian British">
-                      <option value="Indian">Indian</option>
-                      <option value="Pakistani">Pakistani</option>
-                      <option value="Bangladeshi">Bangladeshi</option>
-                      <option value="Chinese">Chinese</option>
-                      <option value="Any other Asian background">Any other Asian background</option>
-                    </optgroup>
-                    <optgroup label="Black, Black British, Caribbean or African">
-                      <option value="Caribbean">Caribbean</option>
-                      <option value="African">African</option>
-                      <option value="Any other Black, Black British, or Caribbean background">Any other Black, Black British, or Caribbean background</option>
-                    </optgroup>
-                    <optgroup label="Other ethnic group">
-                      <option value="Arab">Arab</option>
-                      <option value="Any other ethnic group">Any other ethnic group</option>
-                    </optgroup>
-                    <option value="Prefer not to say">Prefer not to say</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            {/* Physical Measurements */}
-            <div className="mb-6">
-              <h3 className="text-lg font-medium mb-3 text-gray-700">Physical Measurements</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Weight (kg)
-                  </label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    min="20"
-                    max="300"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={formData.demographics.weight_kg || ''}
-                    onChange={(e) => handleInputChange('demographics.weight_kg', e.target.value ? parseFloat(e.target.value) : undefined)}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Height (cm)
-                  </label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    min="100"
-                    max="250"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={formData.demographics.height_cm || ''}
-                    onChange={(e) => handleInputChange('demographics.height_cm', e.target.value ? parseFloat(e.target.value) : undefined)}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    BMI
-                  </label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    min="10"
-                    max="80"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={formData.demographics.bmi || ''}
-                    onChange={(e) => handleInputChange('demographics.bmi', e.target.value ? parseFloat(e.target.value) : undefined)}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-between items-center gap-3">
-              <div>
-                {editingPatient && (
-                  <Button 
-                    type="button" 
-                    variant="danger" 
-                    onClick={() => handleDeleteClick(editingPatient)}
-                  >
-                    Delete Patient
-                  </Button>
-                )}
-              </div>
-              <div className="flex gap-3">
-                <Button type="submit" disabled={loading} variant="primary">
-                  {loading ? (editingPatient ? 'Updating...' : 'Creating...') : (editingPatient ? 'Update Patient' : 'Create Patient')}
-                </Button>
-                <Button 
-                  type="button" 
-                  variant="secondary" 
-                  onClick={() => {
-                    setShowForm(false);
-                    setEditingPatient(null);
-                  }}
-                >
-                  Cancel
-                </Button>
-              </div>
-            </div>
-          </form>
-        </Card>
       )}
 
       {/* Search */}
@@ -592,7 +244,7 @@ export function PatientsPage() {
           )}
         </div>
         
-        {loading && !showForm && <p className="text-gray-500">Loading...</p>}
+        {loading && !showModal && <p className="text-gray-500">Loading...</p>}
         {!loading && patients.length === 0 && (
           <div className="text-center py-12">
             <svg className="mx-auto w-16 h-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -615,56 +267,41 @@ export function PatientsPage() {
           </div>
         )}
         {filteredPatients.length > 0 && (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Patient ID
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    MRN
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    NHS Number
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date of Birth
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Episodes
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredPatients.map((patient) => (
-                  <tr 
-                    key={patient._id} 
-                    onClick={() => navigate(`/episodes/${patient.patient_id}`)}
-                    className="hover:bg-blue-50 cursor-pointer transition-colors"
-                    title="Click to view episodes for this patient"
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {patient.patient_id}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {patient.mrn || '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {patient.nhs_number}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {formatDate(patient.demographics.date_of_birth)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                        {patient.episode_count || 0}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHeadCell>Patient ID</TableHeadCell>
+                <TableHeadCell>MRN</TableHeadCell>
+                <TableHeadCell>NHS Number</TableHeadCell>
+                <TableHeadCell>Date of Birth</TableHeadCell>
+                <TableHeadCell>Episodes</TableHeadCell>
+                <TableHeadCell>Actions</TableHeadCell>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredPatients.map((patient) => (
+                <TableRow 
+                  key={patient._id} 
+                  onClick={() => navigate(`/episodes/${patient.patient_id}`)}
+                >
+                  <TableCell className="font-medium text-gray-900">
+                    {patient.patient_id}
+                  </TableCell>
+                  <TableCell className="text-gray-500">
+                    {patient.mrn || '-'}
+                  </TableCell>
+                  <TableCell className="text-gray-900">
+                    {patient.nhs_number}
+                  </TableCell>
+                  <TableCell className="text-gray-900">
+                    {formatDate(patient.demographics.date_of_birth)}
+                  </TableCell>
+                  <TableCell className="text-gray-900">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      {patient.episode_count || 0}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-gray-500">
                       <div className="flex items-center gap-3">
                         <button
                           onClick={(e) => {
@@ -691,12 +328,11 @@ export function PatientsPage() {
                           </svg>
                         </button>
                       </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         )}      </Card>
 
       {/* Delete Confirmation Modal */}
@@ -776,7 +412,22 @@ export function PatientsPage() {
           </div>
         </div>
       )}
+
+      {/* Patient Modal */}
+      {showModal && (
+        <PatientModal
+          patient={editingPatient}
+          onClose={() => {
+            setShowModal(false);
+            setEditingPatient(null);
+          }}
+          onSubmit={handleSubmit}
+          onDelete={handleDeleteClick}
+          loading={loading}
+        />
+      )}
     </div>
   )
 }
+
 

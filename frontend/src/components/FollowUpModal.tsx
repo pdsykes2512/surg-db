@@ -87,7 +87,7 @@ export function FollowUpModal({ episodeId, patientId, onSubmit, onCancel, mode =
   const removeInvestigation = (index: number) => {
     setFormData({
       ...formData,
-      investigations_ordered: formData.investigations_ordered.filter((_, i) => i !== index)
+      investigations_ordered: formData.investigations_ordered.filter((_: string, i: number) => i !== index)
     })
   }
 
@@ -263,7 +263,7 @@ export function FollowUpModal({ episodeId, patientId, onSubmit, onCancel, mode =
             </div>
             {formData.investigations_ordered.length > 0 && (
               <div className="flex flex-wrap gap-2">
-                {formData.investigations_ordered.map((inv, index) => (
+                {formData.investigations_ordered.map((inv: string, index: number) => (
                   <span
                     key={index}
                     className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
@@ -322,11 +322,11 @@ export function FollowUpModal({ episodeId, patientId, onSubmit, onCancel, mode =
           </div>
         </form>
 
-        <div className="flex justify-end gap-3 p-6 border-t bg-gray-50">
-          <Button variant="outline" onClick={onCancel}>
+        <div className="flex justify-between items-center p-6 border-t bg-gray-50">
+          <Button variant="secondary" onClick={onCancel}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit}>
+          <Button variant="primary" onClick={handleSubmit}>
             {mode === 'create' ? 'Add Follow-up' : 'Save Changes'}
           </Button>
         </div>

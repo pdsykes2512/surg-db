@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { PageHeader } from '../components/PageHeader'
 import { Card } from '../components/Card'
 import { Button } from '../components/Button'
+import { Table, TableHeader, TableBody, TableRow, TableHeadCell, TableCell } from '../components/Table'
 
 const API_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:8000'
 
@@ -31,10 +32,12 @@ interface Clinician {
 
 export function AdminPage() {
   const { token } = useAuth()
-  const [activeTab, setActiveTab] = useState<'users' | 'clinicians' | 'exports'>('users')
+  const [activeTab, setActiveTab] = useState<'users' | 'clinicians' | 'exports' | 'backups'>('users')
   const [users, setUsers] = useState<User[]>([])
   const [clinicians, setClinicians] = useState<Clinician[]>([])
   const [loading, setLoading] = useState(true)
+  const [exportLoading, setExportLoading] = useState(false)
+  const [exportProgress, setExportProgress] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [showClinicianForm, setShowClinicianForm] = useState(false)
   const [editingClinician, setEditingClinician] = useState<Clinician | null>(null)
@@ -42,6 +45,15 @@ export function AdminPage() {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  
+  // Backup state
+  const [backups, setBackups] = useState<any[]>([])
+  const [backupStatus, setBackupStatus] = useState<any>(null)
+  const [backupLoading, setBackupLoading] = useState(false)
+  const [backupNote, setBackupNote] = useState('')
+  const [showRestoreConfirm, setShowRestoreConfirm] = useState(false)
+  const [selectedBackup, setSelectedBackup] = useState<string | null>(null)
+  
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -104,12 +116,43 @@ export function AdminPage() {
     }
   }, [token])
 
+  const fetchBackups = useCallback(async () => {
+    if (!token) return
+    try {
+      setBackupLoading(true)
+      const [backupsRes, statusRes] = await Promise.all([
+        axios.get(`${API_URL}/api/admin/backups/`, {
+          headers: { Authorization: `Bearer ${token}` }
+        }),
+        axios.get(`${API_URL}/api/admin/backups/status`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+      ])
+      setBackups(backupsRes.data)
+      setBackupStatus(statusRes.data)
+      setError('')
+    } catch (err: any) {
+      console.error('Failed to fetch backups:', err)
+      if (err.response?.status === 401) {
+        setError('Session expired. Please log in again.')
+      } else {
+        const errorMsg = err.response?.data?.detail || err.message || 'Failed to fetch backups'
+        setError(errorMsg)
+      }
+    } finally {
+      setBackupLoading(false)
+    }
+  }, [token])
+
   useEffect(() => {
     if (token) {
       fetchUsers()
       fetchClinicians()
+      if (activeTab === 'backups') {
+        fetchBackups()
+      }
     }
-  }, [token, fetchUsers, fetchClinicians])
+  }, [token, activeTab, fetchUsers, fetchClinicians, fetchBackups])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -250,6 +293,47 @@ export function AdminPage() {
     setError('')
   }
 
+  const createBackup = async () => {
+    try {
+      setBackupLoading(true)
+      await axios.post(`${API_URL}/api/admin/backups/create`, 
+        { note: backupNote || undefined },
+        { headers: { Authorization: `Bearer ${token}` }}
+      )
+      setBackupNote('')
+      alert('Backup started! It will appear in the list once complete (usually takes 10-30 seconds).')
+      // Refresh after a delay
+      setTimeout(fetchBackups, 5000)
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Failed to start backup')
+    } finally {
+      setBackupLoading(false)
+    }
+  }
+
+  const deleteBackup = async (backupName: string) => {
+    if (!confirm(`Are you sure you want to delete backup ${backupName}?`)) return
+    
+    try {
+      await axios.delete(`${API_URL}/api/admin/backups/${backupName}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      fetchBackups()
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Failed to delete backup')
+    }
+  }
+
+  const formatBytes = (bytes: number) => {
+    if (bytes === 0) return '0 MB'
+    const mb = bytes
+    return `${mb.toFixed(1)} MB`
+  }
+
+  const formatTimestamp = (timestamp: string) => {
+    return new Date(timestamp).toLocaleString()
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -302,6 +386,16 @@ export function AdminPage() {
             }`}
           >
             Exports
+          </button>
+          <button
+            onClick={() => setActiveTab('backups')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'backups'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            Backups
           </button>
         </nav>
       </div>
@@ -418,94 +512,80 @@ export function AdminPage() {
       )}
 
       <Card padding="none">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Name
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Email
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Role
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Department
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {users.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-sm text-gray-500">
-                    No users found
-                  </td>
-                </tr>
-              ) : (
-                users.map((user) => (
-                  <tr key={user._id} className="hover:bg-blue-50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {user.full_name}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {user.email}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800 capitalize">
-                        {user.role.replace('_', ' ')}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {user.department || '—'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          user.is_active
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-red-100 text-red-800'
-                        }`}
-                      >
-                        {user.is_active ? 'Active' : 'Inactive'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                      <Button
-                        onClick={() => openPasswordModal(user._id)}
-                        variant="outline"
-                        size="small"
-                      >
-                        Change Password
-                      </Button>
-                      <Button
-                        onClick={() => toggleUserStatus(user._id, user.is_active)}
-                        variant="secondary"
-                        size="small"
-                      >
-                        {user.is_active ? 'Deactivate' : 'Activate'}
-                      </Button>
-                      <Button
-                        onClick={() => deleteUser(user._id)}
-                        variant="danger"
-                        size="small"
-                      >
-                        Delete
-                      </Button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHeadCell>Name</TableHeadCell>
+              <TableHeadCell>Email</TableHeadCell>
+              <TableHeadCell>Role</TableHeadCell>
+              <TableHeadCell>Department</TableHeadCell>
+              <TableHeadCell>Status</TableHeadCell>
+              <TableHeadCell>Actions</TableHeadCell>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {users.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="py-8 text-center text-gray-500">
+                  No users found
+                </TableCell>
+              </TableRow>
+            ) : (
+              users.map((user) => (
+                <TableRow key={user._id}>
+                  <TableCell className="font-medium text-gray-900">
+                    {user.full_name}
+                  </TableCell>
+                  <TableCell className="text-gray-900">
+                    {user.email}
+                  </TableCell>
+                  <TableCell>
+                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800 capitalize">
+                      {user.role.replace('_', ' ')}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-gray-900">
+                    {user.department || '—'}
+                  </TableCell>
+                  <TableCell>
+                    <span
+                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        user.is_active
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-red-100 text-red-800'
+                      }`}
+                    >
+                      {user.is_active ? 'Active' : 'Inactive'}
+                    </span>
+                  </TableCell>
+                  <TableCell className="space-x-2">
+                    <Button
+                      onClick={() => openPasswordModal(user._id)}
+                      variant="outline"
+                      size="small"
+                    >
+                      Change Password
+                    </Button>
+                    <Button
+                      onClick={() => toggleUserStatus(user._id, user.is_active)}
+                      variant="secondary"
+                      size="small"
+                    >
+                      {user.is_active ? 'Deactivate' : 'Activate'}
+                    </Button>
+                    <Button
+                      onClick={() => deleteUser(user._id)}
+                      variant="danger"
+                      size="small"
+                    >
+                      Delete
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
       </Card>
         </>
       )}
@@ -639,89 +719,75 @@ export function AdminPage() {
           )}
 
           <Card padding="none">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Surname
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      First Name
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      GMC Number
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Role
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Subspecialty Leads
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {clinicians.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="px-6 py-8 text-center text-sm text-gray-500">
-                        No clinicians found
-                      </td>
-                    </tr>
-                  ) : (
-                    clinicians.map((clinician) => (
-                      <tr key={clinician._id} className="hover:bg-blue-50 transition-colors">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {clinician.surname}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {clinician.first_name}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {clinician.gmc_number || '—'}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 capitalize">
-                            {clinician.clinical_role || 'surgeon'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-900">
-                          {clinician.subspecialty_leads && clinician.subspecialty_leads.length > 0 ? (
-                            <div className="flex flex-wrap gap-1">
-                              {clinician.subspecialty_leads.map((lead) => (
-                                <span key={lead} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 capitalize">
-                                  {lead.replace('_', ' ')}
-                                </span>
-                              ))}
-                            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHeadCell>Surname</TableHeadCell>
+                  <TableHeadCell>First Name</TableHeadCell>
+                  <TableHeadCell>GMC Number</TableHeadCell>
+                  <TableHeadCell>Role</TableHeadCell>
+                  <TableHeadCell>Subspecialty Leads</TableHeadCell>
+                  <TableHeadCell>Actions</TableHeadCell>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {clinicians.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="py-8 text-center text-gray-500">
+                      No clinicians found
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  clinicians.map((clinician) => (
+                    <TableRow key={clinician._id}>
+                      <TableCell className="font-medium text-gray-900">
+                        {clinician.surname}
+                      </TableCell>
+                      <TableCell className="text-gray-900">
+                        {clinician.first_name}
+                      </TableCell>
+                      <TableCell className="text-gray-900">
+                        {clinician.gmc_number || '—'}
+                      </TableCell>
+                      <TableCell className="text-gray-900">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 capitalize">
+                          {clinician.clinical_role || 'surgeon'}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-gray-900">
+                        {clinician.subspecialty_leads && clinician.subspecialty_leads.length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {clinician.subspecialty_leads.map((lead) => (
+                              <span key={lead} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 capitalize">
+                                {lead.replace('_', ' ')}
+                              </span>
+                            ))}
+                          </div>
                           ) : (
                             <span className="text-gray-400">—</span>
                           )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                          <Button
-                            onClick={() => openEditClinician(clinician)}
-                            variant="outline"
-                            size="small"
-                          >
-                            Edit
-                          </Button>
-                          <Button
-                            onClick={() => deleteClinician(clinician._id)}
-                            variant="danger"
-                            size="small"
-                          >
-                            Delete
-                          </Button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+                      </TableCell>
+                      <TableCell className="space-x-2">
+                        <Button
+                          onClick={() => openEditClinician(clinician)}
+                          variant="outline"
+                          size="small"
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          onClick={() => deleteClinician(clinician._id)}
+                          variant="danger"
+                          size="small"
+                        >
+                          Delete
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
           </Card>
         </>
       )}
@@ -795,9 +861,9 @@ export function AdminPage() {
         <>
           <Card>
             <div className="border-b border-gray-200 pb-4 mb-6">
-              <h3 className="text-lg font-medium text-gray-900">NBOCA/COSD Data Export</h3>
+              <h3 className="text-lg font-medium text-gray-900">Cancer Registry Data Export</h3>
               <p className="text-sm text-gray-600 mt-1">
-                Export bowel cancer episode data in XML format for National Bowel Cancer Audit (NBOCA) submission.
+                Export bowel cancer episode data in COSD v9/v10 XML format for cancer registry submissions (NBOCA, Somerset Cancer Registry, and other NHS cancer registries).
               </p>
             </div>
 
@@ -843,6 +909,19 @@ export function AdminPage() {
                   Leave dates empty to export all cancer episodes
                 </p>
               </div>
+
+              {/* Export Progress Indicator */}
+              {exportLoading && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                    <div>
+                      <p className="text-sm font-medium text-blue-900">Generating Export</p>
+                      <p className="text-xs text-blue-700 mt-1">{exportProgress}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Export Actions */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -895,12 +974,14 @@ export function AdminPage() {
                     }
                   }}
                 >
-                  🔍 Validate NBOCA Submission
+                  🔍 Validate COSD Data
                 </Button>
                 
                 <Button
                   variant="primary"
                   onClick={async () => {
+                    setExportLoading(true)
+                    setExportProgress('Fetching cancer episodes from database...')
                     const startDate = (document.getElementById('export-start-date') as HTMLInputElement)?.value
                     const endDate = (document.getElementById('export-end-date') as HTMLInputElement)?.value
                     
@@ -911,24 +992,33 @@ export function AdminPage() {
                       
                       const url = `${API_URL}/api/admin/exports/nboca-xml${params.toString() ? '?' + params.toString() : ''}`
                       
+                      setExportProgress('Generating COSD XML format...')
                       const response = await axios.get(url, {
                         headers: { Authorization: `Bearer ${token}` },
                         responseType: 'blob'
                       })
                       
+                      setExportProgress('Preparing download...')
                       // Create download link
                       const blob = new Blob([response.data], { type: 'application/xml' })
                       const downloadUrl = window.URL.createObjectURL(blob)
                       const link = document.createElement('a')
                       link.href = downloadUrl
-                      link.download = `nboca_export_${new Date().toISOString().split('T')[0]}.xml`
+                      link.download = `cosd_export_${new Date().toISOString().split('T')[0]}.xml`
                       document.body.appendChild(link)
                       link.click()
                       link.remove()
                       window.URL.revokeObjectURL(downloadUrl)
                       
+                      setExportProgress('Download complete!')
+                      setTimeout(() => {
+                        setExportProgress('')
+                        setExportLoading(false)
+                      }, 2000)
                       setError('')
                     } catch (err: any) {
+                      setExportLoading(false)
+                      setExportProgress('')
                       if (err.response?.status === 404) {
                         const detail = err.response?.data?.detail || 'No episodes found'
                         setError(detail)
@@ -937,8 +1027,9 @@ export function AdminPage() {
                       }
                     }
                   }}
+                  disabled={exportLoading}
                 >
-                  📥 Download NBOCA XML
+                  {exportLoading ? '⏳ Exporting...' : '📥 Download COSD XML'}
                 </Button>
 
                 <Button
@@ -993,17 +1084,238 @@ export function AdminPage() {
 
               {/* Information */}
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h4 className="text-sm font-medium text-blue-900 mb-2">NBOCA Submission Tools</h4>
+                <h4 className="text-sm font-medium text-blue-900 mb-2">Cancer Registry Export Tools</h4>
                 <ul className="text-sm text-blue-800 space-y-1">
                   <li>• <strong>Validate:</strong> Check all episodes for NBOCA compliance before export</li>
-                  <li>• <strong>Download XML:</strong> Export data in COSD v9/v10 format for NBOCA submission</li>
+                  <li>• <strong>NBOCA XML:</strong> Export data in COSD v9/v10 format for National Bowel Cancer Audit</li>
+                  <li>• <strong>Somerset XML:</strong> Export data in COSD v9/v10 format for Somerset Cancer Registry submission</li>
                   <li>• <strong>Check Completeness:</strong> View data completeness percentages</li>
                   <li>• Only bowel cancer episodes are included in validation and export</li>
+                  <li>• All NHS cancer registries (NBOCA, Somerset, NCRAS, regional registries) use the same COSD v9/v10 standard</li>
+                  <li>• One export file works for all submissions - no registry-specific formats needed</li>
                   <li>• Validation checks: mandatory fields, code formats, date logic, CRM for rectal cancers</li>
                 </ul>
               </div>
             </div>
           </Card>
+        </>
+      )}
+
+      {/* Backups Tab */}
+      {activeTab === 'backups' && (
+        <>
+          <Card>
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Backup System</h3>
+                
+                {/* Backup Status */}
+                {backupStatus && (
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <div className="text-sm text-blue-600 font-medium">Total Backups</div>
+                      <div className="text-2xl font-bold text-blue-900">{backupStatus.total_backups}</div>
+                    </div>
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                      <div className="text-sm text-green-600 font-medium">Total Size</div>
+                      <div className="text-2xl font-bold text-green-900">{formatBytes(backupStatus.total_size_mb)}</div>
+                    </div>
+                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                      <div className="text-sm text-purple-600 font-medium">Free Space</div>
+                      <div className="text-2xl font-bold text-purple-900">{backupStatus.free_space_gb.toFixed(1)} GB</div>
+                    </div>
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                      <div className="text-sm text-gray-600 font-medium">Documents</div>
+                      <div className="text-2xl font-bold text-gray-900">{backupStatus.database?.total_documents?.toLocaleString()}</div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Latest Backup Info */}
+                {backupStatus?.latest_backup && (
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 mb-6">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h4 className="text-sm font-semibold text-blue-900 mb-2">📦 Latest Backup</h4>
+                        <div className="space-y-1 text-sm text-blue-800">
+                          <div><strong>Time:</strong> {formatTimestamp(backupStatus.latest_backup.timestamp)}</div>
+                          <div><strong>Type:</strong> <span className="px-2 py-0.5 bg-blue-200 rounded text-xs uppercase">{backupStatus.latest_backup.type}</span></div>
+                          <div><strong>Size:</strong> {formatBytes(backupStatus.latest_backup.size_mb)}</div>
+                          {backupStatus.latest_backup.note && <div><strong>Note:</strong> {backupStatus.latest_backup.note}</div>}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Create Manual Backup */}
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                  <h4 className="text-sm font-semibold text-yellow-900 mb-3">🔨 Create Manual Backup</h4>
+                  <p className="text-sm text-yellow-800 mb-3">
+                    Create a manual backup before migrations, schema changes, or bulk operations. Manual backups are never auto-deleted.
+                  </p>
+                  <div className="flex gap-3">
+                    <input
+                      type="text"
+                      placeholder="Optional: Add a note (e.g., 'Before migration X')"
+                      value={backupNote}
+                      onChange={(e) => setBackupNote(e.target.value)}
+                      className="flex-1 border border-yellow-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                    />
+                    <Button
+                      onClick={createBackup}
+                      disabled={backupLoading}
+                      variant="primary"
+                      size="small"
+                    >
+                      {backupLoading ? 'Creating...' : '💾 Create Backup'}
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Automatic Backups Info */}
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
+                  <h4 className="text-sm font-semibold text-gray-900 mb-2">⏰ Automatic Backups</h4>
+                  <ul className="text-sm text-gray-700 space-y-1">
+                    <li>• <strong>Schedule:</strong> Daily at 2:00 AM</li>
+                    <li>• <strong>Retention:</strong> 30 days (daily) → 3 months (weekly) → 1 year (monthly)</li>
+                    <li>• <strong>Location:</strong> ~/.tmp/backups/</li>
+                    <li>• <strong>Manual backups:</strong> Never deleted automatically</li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Backups List */}
+              <div>
+                <div className="flex justify-between items-center mb-4">
+                  <h4 className="text-md font-semibold text-gray-900">📋 Available Backups</h4>
+                  <Button onClick={fetchBackups} size="small" variant="secondary">
+                    🔄 Refresh
+                  </Button>
+                </div>
+
+                {backupLoading ? (
+                  <div className="text-center py-8 text-gray-500">Loading backups...</div>
+                ) : backups.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">No backups found</div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHeadCell>Timestamp</TableHeadCell>
+                        <TableHeadCell>Type</TableHeadCell>
+                        <TableHeadCell>Size</TableHeadCell>
+                        <TableHeadCell>Documents</TableHeadCell>
+                        <TableHeadCell>Note</TableHeadCell>
+                        <TableHeadCell>Actions</TableHeadCell>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {backups.map((backup) => (
+                        <TableRow key={backup.name}>
+                          <TableCell className="text-gray-900 font-medium">
+                            {formatTimestamp(backup.timestamp)}
+                          </TableCell>
+                          <TableCell>
+                            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                              backup.backup_type === 'manual' 
+                                ? 'bg-yellow-100 text-yellow-800' 
+                                : 'bg-blue-100 text-blue-800'
+                            }`}>
+                              {backup.backup_type}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-gray-900">
+                            {formatBytes(backup.backup_size_mb)}
+                          </TableCell>
+                          <TableCell className="text-gray-900">
+                            {backup.total_documents.toLocaleString()}
+                          </TableCell>
+                          <TableCell className="text-gray-600 text-sm">
+                            {backup.note || '—'}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex space-x-2">
+                              <button
+                                onClick={() => {
+                                  setSelectedBackup(backup.name)
+                                  setShowRestoreConfirm(true)
+                                }}
+                                className="text-blue-600 hover:text-blue-900 text-sm font-medium"
+                                title="Restore from this backup"
+                              >
+                                🔄 Restore
+                              </button>
+                              <button
+                                onClick={() => deleteBackup(backup.name)}
+                                className="text-red-600 hover:text-red-900 text-sm font-medium"
+                                title="Delete this backup"
+                              >
+                                🗑️ Delete
+                              </button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </div>
+
+              {/* Warning */}
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <h4 className="text-sm font-semibold text-red-900 mb-2">⚠️ Important Notes</h4>
+                <ul className="text-sm text-red-800 space-y-1">
+                  <li>• <strong>Restoration requires SSH access:</strong> Due to backend service restart requirements, restore operations must be run via terminal</li>
+                  <li>• <strong>Backups contain patient data:</strong> Never commit backups to version control</li>
+                  <li>• <strong>Test restores quarterly:</strong> Verify backups work on test environment</li>
+                  <li>• <strong>Pre-restoration backup:</strong> System automatically creates backup before any restore</li>
+                </ul>
+              </div>
+            </div>
+          </Card>
+
+          {/* Restore Confirmation Modal */}
+          {showRestoreConfirm && selectedBackup && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4">
+                <div className="px-6 py-4 border-b border-gray-200">
+                  <h3 className="text-lg font-medium text-red-600">⚠️ Restore Requires Terminal Access</h3>
+                </div>
+                <div className="px-6 py-4 space-y-4">
+                  <p className="text-sm text-gray-700">
+                    Database restoration requires stopping the backend service and cannot be performed through the web interface.
+                  </p>
+                  <div className="bg-gray-100 rounded p-3">
+                    <p className="text-xs font-mono text-gray-800 mb-2">Run this command via SSH:</p>
+                    <code className="text-xs bg-gray-800 text-green-400 p-2 rounded block overflow-x-auto">
+                      python3 /root/surg-db/execution/restore_database.py ~/.tmp/backups/{selectedBackup} --confirm
+                    </code>
+                  </div>
+                  <div className="bg-red-50 border border-red-200 rounded p-3">
+                    <p className="text-sm text-red-800 font-semibold">⚠️ WARNING:</p>
+                    <ul className="text-sm text-red-700 mt-2 space-y-1">
+                      <li>• This will ERASE your current database</li>
+                      <li>• Backend service will be stopped and restarted</li>
+                      <li>• Pre-restoration backup will be created automatically</li>
+                      <li>• You'll need to type "RESTORE" to confirm</li>
+                    </ul>
+                  </div>
+                </div>
+                <div className="px-6 py-4 border-t border-gray-200 flex justify-end">
+                  <Button
+                    onClick={() => {
+                      setShowRestoreConfirm(false)
+                      setSelectedBackup(null)
+                    }}
+                    variant="secondary"
+                  >
+                    Close
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>

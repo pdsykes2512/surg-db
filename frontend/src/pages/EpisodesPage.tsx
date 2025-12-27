@@ -4,6 +4,7 @@ import { PageHeader } from '../components/PageHeader'
 import { Card } from '../components/Card'
 import { Button } from '../components/Button'
 import { DateInput } from '../components/DateInput'
+import { Table, TableHeader, TableBody, TableRow, TableHeadCell, TableCell } from '../components/Table'
 import { CancerEpisodeForm } from '../components/CancerEpisodeForm'
 import { CancerEpisodeDetailModal } from '../components/CancerEpisodeDetailModal'
 import { ToastContainer } from '../components/Toast'
@@ -387,58 +388,44 @@ export function EpisodesPage() {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Episode ID
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    MRN
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Clinician
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Type
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredEpisodes.map((episode) => (
-                  <tr 
-                    key={episode.episode_id} 
-                    onClick={() => {
-                      setSelectedEpisode(episode)
-                      setShowDetailModal(true)
-                    }}
-                    className="hover:bg-blue-50 cursor-pointer transition-colors"
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {episode.episode_id}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {episode.patient_mrn || episode.patient_id}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {formatDate(episode.referral_date)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {formatSurgeon(episode.lead_clinician)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                        {formatCancerType(episode.cancer_type)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHeadCell>Episode ID</TableHeadCell>
+                <TableHeadCell>MRN</TableHeadCell>
+                <TableHeadCell>Date</TableHeadCell>
+                <TableHeadCell>Clinician</TableHeadCell>
+                <TableHeadCell>Type</TableHeadCell>
+                <TableHeadCell>Actions</TableHeadCell>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredEpisodes.map((episode) => (
+                <TableRow 
+                  key={episode.episode_id} 
+                  onClick={() => {
+                    setSelectedEpisode(episode)
+                    setShowDetailModal(true)
+                  }}
+                >
+                  <TableCell className="font-medium text-gray-900">
+                    {episode.episode_id}
+                  </TableCell>
+                  <TableCell className="text-gray-900">
+                    {episode.patient_mrn || episode.patient_id}
+                  </TableCell>
+                  <TableCell className="text-gray-900">
+                    {formatDate(episode.referral_date)}
+                  </TableCell>
+                  <TableCell className="text-gray-900">
+                    {formatSurgeon(episode.lead_clinician)}
+                  </TableCell>
+                  <TableCell>
+                    <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                      {formatCancerType(episode.cancer_type)}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-gray-500">
                       <div className="flex space-x-2">
                         <button
                           onClick={(e) => {
@@ -466,12 +453,11 @@ export function EpisodesPage() {
                           </svg>
                         </button>
                       </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         )}
       </Card>
 

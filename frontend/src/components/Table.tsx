@@ -103,11 +103,12 @@ interface TableCellProps {
   children: ReactNode
   className?: string
   onClick?: (e: React.MouseEvent) => void
+  colSpan?: number
 }
 
-export function TableCell({ children, className = '', onClick }: TableCellProps) {
+export function TableCell({ children, className = '', onClick, colSpan }: TableCellProps) {
   return (
-    <td className={`px-6 py-4 whitespace-nowrap text-sm ${className}`} onClick={onClick}>
+    <td className={`px-6 py-4 whitespace-nowrap text-sm ${className}`} onClick={onClick} colSpan={colSpan}>
       {children}
     </td>
   )

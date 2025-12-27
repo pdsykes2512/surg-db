@@ -2,6 +2,18 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Ensure no margins on body and html */
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+/* Ensure modal root has no spacing */
+#modal-root {
+  margin: 0;
+  padding: 0;
+}
+
 @layer components {
   /* Standard form field styling - ensures consistent height across all input types */
   input[type="text"],

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { PageHeader } from '../components/PageHeader'
 import { Card } from '../components/Card'
 import { Button } from '../components/Button'
+import { Table, TableHeader, TableBody, TableRow, TableHeadCell, TableCell } from '../components/Table'
 import { CancerEpisodeForm } from '../components/CancerEpisodeForm'
 import { CancerEpisodeDetailModal } from '../components/CancerEpisodeDetailModal'
 import { formatDate, formatCancerType } from '../utils/formatters'
@@ -265,57 +266,42 @@ export function CancerEpisodesPage() {
                 No episodes found. {searchTerm || cancerTypeFilter || statusFilter ? 'Try adjusting your filters.' : 'Click "+ Add Episode" to create one.'}
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Episode ID
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Patient
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Cancer Type
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Referral Date
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Lead Clinician
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredEpisodes.map((episode) => (
-                      <tr key={episode.episode_id} className="hover:bg-gray-50 cursor-pointer" onClick={() => handleViewDetails(episode)}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {episode.episode_id}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {episode.patient_id}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {formatCancerType(episode.cancer_type)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {formatDate(episode.referral_date)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {episode.lead_clinician || '—'}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(episode.episode_status)}`}>
-                            {episode.episode_status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHeadCell>Episode ID</TableHeadCell>
+                    <TableHeadCell>Patient</TableHeadCell>
+                    <TableHeadCell>Cancer Type</TableHeadCell>
+                    <TableHeadCell>Referral Date</TableHeadCell>
+                    <TableHeadCell>Lead Clinician</TableHeadCell>
+                    <TableHeadCell>Status</TableHeadCell>
+                    <TableHeadCell className="text-right">Actions</TableHeadCell>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredEpisodes.map((episode) => (
+                    <TableRow key={episode.episode_id} onClick={() => handleViewDetails(episode)}>
+                      <TableCell className="font-medium text-gray-900">
+                        {episode.episode_id}
+                      </TableCell>
+                      <TableCell className="text-gray-900">
+                        {episode.patient_id}
+                      </TableCell>
+                      <TableCell className="text-gray-900">
+                        {formatCancerType(episode.cancer_type)}
+                      </TableCell>
+                      <TableCell className="text-gray-900">
+                        {formatDate(episode.referral_date)}
+                      </TableCell>
+                      <TableCell className="text-gray-900">
+                        {episode.lead_clinician || '—'}
+                      </TableCell>
+                      <TableCell>
+                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(episode.episode_status)}`}>
+                          {episode.episode_status}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right space-x-2">
                           <Button
                             size="small"
                             variant="secondary"
@@ -337,13 +323,12 @@ export function CancerEpisodesPage() {
                           >
                             Delete
                           </Button>
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                  </TableBody>
+                </Table>
+              )}
           </Card>
         </>
       )}

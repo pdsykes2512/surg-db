@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { PageHeader } from '../components/PageHeader'
 import { Card } from '../components/Card'
-import { formatDate, formatCancerType } from '../utils/formatters'
+import { formatDate } from '../utils/formatters'
 import api from '../services/api'
 
 export function HomePage() {

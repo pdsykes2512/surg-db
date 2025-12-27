@@ -113,6 +113,7 @@ const calculateLengthOfStay = (admissionDate: string, dischargeDate: string): nu
 }
 
 export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'create', initialData }: AddTreatmentModalProps) {
+  const [currentStep, setCurrentStep] = useState(1)
   const [treatmentType, setTreatmentType] = useState(initialData?.treatment_type || 'surgery')
   const [procedureSearch, setProcedureSearch] = useState(initialData?.procedure_name || '')
   const [showProcedureDropdown, setShowProcedureDropdown] = useState(false)
@@ -218,8 +219,11 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
     // Colorectal-specific: Anastomosis
     anastomosis_performed: false,
     anastomosis_type: '',
+    anastomosis_configuration: '',
     anastomosis_height_cm: '',
+    anastomosis_location: '',
     anterior_resection_type: '',
+    defunctioning_stoma: false,
     
     // Colorectal-specific: Surgical Intent
     surgical_intent: '',
@@ -250,6 +254,28 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
     readmission_30d: false,
     readmission_reason: '',
     complications: [] as string[],
+    
+    // Anastomotic Leak (detailed tracking)
+    anastomotic_leak_occurred: false,
+    anastomotic_leak_severity: '',
+    anastomotic_leak_date: '',
+    anastomotic_leak_days_post_surgery: '',
+    anastomotic_leak_presentation: '',
+    anastomotic_leak_clinical_signs: [] as string[],
+    anastomotic_leak_ct_finding: '',
+    anastomotic_leak_endoscopy_finding: '',
+    anastomotic_leak_management: '',
+    anastomotic_leak_reoperation: false,
+    anastomotic_leak_reoperation_procedure: '',
+    anastomotic_leak_reoperation_date: '',
+    anastomotic_leak_icu_admission: false,
+    anastomotic_leak_icu_los_days: '',
+    anastomotic_leak_total_hospital_stay: '',
+    anastomotic_leak_mortality: false,
+    anastomotic_leak_resolved: false,
+    anastomotic_leak_resolution_date: '',
+    anastomotic_leak_defunctioning_stoma_present: false,
+    anastomotic_leak_notes: '',
     
     // Common fields
     notes: ''
@@ -291,8 +317,39 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
     setFormData(updatedFormData)
   }
 
+  // Step navigation
+  const totalSteps = treatmentType === 'surgery' ? 4 : 2
+  const nextStep = (e?: React.MouseEvent) => {
+    e?.preventDefault()
+    e?.stopPropagation()
+    if (currentStep < totalSteps) {
+      setCurrentStep(currentStep + 1)
+    }
+  }
+  const prevStep = (e?: React.MouseEvent) => {
+    e?.preventDefault()
+    e?.stopPropagation()
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1)
+    }
+  }
+
+  const getStepTitle = (step: number) => {
+    if (treatmentType === 'surgery') {
+      const titles = ['Treatment Details', 'Personnel & Timeline', 'Intraoperative Details', 'Post-operative & Complications']
+      return titles[step - 1]
+    } else {
+      return step === 1 ? 'Treatment Details' : 'Additional Information'
+    }
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Only submit if on the final step
+    if (currentStep < totalSteps) {
+      return
+    }
     
     // Build treatment object based on type
     const treatment: any = {
@@ -351,8 +408,11 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
       // Colorectal-specific: Anastomosis
       treatment.anastomosis_performed = formData.anastomosis_performed
       if (formData.anastomosis_type) treatment.anastomosis_type = formData.anastomosis_type
+      if (formData.anastomosis_configuration) treatment.anastomosis_configuration = formData.anastomosis_configuration
       if (formData.anastomosis_height_cm) treatment.anastomosis_height_cm = parseFloat(formData.anastomosis_height_cm)
+      if (formData.anastomosis_location) treatment.anastomosis_location = formData.anastomosis_location
       if (formData.anterior_resection_type) treatment.anterior_resection_type = formData.anterior_resection_type
+      treatment.defunctioning_stoma = formData.defunctioning_stoma
       
       // Colorectal-specific: Surgical Intent
       if (formData.surgical_intent) treatment.surgical_intent = formData.surgical_intent
@@ -365,6 +425,32 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
       treatment.readmission_30d = formData.readmission_30d
       if (formData.readmission_reason) treatment.readmission_reason = formData.readmission_reason
       if (formData.complications?.length > 0) treatment.complications = formData.complications
+      
+      // Anastomotic Leak detailed tracking
+      if (formData.anastomotic_leak_occurred) {
+        treatment.anastomotic_leak = {
+          occurred: formData.anastomotic_leak_occurred,
+          severity: formData.anastomotic_leak_severity,
+          date_identified: formData.anastomotic_leak_date || null,
+          days_post_surgery: formData.anastomotic_leak_days_post_surgery ? parseInt(formData.anastomotic_leak_days_post_surgery) : null,
+          presentation: formData.anastomotic_leak_presentation,
+          clinical_signs: formData.anastomotic_leak_clinical_signs,
+          ct_finding: formData.anastomotic_leak_ct_finding,
+          endoscopy_finding: formData.anastomotic_leak_endoscopy_finding,
+          management: formData.anastomotic_leak_management,
+          reoperation_performed: formData.anastomotic_leak_reoperation,
+          reoperation_procedure: formData.anastomotic_leak_reoperation_procedure || null,
+          reoperation_date: formData.anastomotic_leak_reoperation_date || null,
+          icu_admission: formData.anastomotic_leak_icu_admission,
+          icu_length_of_stay_days: formData.anastomotic_leak_icu_los_days ? parseInt(formData.anastomotic_leak_icu_los_days) : null,
+          total_hospital_stay_days: formData.anastomotic_leak_total_hospital_stay ? parseInt(formData.anastomotic_leak_total_hospital_stay) : null,
+          mortality: formData.anastomotic_leak_mortality,
+          resolved: formData.anastomotic_leak_resolved,
+          resolution_date: formData.anastomotic_leak_resolution_date || null,
+          defunctioning_stoma_present: formData.anastomotic_leak_defunctioning_stoma_present,
+          notes: formData.anastomotic_leak_notes || null
+        }
+      }
       
     } else if (treatmentType === 'chemotherapy') {
       treatment.regimen = formData.regimen
@@ -384,22 +470,66 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-gray-900">{mode === 'edit' ? 'Edit Treatment' : 'Add Treatment'}</h2>
-          <button
-            onClick={onCancel}
-            className="text-gray-400 hover:text-gray-600"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+        <div className="sticky top-0 bg-white border-b z-10">
+          {/* Header */}
+          <div className="px-6 py-4 flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900">{mode === 'edit' ? 'Edit Treatment' : 'Add Treatment'}</h2>
+              <p className="text-xs text-gray-500 mt-1">Step {currentStep} of {totalSteps} • {treatmentType}</p>
+            </div>
+            <button
+              onClick={onCancel}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          
+          {/* Progress Bar */}
+          <div className="px-6 pb-4">
+            <div className="flex items-center justify-between mb-2">
+              {Array.from({ length: totalSteps }, (_, i) => i + 1).map((step) => (
+                <div key={step} className="flex items-center flex-1">
+                  <div className="flex flex-col items-center flex-1">
+                    <button
+                      type="button"
+                      onClick={() => mode === 'edit' ? setCurrentStep(step) : undefined}
+                      disabled={mode === 'create'}
+                      className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm transition-all ${
+                        currentStep === step ? 'bg-blue-600 text-white' :
+                        currentStep > step ? 'bg-green-600 text-white' :
+                        'bg-gray-200 text-gray-600'
+                      } ${mode === 'edit' ? 'cursor-pointer hover:ring-2 hover:ring-blue-400' : 'cursor-default'}`}
+                      title={mode === 'edit' ? `Jump to ${getStepTitle(step)}` : ''}
+                    >
+                      {currentStep > step ? '✓' : step}
+                    </button>
+                    <div className={`text-xs mt-1 text-center font-medium ${mode === 'edit' ? 'cursor-pointer' : ''}`}>
+                      {getStepTitle(step)}
+                    </div>
+                  </div>
+                  {step < totalSteps && (
+                    <div className={`h-1 flex-1 mx-2 rounded ${
+                      currentStep > step ? 'bg-green-600' : 'bg-gray-200'
+                    }`} />
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* Treatment Type Selection */}
-          {/* Treatment Type Selection - Only show when creating */}
-          {mode === 'create' && (
+        <form onSubmit={handleSubmit} className="p-6 space-y-6" onKeyDown={(e) => {
+          // Prevent Enter key from submitting form unless on final step
+          if (e.key === 'Enter' && e.target instanceof HTMLInputElement && currentStep < totalSteps) {
+            e.preventDefault()
+            nextStep()
+          }
+        }}>
+          {/* Treatment Type Selection - Only show when creating and on Step 1 */}
+          {mode === 'create' && currentStep === 1 && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Treatment Type *
@@ -429,41 +559,44 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
             </div>
           )}
 
-          {/* Common Fields */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Treatment ID
-              </label>
-              <input
-                type="text"
-                value={formData.treatment_id}
-                disabled
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50"
-              />
-            </div>
-            <DateInput
-              label="Treatment Date"
-              required
-              value={formData.treatment_date}
-              onChange={(e) => setFormData({ ...formData, treatment_date: e.target.value })}
-            />
-          </div>
-
-          {/* Provider Organisation - NBOCA CR1450 */}
-          <div>
-            <NHSProviderSelect
-              label="Provider Organisation"
-              value={formData.provider_organisation}
-              onChange={(value) => setFormData({ ...formData, provider_organisation: value })}
-              placeholder="Search NHS Trust..."
-            />
-            <p className="mt-1 text-xs text-gray-500">NBOCA (CR1450) - NHS Trust Code where treatment provided</p>
-          </div>
-
-          {/* Surgery-Specific Fields */}
-          {treatmentType === 'surgery' && (
+          {/* STEP 1: Treatment Details */}
+          {currentStep === 1 && (
             <>
+              {/* Common Fields */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Treatment ID
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.treatment_id}
+                    disabled
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50"
+                  />
+                </div>
+                <DateInput
+                  label="Treatment Date"
+                  required
+                  value={formData.treatment_date}
+                  onChange={(e) => setFormData({ ...formData, treatment_date: e.target.value })}
+                />
+              </div>
+
+              {/* Provider Organisation - NBOCA CR1450 */}
+              <div>
+                <NHSProviderSelect
+                  label="Provider Organisation"
+                  value={formData.provider_organisation}
+                  onChange={(value) => setFormData({ ...formData, provider_organisation: value })}
+                  placeholder="Search NHS Trust..."
+                />
+                <p className="mt-1 text-xs text-gray-500">NBOCA (CR1450) - NHS Trust Code where treatment provided</p>
+              </div>
+
+              {/* Surgery-Specific Fields */}
+              {treatmentType === 'surgery' && (
+                <>
               {/* Procedure Details */}
               <div className="relative">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -660,29 +793,14 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
                   )}
                 </div>
               </div>
+                </>
+              )}
+            </>
+          )}
 
-              {/* Patient Fitness */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  ASA Score *
-                </label>
-                <SearchableSelect
-                  value={formData.asa_score}
-                  onChange={(value) => setFormData({ ...formData, asa_score: value })}
-                  options={[
-                    { value: '1', label: 'ASA I - Normal healthy patient' },
-                    { value: '2', label: 'ASA II - Mild systemic disease' },
-                    { value: '3', label: 'ASA III - Severe systemic disease' },
-                    { value: '4', label: 'ASA IV - Severe disease, constant threat to life' },
-                    { value: '5', label: 'ASA V - Moribund, not expected to survive' }
-                  ]}
-                  getOptionValue={(opt) => opt.value}
-                  getOptionLabel={(opt) => opt.label}
-                  placeholder="Select ASA grade..."
-                  required
-                />
-              </div>
-
+          {/* STEP 2: Personnel & Timeline */}
+          {currentStep === 2 && treatmentType === 'surgery' && (
+            <>
               {/* Team */}
               <div className="grid grid-cols-2 gap-4">
                 <SurgeonSearch
@@ -770,6 +888,33 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
                     </div>
                   </div>
                 )}
+              </div>
+            </>
+          )}
+
+          {/* STEP 3: Intraoperative Details */}
+          {currentStep === 3 && treatmentType === 'surgery' && (
+            <>
+              {/* Patient Fitness */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  ASA Score *
+                </label>
+                <SearchableSelect
+                  value={formData.asa_score}
+                  onChange={(value) => setFormData({ ...formData, asa_score: value })}
+                  options={[
+                    { value: '1', label: 'ASA I - Normal healthy patient' },
+                    { value: '2', label: 'ASA II - Mild systemic disease' },
+                    { value: '3', label: 'ASA III - Severe systemic disease' },
+                    { value: '4', label: 'ASA IV - Severe disease, constant threat to life' },
+                    { value: '5', label: 'ASA V - Moribund, not expected to survive' }
+                  ]}
+                  getOptionValue={(opt) => opt.value}
+                  getOptionLabel={(opt) => opt.label}
+                  placeholder="Select ASA grade..."
+                  required
+                />
               </div>
 
               {/* Intraoperative Details */}
@@ -876,6 +1021,109 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
               <div className="bg-amber-50 p-4 rounded-lg space-y-4">
                 <h4 className="text-sm font-semibold text-gray-900">Colorectal-Specific Details</h4>
                 
+                {/* Anastomosis */}
+                <div className="space-y-3">
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={formData.anastomosis_performed}
+                      onChange={(e) => setFormData({ ...formData, anastomosis_performed: e.target.checked })}
+                      className="mr-2 h-4 w-4"
+                    />
+                    <span className="text-sm font-medium text-gray-700">Anastomosis Performed</span>
+                  </label>
+                  
+                  {formData.anastomosis_performed && (
+                    <div className="grid grid-cols-2 gap-4 ml-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Anastomosis Type
+                        </label>
+                        <SearchableSelect
+                          value={formData.anastomosis_type}
+                          onChange={(value) => setFormData({ ...formData, anastomosis_type: value })}
+                          options={[
+                            { value: 'hand_sewn', label: 'Hand-Sewn' },
+                            { value: 'stapled', label: 'Stapled' },
+                            { value: 'hybrid', label: 'Hybrid (hand-sewn + stapled)' }
+                          ]}
+                          getOptionValue={(opt) => opt.value}
+                          getOptionLabel={(opt) => opt.label}
+                          placeholder="Select type..."
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Configuration
+                        </label>
+                        <SearchableSelect
+                          value={formData.anastomosis_configuration}
+                          onChange={(value) => setFormData({ ...formData, anastomosis_configuration: value })}
+                          options={[
+                            { value: 'end_to_end', label: 'End-to-End' },
+                            { value: 'end_to_side', label: 'End-to-Side' },
+                            { value: 'side_to_side', label: 'Side-to-Side' },
+                            { value: 'side_to_end', label: 'Side-to-End' }
+                          ]}
+                          getOptionValue={(opt) => opt.value}
+                          getOptionLabel={(opt) => opt.label}
+                          placeholder="Select configuration..."
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Anatomical Location
+                        </label>
+                        <SearchableSelect
+                          value={formData.anastomosis_location}
+                          onChange={(value) => setFormData({ ...formData, anastomosis_location: value })}
+                          options={[
+                            { value: 'colorectal', label: 'Colorectal' },
+                            { value: 'coloanal', label: 'Coloanal' },
+                            { value: 'ileocolic', label: 'Ileocolic' },
+                            { value: 'ileorectal', label: 'Ileorectal' },
+                            { value: 'colocolic', label: 'Colocolic' },
+                            { value: 'ileoanal_pouch', label: 'Ileoanal Pouch (J-pouch)' },
+                            { value: 'other', label: 'Other' }
+                          ]}
+                          getOptionValue={(opt) => opt.value}
+                          getOptionLabel={(opt) => opt.label}
+                          placeholder="Select location..."
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Height from Anal Verge (cm)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={formData.anastomosis_height_cm}
+                          onChange={(e) => setFormData({ ...formData, anastomosis_height_cm: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
+                          placeholder="e.g., 8.5"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Anterior Resection Type
+                        </label>
+                        <SearchableSelect
+                          value={formData.anterior_resection_type}
+                          onChange={(value) => setFormData({ ...formData, anterior_resection_type: value })}
+                          options={[
+                            { value: 'high', label: 'High (>12cm from anal verge)' },
+                            { value: 'low', label: 'Low (<12cm from anal verge)' }
+                          ]}
+                          getOptionValue={(opt) => opt.value}
+                          getOptionLabel={(opt) => opt.label}
+                          placeholder="Select type..."
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
                 {/* Stoma */}
                 <div className="space-y-3">
                   <label className="flex items-center">
@@ -909,6 +1157,20 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
                             placeholder="Select type..."
                           />
                         </div>
+                        <div>
+                          <label className="flex items-center h-full items-end pb-2">
+                            <input
+                              type="checkbox"
+                              checked={formData.defunctioning_stoma}
+                              onChange={(e) => setFormData({ ...formData, defunctioning_stoma: e.target.checked })}
+                              className="mr-2 h-4 w-4"
+                            />
+                            <span className="text-sm font-medium text-gray-700">Defunctioning/Protective Stoma</span>
+                          </label>
+                          <p className="text-xs text-gray-500 mt-1">Created to protect an anastomosis</p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
                             Link to Reversal Surgery
@@ -952,75 +1214,13 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
                     </div>
                   )}
                 </div>
-                
-                {/* Anastomosis */}
-                <div className="space-y-3">
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={formData.anastomosis_performed}
-                      onChange={(e) => setFormData({ ...formData, anastomosis_performed: e.target.checked })}
-                      className="mr-2 h-4 w-4"
-                    />
-                    <span className="text-sm font-medium text-gray-700">Anastomosis Performed</span>
-                  </label>
-                  
-                  {formData.anastomosis_performed && (
-                    <div className="grid grid-cols-2 gap-4 ml-6">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Anastomosis Type
-                        </label>
-                        <SearchableSelect
-                          value={formData.anastomosis_type}
-                          onChange={(value) => setFormData({ ...formData, anastomosis_type: value })}
-                          options={[
-                            { value: 'hand_sewn', label: 'Hand-Sewn' },
-                            { value: 'stapled', label: 'Stapled' },
-                            { value: 'end_to_end', label: 'End-to-End' },
-                            { value: 'end_to_side', label: 'End-to-Side' },
-                            { value: 'side_to_side', label: 'Side-to-Side' },
-                            { value: 'side_to_end', label: 'Side-to-End' }
-                          ]}
-                          getOptionValue={(opt) => opt.value}
-                          getOptionLabel={(opt) => opt.label}
-                          placeholder="Select type..."
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Height from Anal Verge (cm)
-                        </label>
-                        <input
-                          type="number"
-                          step="0.1"
-                          value={formData.anastomosis_height_cm}
-                          onChange={(e) => setFormData({ ...formData, anastomosis_height_cm: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
-                          placeholder="e.g., 8.5"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Anterior Resection Type
-                        </label>
-                        <SearchableSelect
-                          value={formData.anterior_resection_type}
-                          onChange={(value) => setFormData({ ...formData, anterior_resection_type: value })}
-                          options={[
-                            { value: 'high', label: 'High' },
-                            { value: 'low', label: 'Low' }
-                          ]}
-                          getOptionValue={(opt) => opt.value}
-                          getOptionLabel={(opt) => opt.label}
-                          placeholder="Select type..."
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
               </div>
+            </>
+          )}
 
+          {/* STEP 4: Post-operative & Complications */}
+          {currentStep === 4 && treatmentType === 'surgery' && (
+            <>
               {/* Complications Section */}
               <div className="border-t pt-4 space-y-4">
                 <h3 className="text-md font-semibold text-gray-900">Post-Operative Complications</h3>
@@ -1093,12 +1293,307 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
                     />
                   )}
                 </div>
+
+                {/* Anastomotic Leak Detailed Tracking (NBOCA Requirement) */}
+                {formData.anastomosis_performed && (
+                  <div className="border-t pt-4 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-md font-semibold text-gray-900">Anastomotic Leak Tracking</h4>
+                      <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">NBOCA Required</span>
+                    </div>
+                    
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={formData.anastomotic_leak_occurred}
+                        onChange={(e) => setFormData({ ...formData, anastomotic_leak_occurred: e.target.checked })}
+                        className="mr-2 h-4 w-4"
+                      />
+                      <span className="text-sm font-medium text-gray-700">Anastomotic Leak Occurred</span>
+                    </label>
+
+                    {formData.anastomotic_leak_occurred && (
+                      <div className="ml-6 space-y-4 border-l-2 border-red-200 pl-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Leak Severity (ISGPS Grade) *
+                            </label>
+                            <SearchableSelect
+                              value={formData.anastomotic_leak_severity}
+                              onChange={(value) => setFormData({ ...formData, anastomotic_leak_severity: value })}
+                              options={[
+                                { value: 'A', label: 'Grade A - Asymptomatic (radiological only)' },
+                                { value: 'B', label: 'Grade B - Requires medical intervention' },
+                                { value: 'C', label: 'Grade C - Requires reoperation' }
+                              ]}
+                              getOptionValue={(opt) => opt.value}
+                              getOptionLabel={(opt) => opt.label}
+                              placeholder="Select severity..."
+                            />
+                          </div>
+                          <DateInput
+                            label="Date Identified *"
+                            value={formData.anastomotic_leak_date}
+                            onChange={(e) => setFormData({ ...formData, anastomotic_leak_date: e.target.value })}
+                          />
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Days Post-Surgery
+                            </label>
+                            <input
+                              type="number"
+                              value={formData.anastomotic_leak_days_post_surgery}
+                              onChange={(e) => setFormData({ ...formData, anastomotic_leak_days_post_surgery: e.target.value })}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                              placeholder="e.g., 7"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              How Detected
+                            </label>
+                            <SearchableSelect
+                              value={formData.anastomotic_leak_presentation}
+                              onChange={(value) => setFormData({ ...formData, anastomotic_leak_presentation: value })}
+                              options={[
+                                { value: 'clinical', label: 'Clinical signs' },
+                                { value: 'radiological', label: 'CT/imaging' },
+                                { value: 'endoscopic', label: 'Endoscopy' },
+                                { value: 'at_reoperation', label: 'At reoperation' }
+                              ]}
+                              getOptionValue={(opt) => opt.value}
+                              getOptionLabel={(opt) => opt.label}
+                              placeholder="Select..."
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Clinical Signs (select all that apply)
+                          </label>
+                          <div className="grid grid-cols-3 gap-2 mt-2">
+                            {['fever', 'tachycardia', 'peritonitis', 'sepsis', 'ileus', 'abdominal_pain'].map(sign => (
+                              <label key={sign} className="flex items-center text-sm">
+                                <input
+                                  type="checkbox"
+                                  checked={formData.anastomotic_leak_clinical_signs.includes(sign)}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setFormData({ ...formData, anastomotic_leak_clinical_signs: [...formData.anastomotic_leak_clinical_signs, sign] })
+                                    } else {
+                                      setFormData({ ...formData, anastomotic_leak_clinical_signs: formData.anastomotic_leak_clinical_signs.filter((s: string) => s !== sign) })
+                                    }
+                                  }}
+                                  className="mr-2 h-4 w-4"
+                                />
+                                {sign.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              CT Finding
+                            </label>
+                            <SearchableSelect
+                              value={formData.anastomotic_leak_ct_finding}
+                              onChange={(value) => setFormData({ ...formData, anastomotic_leak_ct_finding: value })}
+                              options={[
+                                { value: 'free_fluid', label: 'Free fluid' },
+                                { value: 'gas', label: 'Extraluminal gas' },
+                                { value: 'contrast_leak', label: 'Contrast extravasation' },
+                                { value: 'collection', label: 'Pelvic collection' },
+                                { value: 'none', label: 'None/normal' }
+                              ]}
+                              getOptionValue={(opt) => opt.value}
+                              getOptionLabel={(opt) => opt.label}
+                              placeholder="Select..."
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Endoscopy Finding
+                            </label>
+                            <SearchableSelect
+                              value={formData.anastomotic_leak_endoscopy_finding}
+                              onChange={(value) => setFormData({ ...formData, anastomotic_leak_endoscopy_finding: value })}
+                              options={[
+                                { value: 'defect_visible', label: 'Defect visible' },
+                                { value: 'dehiscence', label: 'Dehiscence' },
+                                { value: 'ischemia', label: 'Ischemia' },
+                                { value: 'normal', label: 'Normal' }
+                              ]}
+                              getOptionValue={(opt) => opt.value}
+                              getOptionLabel={(opt) => opt.label}
+                              placeholder="Select..."
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Management Strategy *
+                          </label>
+                          <SearchableSelect
+                            value={formData.anastomotic_leak_management}
+                            onChange={(value) => setFormData({ ...formData, anastomotic_leak_management: value })}
+                            options={[
+                              { value: 'conservative', label: 'Conservative (antibiotics/NBM)' },
+                              { value: 'percutaneous_drainage', label: 'Percutaneous drainage' },
+                              { value: 'endoscopic_intervention', label: 'Endoscopic intervention (stent/clip)' },
+                              { value: 'reoperation', label: 'Reoperation' }
+                            ]}
+                            getOptionValue={(opt) => opt.value}
+                            getOptionLabel={(opt) => opt.label}
+                            placeholder="Select..."
+                          />
+                        </div>
+
+                        <div className="space-y-3">
+                          <label className="flex items-center">
+                            <input
+                              type="checkbox"
+                              checked={formData.anastomotic_leak_reoperation}
+                              onChange={(e) => setFormData({ ...formData, anastomotic_leak_reoperation: e.target.checked })}
+                              className="mr-2 h-4 w-4"
+                            />
+                            <span className="text-sm font-medium text-gray-700">Reoperation Performed</span>
+                          </label>
+                          
+                          {formData.anastomotic_leak_reoperation && (
+                            <div className="grid grid-cols-2 gap-4 ml-6">
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Procedure Performed
+                                </label>
+                                <SearchableSelect
+                                  value={formData.anastomotic_leak_reoperation_procedure}
+                                  onChange={(value) => setFormData({ ...formData, anastomotic_leak_reoperation_procedure: value })}
+                                  options={[
+                                    { value: 'washout', label: 'Washout/drainage' },
+                                    { value: 'resection', label: 'Resection' },
+                                    { value: 'stoma_formation', label: 'Stoma formation' },
+                                    { value: 'anastomotic_revision', label: 'Anastomotic revision' },
+                                    { value: 'hartmann', label: 'Hartmann\'s procedure' }
+                                  ]}
+                                  getOptionValue={(opt) => opt.value}
+                                  getOptionLabel={(opt) => opt.label}
+                                  placeholder="Select..."
+                                />
+                              </div>
+                              <DateInput
+                                label="Reoperation Date"
+                                value={formData.anastomotic_leak_reoperation_date}
+                                onChange={(e) => setFormData({ ...formData, anastomotic_leak_reoperation_date: e.target.value })}
+                              />
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-4">
+                          <label className="flex items-center">
+                            <input
+                              type="checkbox"
+                              checked={formData.anastomotic_leak_icu_admission}
+                              onChange={(e) => setFormData({ ...formData, anastomotic_leak_icu_admission: e.target.checked })}
+                              className="mr-2 h-4 w-4"
+                            />
+                            <span className="text-sm font-medium text-gray-700">ICU/HDU Admission</span>
+                          </label>
+                          {formData.anastomotic_leak_icu_admission && (
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                ICU Length of Stay (days)
+                              </label>
+                              <input
+                                type="number"
+                                value={formData.anastomotic_leak_icu_los_days}
+                                onChange={(e) => setFormData({ ...formData, anastomotic_leak_icu_los_days: e.target.value })}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                placeholder="Days"
+                              />
+                            </div>
+                          )}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Total Hospital Stay (days)
+                            </label>
+                            <input
+                              type="number"
+                              value={formData.anastomotic_leak_total_hospital_stay}
+                              onChange={(e) => setFormData({ ...formData, anastomotic_leak_total_hospital_stay: e.target.value })}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                              placeholder="From surgery to discharge"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <label className="flex items-center">
+                            <input
+                              type="checkbox"
+                              checked={formData.anastomotic_leak_defunctioning_stoma_present}
+                              onChange={(e) => setFormData({ ...formData, anastomotic_leak_defunctioning_stoma_present: e.target.checked })}
+                              className="mr-2 h-4 w-4"
+                            />
+                            <span className="text-sm font-medium text-gray-700">Protective Stoma Present at Time of Leak</span>
+                          </label>
+                          <label className="flex items-center">
+                            <input
+                              type="checkbox"
+                              checked={formData.anastomotic_leak_mortality}
+                              onChange={(e) => setFormData({ ...formData, anastomotic_leak_mortality: e.target.checked })}
+                              className="mr-2 h-4 w-4"
+                            />
+                            <span className="text-sm font-medium text-gray-700 text-red-600">Mortality</span>
+                          </label>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <label className="flex items-center">
+                            <input
+                              type="checkbox"
+                              checked={formData.anastomotic_leak_resolved}
+                              onChange={(e) => setFormData({ ...formData, anastomotic_leak_resolved: e.target.checked })}
+                              className="mr-2 h-4 w-4"
+                            />
+                            <span className="text-sm font-medium text-gray-700">Leak Resolved</span>
+                          </label>
+                          {formData.anastomotic_leak_resolved && (
+                            <DateInput
+                              label="Resolution Date"
+                              value={formData.anastomotic_leak_resolution_date}
+                              onChange={(e) => setFormData({ ...formData, anastomotic_leak_resolution_date: e.target.value })}
+                            />
+                          )}
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Additional Notes
+                          </label>
+                          <textarea
+                            value={formData.anastomotic_leak_notes}
+                            onChange={(e) => setFormData({ ...formData, anastomotic_leak_notes: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            rows={3}
+                            placeholder="Additional clinical details..."
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </>
           )}
 
-          {/* Chemotherapy-Specific Fields */}
-          {treatmentType === 'chemotherapy' && (
+          {/* Chemotherapy-Specific Fields - Step 1 */}
+          {treatmentType === 'chemotherapy' && currentStep === 1 && (
             <>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -1151,8 +1646,8 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
             </>
           )}
 
-          {/* Radiotherapy-Specific Fields */}
-          {treatmentType === 'radiotherapy' && (
+          {/* Radiotherapy-Specific Fields - Step 1 */}
+          {treatmentType === 'radiotherapy' && currentStep === 1 && (
             <>
               <div className="grid grid-cols-3 gap-4">
                 <div>
@@ -1204,7 +1699,37 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
             </>
           )}
 
-          {/* Notes */}
+          {/* STEP 2: Additional Information (for non-surgery treatments) */}
+          {currentStep === 2 && (treatmentType === 'chemotherapy' || treatmentType === 'radiotherapy' || treatmentType === 'immunotherapy') && (
+            <>
+              {treatmentType === 'immunotherapy' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Therapy Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.regimen}
+                    onChange={(e) => setFormData({ ...formData, regimen: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., Pembrolizumab"
+                    required
+                  />
+                </div>
+              )}
+              
+              <SurgeonSearch
+                value={formData.surgeon}
+                onChange={(name) => setFormData({ ...formData, surgeon: name })}
+                label={treatmentType === 'surgery' ? 'Lead Surgeon' : 'Clinician'}
+                placeholder={`Type to search ${treatmentType === 'surgery' ? 'surgeons' : 'clinicians'}...`}
+              />
+            </>
+          )}
+
+          {/* Notes - Show on last step for all treatment types */}
+          {((treatmentType === 'surgery' && currentStep === 4) || 
+            ((treatmentType === 'chemotherapy' || treatmentType === 'radiotherapy' || treatmentType === 'immunotherapy') && currentStep === 2)) && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Notes
@@ -1217,15 +1742,29 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
               placeholder="Additional notes..."
             />
           </div>
+          )}
 
-          {/* Actions */}
-          <div className="flex justify-end space-x-3 pt-4 border-t">
+          {/* Navigation Buttons */}
+          <div className="flex justify-between items-center pt-4 border-t">
             <Button type="button" variant="secondary" onClick={onCancel}>
               Cancel
             </Button>
-            <Button type="submit" variant="primary">
-              {mode === 'edit' ? 'Update Treatment' : 'Add Treatment'}
-            </Button>
+            <div className="flex space-x-3">
+              {currentStep > 1 && (
+                <Button type="button" variant="secondary" onClick={(e) => prevStep(e)}>
+                  ← Previous
+                </Button>
+              )}
+              {currentStep < totalSteps ? (
+                <Button type="button" variant="primary" onClick={(e) => nextStep(e)}>
+                  Next →
+                </Button>
+              ) : (
+                <Button type="submit" variant="primary">
+                  {mode === 'edit' ? 'Update Treatment' : 'Add Treatment'}
+                </Button>
+              )}
+            </div>
           </div>
         </form>
       </div>

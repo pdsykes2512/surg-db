@@ -27,7 +27,7 @@ export function SurgeonSearch({
   onChange,
   label = 'Surgeon',
   required = false,
-  consultantsOnly = false,
+  consultantsOnly: _consultantsOnly = false,
   subspecialtyFilter,
   roleFilter,
   placeholder = 'Search surgeon...',

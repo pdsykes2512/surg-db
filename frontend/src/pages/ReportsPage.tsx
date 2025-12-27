@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { PageHeader } from '../components/PageHeader'
 import { Card } from '../components/Card'
 import { Button } from '../components/Button'
+import { Table, TableHeader, TableBody, TableRow, TableHeadCell, TableCell } from '../components/Table'
 import { apiService } from '../services/api'
 
 interface SummaryReport {
@@ -516,88 +517,68 @@ export function ReportsPage() {
           {surgeonPerf.length > 0 && (
             <Card className="p-6">
               <h3 className="text-lg font-semibold mb-4">Surgeon Performance</h3>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Surgeon
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Surgeries
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Complication Rate
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Readmission Rate
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        RTT
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        30d Mortality
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        90d Mortality
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Median Duration (min)
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Median LOS (days)
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {surgeonPerf.map((surgeon) => (
-                      <tr key={surgeon._id}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {surgeon._id}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {surgeon.total_surgeries}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`text-sm font-semibold px-2 py-1 rounded ${getOutcomeColor(surgeon.complication_rate, 'complication')}`}>
-                            {surgeon.complication_rate.toFixed(1)}%
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`text-sm font-semibold px-2 py-1 rounded ${getOutcomeColor(surgeon.readmission_rate, 'readmission')}`}>
-                            {surgeon.readmission_rate.toFixed(1)}%
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`text-sm font-semibold px-2 py-1 rounded ${getOutcomeColor(surgeon.return_to_theatre_rate, 'return_to_theatre')}`}>
-                            {surgeon.return_to_theatre_rate.toFixed(1)}%
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`text-sm font-semibold px-2 py-1 rounded ${getOutcomeColor(surgeon.mortality_30d_rate, 'mortality')}`}>
-                            {surgeon.mortality_30d_rate.toFixed(1)}%
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`text-sm font-semibold px-2 py-1 rounded ${getOutcomeColor(surgeon.mortality_90d_rate, 'mortality')}`}>
-                            {surgeon.mortality_90d_rate.toFixed(1)}%
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {surgeon.median_duration?.toFixed(0) || 'N/A'}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {surgeon.median_los 
-                            ? (surgeon.median_los % 1 === 0 
-                                ? surgeon.median_los.toFixed(0) 
-                                : surgeon.median_los.toFixed(1))
-                            : 'N/A'}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHeadCell>Surgeon</TableHeadCell>
+                    <TableHeadCell>Surgeries</TableHeadCell>
+                    <TableHeadCell>Complication Rate</TableHeadCell>
+                    <TableHeadCell>Readmission Rate</TableHeadCell>
+                    <TableHeadCell>RTT</TableHeadCell>
+                    <TableHeadCell>30d Mortality</TableHeadCell>
+                    <TableHeadCell>90d Mortality</TableHeadCell>
+                    <TableHeadCell>Median Duration (min)</TableHeadCell>
+                    <TableHeadCell>Median LOS (days)</TableHeadCell>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {surgeonPerf.map((surgeon) => (
+                    <TableRow key={surgeon._id}>
+                      <TableCell className="font-medium text-gray-900">
+                        {surgeon._id}
+                      </TableCell>
+                      <TableCell className="text-gray-500">
+                        {surgeon.total_surgeries}
+                      </TableCell>
+                      <TableCell>
+                        <span className={`text-sm font-semibold px-2 py-1 rounded ${getOutcomeColor(surgeon.complication_rate, 'complication')}`}>
+                          {surgeon.complication_rate.toFixed(1)}%
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <span className={`text-sm font-semibold px-2 py-1 rounded ${getOutcomeColor(surgeon.readmission_rate, 'readmission')}`}>
+                          {surgeon.readmission_rate.toFixed(1)}%
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <span className={`text-sm font-semibold px-2 py-1 rounded ${getOutcomeColor(surgeon.return_to_theatre_rate, 'return_to_theatre')}`}>
+                          {surgeon.return_to_theatre_rate.toFixed(1)}%
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <span className={`text-sm font-semibold px-2 py-1 rounded ${getOutcomeColor(surgeon.mortality_30d_rate, 'mortality')}`}>
+                          {surgeon.mortality_30d_rate.toFixed(1)}%
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <span className={`text-sm font-semibold px-2 py-1 rounded ${getOutcomeColor(surgeon.mortality_90d_rate, 'mortality')}`}>
+                          {surgeon.mortality_90d_rate.toFixed(1)}%
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-gray-500">
+                        {surgeon.median_duration?.toFixed(0) || 'N/A'}
+                      </TableCell>
+                      <TableCell className="text-gray-500">
+                        {surgeon.median_los 
+                          ? (surgeon.median_los % 1 === 0 
+                              ? surgeon.median_los.toFixed(0) 
+                              : surgeon.median_los.toFixed(1))
+                          : 'N/A'}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </Card>
           )}
 
@@ -678,107 +659,83 @@ export function ReportsPage() {
           {/* Episode Fields Detail */}
           <Card className="p-6">
             <h3 className="text-lg font-semibold mb-4">Episode Data Fields</h3>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Field
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Category
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Complete
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Missing
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Completeness
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {dataQuality.episode_fields
-                    ?.sort((a: any, b: any) => a.completeness - b.completeness)
-                    .map((field: any) => (
-                      <tr key={field.field}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {field.field}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {field.category}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {field.complete_count}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600">
-                          {field.missing_count}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`text-sm font-semibold px-2 py-1 rounded ${getCompletenessColor(field.completeness)}`}>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHeadCell>Field</TableHeadCell>
+                  <TableHeadCell>Category</TableHeadCell>
+                  <TableHeadCell>Complete</TableHeadCell>
+                  <TableHeadCell>Missing</TableHeadCell>
+                  <TableHeadCell>Completeness</TableHeadCell>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {dataQuality.episode_fields
+                  ?.sort((a: any, b: any) => a.completeness - b.completeness)
+                  .map((field: any) => (
+                    <TableRow key={field.field}>
+                      <TableCell className="font-medium text-gray-900">
+                        {field.field}
+                      </TableCell>
+                      <TableCell className="text-gray-500">
+                        {field.category}
+                      </TableCell>
+                      <TableCell className="text-gray-500">
+                        {field.complete_count}
+                      </TableCell>
+                      <TableCell className="text-red-600">
+                        {field.missing_count}
+                      </TableCell>
+                      <TableCell>
+                        <span className={`text-sm font-semibold px-2 py-1 rounded ${getCompletenessColor(field.completeness)}`}>
                             {field.completeness.toFixed(1)}%
                           </span>
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     ))}
-                </tbody>
-              </table>
-            </div>
+                </TableBody>
+              </Table>
           </Card>
 
           {/* Treatment Fields Detail */}
           <Card className="p-6">
             <h3 className="text-lg font-semibold mb-4">Treatment Data Fields</h3>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Field
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Category
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Complete
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Missing
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Completeness
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {dataQuality.treatment_fields
-                    ?.sort((a: any, b: any) => a.completeness - b.completeness)
-                    .map((field: any) => (
-                      <tr key={field.field}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {field.field}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {field.category}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {field.complete_count}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600">
-                          {field.missing_count}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`text-sm font-semibold px-2 py-1 rounded ${getCompletenessColor(field.completeness)}`}>
-                            {field.completeness.toFixed(1)}%
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHeadCell>Field</TableHeadCell>
+                  <TableHeadCell>Category</TableHeadCell>
+                  <TableHeadCell>Complete</TableHeadCell>
+                  <TableHeadCell>Missing</TableHeadCell>
+                  <TableHeadCell>Completeness</TableHeadCell>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {dataQuality.treatment_fields
+                  ?.sort((a: any, b: any) => a.completeness - b.completeness)
+                  .map((field: any) => (
+                    <TableRow key={field.field}>
+                      <TableCell className="font-medium text-gray-900">
+                        {field.field}
+                      </TableCell>
+                      <TableCell className="text-gray-500">
+                        {field.category}
+                      </TableCell>
+                      <TableCell className="text-gray-500">
+                        {field.complete_count}
+                      </TableCell>
+                      <TableCell className="text-red-600">
+                        {field.missing_count}
+                      </TableCell>
+                      <TableCell>
+                        <span className={`text-sm font-semibold px-2 py-1 rounded ${getCompletenessColor(field.completeness)}`}>
+                          {field.completeness.toFixed(1)}%
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+              </TableBody>
+            </Table>
           </Card>
         </>
       )}

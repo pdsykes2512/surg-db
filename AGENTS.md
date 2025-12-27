@@ -61,6 +61,12 @@ You operate within a 3-layer architecture that separates concerns to maximize re
 - Duplicating code that was already added
 - Reverting fixes that were previously applied
 
+**0.5. Follow the style guide** **When creating or modifying UI components, read `STYLE_GUIDE.md`** to ensure consistency. This prevents:
+- Inconsistent modal layouts and button placements
+- Mismatched color schemes and typography
+- Breaking established UX patterns
+- Creating components that don't match the existing design system
+
 **1. Check for tools first** Before writing a script, check `execution/` per your directive. Only create new scripts if none exist.
 
 **2. Self-anneal when things break** - Read error message and stack trace  
@@ -99,7 +105,8 @@ Errors are learning opportunities. When something breaks:
 **Directory structure:** - `.tmp/` (or `~/.tmp/`) - All intermediate files (dossiers, scraped data, temp exports, **log files**). Never commit, always regenerated.  
 - `execution/` - Python scripts (the deterministic tools) and startup scripts  
 - `directives/` - SOPs in Markdown (the instruction set)
-- `RECENT_CHANGES.md` - **READ THIS FIRST** - Log of recent changes across AI sessions (prevents duplicate work and breaking fixes)  
+- `RECENT_CHANGES.md` - **READ THIS FIRST** - Log of recent changes across AI sessions (prevents duplicate work and breaking fixes)
+- `STYLE_GUIDE.md` - **UI/UX design patterns** - Modal layouts, button placement, color schemes, component standards
 - `.env` - Environment variables and API keys  
 - `credentials.json`, `token.json` - Google OAuth credentials (required files, in `.gitignore`)
 
