@@ -180,7 +180,7 @@ export function HomePage() {
         }
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
         <Card hover>
           <div className="relative pt-2">
             <div className="absolute top-0 left-0 bg-blue-100 rounded-md p-3">
@@ -287,7 +287,7 @@ export function HomePage() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
         <Card>
           <div className="border-b border-gray-200 pb-4 mb-4">
             <h3 className="text-lg font-medium text-gray-900">Quick Actions</h3>

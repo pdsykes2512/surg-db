@@ -479,13 +479,17 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" style={{ margin: 0 }}>
-      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-lg max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-white border-b z-10">
           {/* Header */}
-          <div className="px-6 py-4 flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900">{mode === 'edit' ? 'Edit Treatment' : 'Add Treatment'}</h2>
-              <p className="text-xs text-gray-500 mt-1">Step {currentStep} of {totalSteps} • {treatmentType}</p>
+          <div className="px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
+            <div className="flex-1 min-w-0">
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 truncate">{mode === 'edit' ? 'Edit Treatment' : 'Add Treatment'}</h2>
+              <p className="text-xs text-gray-500 mt-1">
+                <span className="hidden sm:inline">Step {currentStep} of {totalSteps} • </span>
+                <span className="sm:hidden">{currentStep}/{totalSteps} • </span>
+                <span className="truncate">{treatmentType}</span>
+              </p>
             </div>
             <button
               onClick={onCancel}
@@ -499,7 +503,7 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
           
           {/* Progress Bar */}
           <div className="px-6 pb-4">
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-2 overflow-x-auto pb-2">
               {Array.from({ length: totalSteps }, (_, i) => i + 1).map((step) => (
                 <div key={step} className="flex items-center flex-1">
                   <div className="flex flex-col items-center flex-1">

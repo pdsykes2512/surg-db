@@ -93,7 +93,7 @@ export function FollowUpModal({ episodeId, patientId, onSubmit, onCancel, mode =
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" style={{ margin: 0 }}>
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-full sm:max-w-xl md:max-w-2xl lg:max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
         <div className="flex items-center justify-between p-6 border-b">
           <h2 className="text-2xl font-bold text-gray-900">
             {mode === 'create' ? 'Add Follow-up Visit' : 'Edit Follow-up Visit'}

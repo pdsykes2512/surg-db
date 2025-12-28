@@ -28,9 +28,9 @@ export function Button({
   }
   
   const sizeClasses = {
-    small: 'px-3 py-1.5 text-sm',
-    medium: 'px-4 py-2 text-sm',
-    large: 'px-6 py-3 text-base'
+    small: 'px-3 py-2 text-sm min-h-[44px]',  // Meets WCAG 44px minimum touch target
+    medium: 'px-4 py-2 text-sm min-h-[44px]',
+    large: 'px-6 py-3 text-base min-h-[48px]'
   }
 
   return (

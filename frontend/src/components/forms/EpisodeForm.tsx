@@ -672,7 +672,10 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
       {/* Progress indicator */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-gray-700">Step {step} of {totalSteps}</span>
+          <span className="text-xs sm:text-sm font-medium text-gray-700">
+            <span className="hidden sm:inline">Step {step} of {totalSteps}</span>
+            <span className="sm:hidden">{step}/{totalSteps}</span>
+          </span>
           <span className="text-sm text-gray-500">
             {step === 1 && 'Basic Information'}
             {step === 2 && 'Classification & Procedure'}

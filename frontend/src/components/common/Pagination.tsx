@@ -1,3 +1,4 @@
+import React from 'react'
 import { Button } from './Button'
 
 export interface PaginationProps {
@@ -31,17 +32,38 @@ export function Pagination({
     return null
   }
 
-  // Generate page numbers with smart ellipsis
-  const getPageNumbers = (): (number | 'ellipsis')[] => {
+  // Generate page numbers with smart ellipsis - responsive to screen size
+  const getPageNumbers = (isMobile: boolean = false): (number | 'ellipsis')[] => {
     const pages: (number | 'ellipsis')[] = []
 
-    if (totalPages <= 7) {
-      // Show all pages if 7 or fewer
+    // Mobile: show fewer page numbers (max 3-5 total)
+    // Desktop: show more page numbers (max 7-9 total)
+    const maxPages = isMobile ? 3 : 7
+
+    if (totalPages <= maxPages) {
+      // Show all pages if within limit
       for (let i = 1; i <= totalPages; i++) {
         pages.push(i)
       }
+    } else if (isMobile) {
+      // Mobile pagination: 1 ... 5 ... 10 (show only current, first, and last)
+      pages.push(1)
+      if (currentPage > 2 && currentPage < totalPages - 1) {
+        pages.push('ellipsis', currentPage, 'ellipsis')
+      } else if (currentPage === 2) {
+        pages.push(2, 'ellipsis')
+      } else if (currentPage === totalPages - 1) {
+        pages.push('ellipsis', totalPages - 1)
+      } else {
+        pages.push('ellipsis')
+      }
+      if (currentPage !== totalPages && currentPage !== 1) {
+        pages.push(totalPages)
+      } else if (currentPage === 1 && totalPages > 1) {
+        pages.push(totalPages)
+      }
     } else {
-      // Always show first page
+      // Desktop pagination: show more context
       pages.push(1)
 
       if (currentPage <= 3) {
@@ -59,11 +81,21 @@ export function Pagination({
     return pages
   }
 
-  const pageNumbers = getPageNumbers()
+  // Detect screen size for responsive pagination
+  const [isMobile, setIsMobile] = React.useState(false)
+
+  React.useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 640)
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
+
+  const pageNumbers = getPageNumbers(isMobile)
 
   return (
-    <div className="bg-gray-50 border-t border-gray-200 px-6 py-4">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div className="bg-gray-50 border-t border-gray-200 px-4 sm:px-6 py-3 sm:py-4">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 sm:gap-4">
         {/* Range display */}
         <div className="text-sm text-gray-700">
           Showing <span className="font-medium">{startItem}</span> to{' '}
@@ -73,14 +105,16 @@ export function Pagination({
         </div>
 
         {/* Navigation */}
-        <div className="flex items-center justify-center gap-2">
+        <div className="flex items-center justify-center gap-1 sm:gap-2">
           <Button
             variant="secondary"
             size="small"
             onClick={() => onPageChange(currentPage - 1)}
             disabled={currentPage === 1 || loading}
+            className="whitespace-nowrap"
           >
-            ← Previous
+            <span className="hidden sm:inline">← Previous</span>
+            <span className="sm:hidden">←</span>
           </Button>
 
           {/* Page numbers */}
@@ -98,7 +132,7 @@ export function Pagination({
                 key={page}
                 onClick={() => onPageChange(page)}
                 disabled={loading}
-                className={`min-w-[2.5rem] h-10 px-3 text-sm font-medium rounded-lg transition-colors ${
+                className={`min-w-[2.5rem] h-10 px-2 sm:px-3 text-sm font-medium rounded-lg transition-colors ${
                   currentPage === page
                     ? 'bg-blue-600 text-white'
                     : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
@@ -114,13 +148,15 @@ export function Pagination({
             size="small"
             onClick={() => onPageChange(currentPage + 1)}
             disabled={currentPage === totalPages || loading}
+            className="whitespace-nowrap"
           >
-            Next →
+            <span className="hidden sm:inline">Next →</span>
+            <span className="sm:hidden">→</span>
           </Button>
         </div>
 
         {/* Page size selector */}
-        <div className="flex items-center gap-2 text-sm">
+        <div className="flex items-center gap-2 text-xs sm:text-sm">
           <span className="text-gray-600">Show</span>
           <select
             value={pageSize}

@@ -264,8 +264,8 @@ export function TumourModal({ episodeId, onSubmit, onCancel, mode = 'create', in
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" style={{ margin: 0 }}>
-      <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-        <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
+      <div className="bg-white rounded-lg max-w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="sticky top-0 bg-white border-b px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
           <div>
             <h2 className="text-xl font-semibold text-gray-900">
               {mode === 'edit' ? 'Edit Tumour' : 'Add Tumour'}
@@ -860,7 +860,7 @@ export function TumourModal({ episodeId, onSubmit, onCancel, mode = 'create', in
           </div>
 
           {/* Actions */}
-          <div className="sticky bottom-0 bg-white border-t px-6 py-4 flex justify-between items-center">
+          <div className="sticky bottom-0 bg-white border-t px-4 sm:px-6 py-3 sm:py-4 flex justify-between items-center">
             <Button type="button" variant="secondary" onClick={onCancel}>
               Cancel
             </Button>

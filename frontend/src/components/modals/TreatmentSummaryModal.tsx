@@ -54,9 +54,9 @@ export function TreatmentSummaryModal({ treatment, onClose, onEdit }: TreatmentS
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" style={{ margin: 0 }}>
-      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="bg-white rounded-lg shadow-xl max-w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="bg-gradient-to-r from-purple-600 to-purple-700 px-6 py-3 flex justify-between items-center">
+        <div className="bg-gradient-to-r from-purple-600 to-purple-700 px-4 sm:px-6 py-3 flex justify-between items-center">
           <div>
             <h2 className="text-xl font-bold text-white">Treatment Summary</h2>
             <p className="text-purple-100 text-sm mt-1">{treatment.treatment_id}</p>
@@ -403,7 +403,7 @@ export function TreatmentSummaryModal({ treatment, onClose, onEdit }: TreatmentS
         </div>
 
         {/* Footer */}
-        <div className="border-t border-gray-200 px-6 py-4 bg-gray-50 flex justify-between">
+        <div className="border-t border-gray-200 px-4 sm:px-6 py-3 sm:py-4 bg-gray-50 flex justify-between">
           <Button variant="secondary" onClick={onClose}>
             Close
           </Button>

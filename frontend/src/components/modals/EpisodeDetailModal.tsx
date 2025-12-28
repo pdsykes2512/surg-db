@@ -23,9 +23,9 @@ export function EpisodeDetailModal({ episode, onClose, onEdit }: EpisodeDetailMo
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" style={{ margin: 0 }}>
-      <div className="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-lg max-w-full sm:max-w-3xl md:max-w-4xl lg:max-w-5xl xl:max-w-6xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
+        <div className="sticky top-0 bg-white border-b px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
           <div>
             <h2 className="text-xl font-semibold text-gray-900">Episode Details</h2>
             <p className="text-sm text-gray-500 mt-1">{episode.surgery_id}</p>

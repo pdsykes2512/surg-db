@@ -3,6 +3,7 @@
 > This document defines the design patterns and conventions for the surgical outcomes database frontend. **All new components and modifications must follow these guidelines to ensure consistency.**
 
 ## Table of Contents
+- [Responsive Design](#responsive-design)
 - [Modals](#modals)
 - [Buttons](#buttons)
 - [Forms](#forms)
@@ -10,6 +11,88 @@
 - [Colors & Themes](#colors--themes)
 - [Typography](#typography)
 - [Layout & Spacing](#layout--spacing)
+- [Navigation](#navigation)
+
+---
+
+## Responsive Design
+
+### Mobile-First Approach
+All components must be designed with mobile devices in mind first, then enhanced for larger screens.
+
+### Breakpoint Strategy
+Use Tailwind's default breakpoints consistently:
+- **Default (< 640px):** Mobile phones (portrait)
+- **sm: (≥ 640px):** Large phones (landscape), small tablets
+- **md: (≥ 768px):** Tablets (landscape), small laptops
+- **lg: (≥ 1024px):** Laptops, desktops
+- **xl: (≥ 1280px):** Large desktops
+
+### Responsive Patterns
+
+#### Grid Layouts
+Always provide mobile, tablet, and desktop breakpoints:
+```tsx
+{/* GOOD: Complete responsive chain */}
+<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+
+{/* BAD: Missing intermediate breakpoints */}
+<div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+```
+
+#### Spacing
+Scale spacing from mobile to desktop:
+```tsx
+{/* Padding */}
+className="px-2 sm:px-4 md:px-6"
+className="py-2 sm:py-3 md:py-4"
+
+{/* Gaps */}
+className="gap-2 sm:gap-3 md:gap-4"
+className="space-y-3 sm:space-y-4 md:space-y-6"
+```
+
+#### Text Sizing
+```tsx
+{/* Headings */}
+className="text-lg sm:text-xl md:text-2xl"
+
+{/* Body text generally stays text-sm or text-base */}
+```
+
+#### Modal Widths
+Scale max-width progressively:
+```tsx
+{/* Small modals (forms, simple inputs) */}
+className="max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl"
+
+{/* Medium modals (standard forms) */}
+className="max-w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl"
+
+{/* Large modals (detailed views, multi-section) */}
+className="max-w-full sm:max-w-3xl md:max-w-4xl lg:max-w-5xl xl:max-w-6xl"
+```
+
+#### Touch Targets
+All interactive elements must meet WCAG 2.1 minimum of 44×44px:
+```tsx
+{/* Buttons */}
+className="min-h-[44px] px-4 py-2"
+
+{/* Icon buttons */}
+className="p-2 min-w-[44px] min-h-[44px]"
+```
+
+### Mobile Navigation
+- Use hamburger menu for mobile (< 768px)
+- Show full navigation on desktop (≥ 768px)
+- Ensure menu items are easily tappable (min 44px height)
+- Close mobile menu on route change
+
+### Table Responsiveness
+- Reduce padding on small screens: `px-2 sm:px-4 md:px-6`
+- Enable horizontal scrolling with `overflow-x-auto`
+- Consider hiding less important columns on mobile with `hidden md:table-cell`
 
 ---
 
@@ -26,10 +109,10 @@ Used for: Adding or editing data (patients, treatments, investigations, etc.)
 
 **Structure:**
 ```tsx
-<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-  <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+  <div className="bg-white rounded-lg max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl w-full max-h-[90vh] overflow-y-auto">
     {/* Header */}
-    <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
+    <div className="sticky top-0 bg-white border-b px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
       <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
       <button onClick={onCancel} className="text-gray-400 hover:text-gray-600">
         {/* X icon */}
@@ -37,12 +120,12 @@ Used for: Adding or editing data (patients, treatments, investigations, etc.)
     </div>
     
     {/* Body - Form Content */}
-    <form onSubmit={handleSubmit} className="p-6 space-y-6">
+    <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 sm:space-y-6">
       {/* Form fields */}
     </form>
     
     {/* Footer - Action Buttons */}
-    <div className="flex justify-between items-center pt-4 border-t px-6 pb-6">
+    <div className="flex justify-between items-center pt-4 border-t px-4 sm:px-6 pb-4 sm:pb-6">
       <Button type="button" variant="secondary" onClick={onCancel}>
         Cancel
       </Button>
@@ -326,11 +409,13 @@ When creating or updating a multi-step modal, ensure ALL of the following are im
 - [CancerEpisodeForm.tsx](frontend/src/components/CancerEpisodeForm.tsx) - Lines 30-36 (state), 129-135 (updateFormData), 779-808 (step navigation), 825-888 (footer)
 
 ### Modal Sizing
-- **Small forms:** `max-w-md` (e.g., simple input modals)
-- **Standard forms:** `max-w-2xl` (e.g., most CRUD modals)
-- **Large forms:** `max-w-4xl` (e.g., tumour, pathology)
-- **Extra large:** `max-w-6xl` (e.g., episode details with multiple sections)
+All modal widths must be responsive with complete breakpoint chains:
+- **Small forms:** `max-w-full sm:max-w-md md:max-w-lg` (e.g., simple input modals)
+- **Standard forms:** `max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl` (e.g., most CRUD modals)
+- **Large forms:** `max-w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl` (e.g., tumour, pathology)
+- **Extra large:** `max-w-full sm:max-w-3xl md:max-w-4xl lg:max-w-5xl xl:max-w-6xl` (e.g., episode details)
 - **Always include:** `max-h-[90vh] overflow-y-auto` for scrolling
+- **Container padding:** `p-2 sm:p-4` on backdrop for mobile margins
 
 ---
 
@@ -786,4 +871,62 @@ When updating existing components or creating new ones:
 
 ---
 
-*Last updated: 2025-12-27*
+## Navigation
+
+### Mobile Navigation (< 768px)
+Use hamburger menu pattern with dropdown:
+```tsx
+const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
+{/* Hamburger button - visible on mobile only */}
+<button
+  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+  className="md:hidden p-2 rounded-lg min-h-[44px] min-w-[44px]"
+>
+  {/* Hamburger/X icon */}
+</button>
+
+{/* Dropdown menu */}
+{mobileMenuOpen && (
+  <div className="md:hidden border-t bg-white">
+    <nav className="px-4 py-3 space-y-1">
+      {/* Navigation links with min-h-[44px] */}
+    </nav>
+  </div>
+)}
+```
+
+### Desktop Navigation (≥ 768px)
+Horizontal navigation bar:
+```tsx
+<nav className="hidden md:flex space-x-2">
+  {/* Navigation links */}
+</nav>
+```
+
+**Key Requirements:**
+- Hamburger button must be 44×44px minimum
+- Menu items must have min-h-[44px] for touch targets
+- Close mobile menu on navigation (onClick handler)
+- Hide desktop nav on mobile (`hidden md:flex`)
+- Hide hamburger on desktop (`md:hidden`)
+
+---
+
+## Responsive Design Checklist
+
+When creating or updating components:
+
+- [ ] **Grids:** Complete breakpoint chain (sm:, md:, lg:)
+- [ ] **Spacing:** Responsive padding and gaps (px-2 sm:px-4 md:px-6)
+- [ ] **Modals:** Responsive max-widths with full breakpoint range
+- [ ] **Touch targets:** All buttons ≥ 44×44px
+- [ ] **Tables:** Responsive padding, horizontal scroll enabled
+- [ ] **Navigation:** Hamburger menu for mobile, full nav for desktop
+- [ ] **Typography:** Consider responsive text sizing for headings
+- [ ] **Forms:** Grid columns adapt to screen size
+- [ ] **Test:** View on mobile (375px), tablet (768px), desktop (1280px)
+
+---
+
+*Last updated: 2025-12-28*

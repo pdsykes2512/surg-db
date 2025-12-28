@@ -528,9 +528,9 @@ export function CancerEpisodeDetailModal({
 
   return createPortal(
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4" style={{ margin: 0 }}>
-      <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full h-[85vh] overflow-hidden flex flex-col">
+      <div className="bg-white rounded-lg shadow-xl max-w-full sm:max-w-3xl md:max-w-4xl lg:max-w-5xl xl:max-w-6xl w-full max-h-[90vh] md:h-[85vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-3 flex justify-between items-center">
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-4 sm:px-6 py-3 flex justify-between items-center">
           <div>
             <h2 className="text-xl font-bold text-white">Cancer Episode Details</h2>
             <p className="text-blue-100 text-sm mt-1">{episode.episode_id}</p>
@@ -547,10 +547,10 @@ export function CancerEpisodeDetailModal({
 
         {/* Tabs */}
         <div className="border-b bg-gray-50">
-          <div className="flex space-x-4 px-6">
+          <div className="flex overflow-x-auto space-x-2 sm:space-x-4 px-4 sm:px-6">
             <button
               onClick={() => setActiveTab('overview')}
-              className={`py-3 px-2 border-b-2 font-medium text-sm ${
+              className={`py-3 px-3 sm:px-4 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap ${
                 activeTab === 'overview'
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -560,7 +560,7 @@ export function CancerEpisodeDetailModal({
             </button>
             <button
               onClick={() => setActiveTab('investigations')}
-              className={`py-3 px-2 border-b-2 font-medium text-sm ${
+              className={`py-3 px-3 sm:px-4 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap ${
                 activeTab === 'investigations'
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -570,7 +570,7 @@ export function CancerEpisodeDetailModal({
             </button>
             <button
               onClick={() => setActiveTab('tumours')}
-              className={`py-3 px-2 border-b-2 font-medium text-sm ${
+              className={`py-3 px-3 sm:px-4 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap ${
                 activeTab === 'tumours'
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -580,7 +580,7 @@ export function CancerEpisodeDetailModal({
             </button>
             <button
               onClick={() => setActiveTab('treatments')}
-              className={`py-3 px-2 border-b-2 font-medium text-sm ${
+              className={`py-3 px-3 sm:px-4 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap ${
                 activeTab === 'treatments'
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -590,7 +590,7 @@ export function CancerEpisodeDetailModal({
             </button>
             <button
               onClick={() => setActiveTab('followups')}
-              className={`py-3 px-2 border-b-2 font-medium text-sm ${
+              className={`py-3 px-3 sm:px-4 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap ${
                 activeTab === 'followups'
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -602,14 +602,14 @@ export function CancerEpisodeDetailModal({
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
           {/* Overview Tab */}
           {activeTab === 'overview' && (
             <div className="space-y-6">
               {/* Basic Information */}
               <div className="bg-gray-50 rounded-lg p-4">
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">Episode Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   <div>
                     <label className="text-sm font-medium text-gray-500">Patient ID</label>
                     <p className="text-sm text-gray-900 mt-1">{episode.patient_id}</p>
@@ -991,7 +991,7 @@ export function CancerEpisodeDetailModal({
           {/* Tumours Tab */}
           {activeTab === 'tumours' && (
             <div className="bg-white rounded-lg border">
-              <div className="px-6 py-4 border-b flex items-center justify-between">
+              <div className="px-4 sm:px-6 py-3 sm:py-4 border-b flex flex-col sm:flex-row gap-2 sm:gap-0 items-start sm:items-center justify-between">
                 <h3 className="text-lg font-semibold text-gray-900">
                   Tumour Sites ({tumours.length})
                 </h3>
@@ -1014,29 +1014,29 @@ export function CancerEpisodeDetailModal({
                   <p className="text-sm">Add individual tumour sites to track primaries, metastases, or recurrences</p>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto shadow-sm">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-2 sm:px-4 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Tumour ID
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-2 sm:px-4 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Type
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-2 sm:px-4 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Site
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-2 sm:px-4 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           ICD-10
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-2 sm:px-4 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           TNM (Clinical)
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-2 sm:px-4 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           TNM (Path)
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-2 sm:px-4 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Actions
                         </th>
                       </tr>
@@ -1048,10 +1048,10 @@ export function CancerEpisodeDetailModal({
                           className="hover:bg-blue-50 cursor-pointer transition-colors"
                           onClick={() => setViewingTumour(tumour)}
                         >
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          <td className="px-2 sm:px-4 md:px-6 py-3 md:py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                             {tumour.tumour_id}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          <td className="px-2 sm:px-4 md:px-6 py-3 md:py-4 whitespace-nowrap text-sm text-gray-900">
                             <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
                               tumour.tumour_type === 'primary' ? 'bg-blue-100 text-blue-800' :
                               tumour.tumour_type === 'metastasis' ? 'bg-red-100 text-red-800' :
@@ -1060,23 +1060,23 @@ export function CancerEpisodeDetailModal({
                               {capitalize(tumour.tumour_type)}
                             </span>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          <td className="px-2 sm:px-4 md:px-6 py-3 md:py-4 whitespace-nowrap text-sm text-gray-900">
                             {formatAnatomicalSite(tumour.site)}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          <td className="px-2 sm:px-4 md:px-6 py-3 md:py-4 whitespace-nowrap text-sm text-gray-900">
                             {tumour.icd10_code || '—'}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          <td className="px-2 sm:px-4 md:px-6 py-3 md:py-4 whitespace-nowrap text-sm text-gray-900">
                             {tumour.clinical_t || tumour.clinical_n || tumour.clinical_m ? (
                               formatClinicalTNM(tumour.clinical_t, tumour.clinical_n, tumour.clinical_m)
                             ) : '—'}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          <td className="px-2 sm:px-4 md:px-6 py-3 md:py-4 whitespace-nowrap text-sm text-gray-900">
                             {tumour.pathological_t || tumour.pathological_n || tumour.pathological_m ? (
                               formatPathologicalTNM(tumour.pathological_t, tumour.pathological_n, tumour.pathological_m)
                             ) : '—'}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <td className="px-2 sm:px-4 md:px-6 py-3 md:py-4 whitespace-nowrap text-sm text-gray-500">
                             <div className="flex space-x-2">
                               <button
                                 onClick={(e) => {
@@ -1117,7 +1117,7 @@ export function CancerEpisodeDetailModal({
           {/* Treatments Tab */}
           {activeTab === 'treatments' && (
             <div className="bg-white rounded-lg border">
-              <div className="px-6 py-4 border-b flex items-center justify-between">
+              <div className="px-4 sm:px-6 py-3 sm:py-4 border-b flex flex-col sm:flex-row gap-2 sm:gap-0 items-start sm:items-center justify-between">
                 <h3 className="text-lg font-semibold text-gray-900">
                   Treatments ({treatments.length})
                 </h3>
@@ -1136,26 +1136,26 @@ export function CancerEpisodeDetailModal({
                   No treatments recorded yet
                 </div>
               ) : (
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto shadow-sm">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-2 sm:px-4 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Treatment ID
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-2 sm:px-4 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Type
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-2 sm:px-4 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Date
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-2 sm:px-4 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Details
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-2 sm:px-4 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Clinician
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-2 sm:px-4 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Actions
                         </th>
                       </tr>
@@ -1167,18 +1167,18 @@ export function CancerEpisodeDetailModal({
                           className="hover:bg-blue-50 cursor-pointer transition-colors"
                           onClick={() => setViewingTreatment(treatment)}
                         >
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          <td className="px-2 sm:px-4 md:px-6 py-3 md:py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                             {treatment.treatment_id}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          <td className="px-2 sm:px-4 md:px-6 py-3 md:py-4 whitespace-nowrap text-sm text-gray-900">
                             <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getTreatmentTypeColor(treatment.treatment_type)}`}>
                               {formatTreatmentType(treatment.treatment_type)}
                             </span>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          <td className="px-2 sm:px-4 md:px-6 py-3 md:py-4 whitespace-nowrap text-sm text-gray-900">
                             {formatDate(treatment.treatment_date)}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 max-w-xs truncate">
+                          <td className="px-2 sm:px-4 md:px-6 py-3 md:py-4 whitespace-nowrap text-sm text-gray-900 max-w-xs truncate">
                             {treatment.treatment_type === 'surgery' && treatment.procedure_name ? (
                               treatment.procedure_name
                             ) : treatment.treatment_type === 'chemotherapy' && treatment.regimen ? (
@@ -1189,10 +1189,10 @@ export function CancerEpisodeDetailModal({
                               treatment.notes || '—'
                             )}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          <td className="px-2 sm:px-4 md:px-6 py-3 md:py-4 whitespace-nowrap text-sm text-gray-900">
                             {formatSurgeon((treatment.surgeon_name || treatment.anaesthetist_name || treatment.surgeon || treatment.oncologist) || 'Not specified')}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <td className="px-2 sm:px-4 md:px-6 py-3 md:py-4 whitespace-nowrap text-sm text-gray-500">
                             <div className="flex space-x-2">
                               <button
                                 onClick={(e) => {
@@ -1233,7 +1233,7 @@ export function CancerEpisodeDetailModal({
           {/* Investigations Tab */}
           {activeTab === 'investigations' && (
             <div className="bg-white rounded-lg border">
-              <div className="px-6 py-4 border-b flex items-center justify-between">
+              <div className="px-4 sm:px-6 py-3 sm:py-4 border-b flex flex-col sm:flex-row gap-2 sm:gap-0 items-start sm:items-center justify-between">
                 <h3 className="text-lg font-semibold text-gray-900">
                   Investigations & Imaging ({investigations.length})
                 </h3>
@@ -1253,23 +1253,23 @@ export function CancerEpisodeDetailModal({
                   <p className="text-sm">Add imaging, endoscopy, or laboratory investigations</p>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto shadow-sm">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-2 sm:px-4 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Date
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-2 sm:px-4 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Type
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-2 sm:px-4 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Investigation
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-2 sm:px-4 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Result
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-2 sm:px-4 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Actions
                         </th>
                       </tr>
@@ -1277,10 +1277,10 @@ export function CancerEpisodeDetailModal({
                     <tbody className="bg-white divide-y divide-gray-200">
                       {investigations.map((inv) => (
                         <tr key={inv.investigation_id} className="hover:bg-blue-50 cursor-pointer transition-colors">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          <td className="px-2 sm:px-4 md:px-6 py-3 md:py-4 whitespace-nowrap text-sm text-gray-900">
                             {inv.date ? formatDate(inv.date) : '—'}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          <td className="px-2 sm:px-4 md:px-6 py-3 md:py-4 whitespace-nowrap text-sm text-gray-900">
                             <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
                               inv.type === 'imaging' ? 'bg-blue-100 text-blue-800' :
                               inv.type === 'endoscopy' ? 'bg-green-100 text-green-800' :
@@ -1289,13 +1289,13 @@ export function CancerEpisodeDetailModal({
                               {capitalize(inv.type)}
                             </span>
                           </td>
-                          <td className="px-6 py-4 text-sm text-gray-900">
+                          <td className="px-2 sm:px-4 md:px-6 py-3 md:py-4 text-sm text-gray-900">
                             {formatInvestigationType(inv.subtype)}
                           </td>
-                          <td className="px-6 py-4 text-sm text-gray-900">
+                          <td className="px-2 sm:px-4 md:px-6 py-3 md:py-4 text-sm text-gray-900">
                             {inv.result || '—'}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <td className="px-2 sm:px-4 md:px-6 py-3 md:py-4 whitespace-nowrap text-sm text-gray-500">
                             <div className="flex space-x-2">
                               <button
                                 onClick={(e) => {
@@ -1440,7 +1440,7 @@ export function CancerEpisodeDetailModal({
         </div>
 
         {/* Footer */}
-        <div className="border-t border-gray-200 px-6 py-4 bg-gray-50 flex justify-between">
+        <div className="border-t border-gray-200 px-4 sm:px-6 py-3 sm:py-4 bg-gray-50 flex justify-between">
           <Button variant="secondary" onClick={onClose}>
             Close
           </Button>

@@ -839,7 +839,7 @@ export function CancerEpisodeForm({ onSubmit, onCancel, initialData, mode = 'cre
 
           {/* Progress Indicator */}
           <div className="mt-4">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between overflow-x-auto pb-2">
               {Array.from({ length: totalSteps }, (_, i) => i + 1)
                 .filter(stepNum => mode === 'edit' ? stepNum !== 5 : true) // Skip step 5 in edit mode
                 .map((stepNum, index, array) => {
@@ -872,7 +872,9 @@ export function CancerEpisodeForm({ onSubmit, onCancel, initialData, mode = 'cre
                 })}
             </div>
             <p className="text-xs text-gray-500 mt-2 text-center">
-              Step {currentStep} of {totalSteps}{mode === 'edit' ? ' (skipping optional clinical data)' : ''}
+              <span className="hidden sm:inline">Step {currentStep} of {totalSteps}</span>
+              <span className="sm:hidden">{currentStep}/{totalSteps}</span>
+              {mode === 'edit' && <span className="hidden md:inline"> (skipping optional clinical data)</span>}
             </p>
           </div>
         </div>

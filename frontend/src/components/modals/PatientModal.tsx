@@ -194,10 +194,10 @@ export function PatientModal({ patient, onClose, onSubmit, onDelete, loading = f
   }
 
   return createPortal(
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4" style={{ margin: 0 }}>
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-2 sm:p-4" style={{ margin: 0 }}>
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 flex justify-between items-center">
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-4 sm:px-6 py-3 sm:py-4 flex justify-between items-center">
           <div>
             <h2 className="text-xl font-bold text-white">{patient ? 'Edit Patient' : 'New Patient'}</h2>
             {patient && <p className="text-blue-100 text-sm mt-1">{patient.patient_id}</p>}
@@ -213,7 +213,7 @@ export function PatientModal({ patient, onClose, onSubmit, onDelete, loading = f
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
           <form onSubmit={handleSubmit} id="patient-form">
             {/* Basic Information */}
             <div className="mb-6">
@@ -228,7 +228,7 @@ export function PatientModal({ patient, onClose, onSubmit, onDelete, loading = f
 
               <div className="space-y-4">
                 {/* All three identifiers in one row */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Patient ID
@@ -291,7 +291,7 @@ export function PatientModal({ patient, onClose, onSubmit, onDelete, loading = f
             {/* Demographics */}
             <div className="mb-6">
               <h3 className="text-lg font-medium mb-3 text-gray-700">Demographics</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Date of Birth <span className="text-red-500">*</span>
@@ -393,7 +393,7 @@ export function PatientModal({ patient, onClose, onSubmit, onDelete, loading = f
             {/* Physical Measurements */}
             <div className="mb-6">
               <h3 className="text-lg font-medium mb-3 text-gray-700">Physical Measurements</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Weight (kg)
@@ -454,7 +454,7 @@ export function PatientModal({ patient, onClose, onSubmit, onDelete, loading = f
         </div>
 
         {/* Footer */}
-        <div className="border-t border-gray-200 px-6 py-4 bg-gray-50 flex justify-between">
+        <div className="border-t border-gray-200 px-4 sm:px-6 py-3 sm:py-4 bg-gray-50 flex justify-between">
           <div>
             {patient && onDelete && (
               <Button 

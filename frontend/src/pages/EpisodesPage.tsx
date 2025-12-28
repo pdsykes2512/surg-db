@@ -411,7 +411,7 @@ export function EpisodesPage() {
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Patient Information</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 text-sm">
                 <div>
                   <span className="text-gray-500">Record Number:</span>
                   <p className="font-medium text-gray-900">{patientInfo.record_number}</p>
@@ -451,8 +451,9 @@ export function EpisodesPage() {
           </div>
 
           {/* Search and Date Filters */}
-          <div className="grid grid-cols-1 md:grid-cols-7 gap-4 items-center">
-            <div className="md:col-span-4">
+          <div className="space-y-3">
+            {/* Search bar - full width on all screens */}
+            <div>
               <input
                 type="text"
                 placeholder="Search by Episode ID, Patient ID, Cancer Type, or Clinician..."
@@ -462,20 +463,22 @@ export function EpisodesPage() {
               />
             </div>
 
-            <div className="md:col-span-1.5 flex items-center gap-2">
-              <span className="text-sm text-gray-600 whitespace-nowrap">From:</span>
-              <DateInput
-                value={startDateFilter}
-                onChange={(e) => setStartDateFilter(e.target.value)}
-              />
-            </div>
-
-            <div className="md:col-span-1.5 flex items-center gap-2">
-              <span className="text-sm text-gray-600 whitespace-nowrap">To:</span>
-              <DateInput
-                value={endDateFilter}
-                onChange={(e) => setEndDateFilter(e.target.value)}
-              />
+            {/* Date filters - side by side on all screens */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">From Date</label>
+                <DateInput
+                  value={startDateFilter}
+                  onChange={(e) => setStartDateFilter(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">To Date</label>
+                <DateInput
+                  value={endDateFilter}
+                  onChange={(e) => setEndDateFilter(e.target.value)}
+                />
+              </div>
             </div>
           </div>
 
@@ -650,7 +653,7 @@ export function EpisodesPage() {
               </p>
               
               <div className="bg-gray-50 rounded-md p-4 mb-4">
-                <div className="grid grid-cols-2 gap-2 text-sm">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                   <div className="text-gray-500">Episode ID:</div>
                   <div className="font-medium text-gray-900">{deleteConfirmation.episode.episode_id}</div>
                   
