@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Background -->
+  <rect width="512" height="512" fill="#2563eb" rx="96"/>
+  
+  <!-- Medical Cross -->
+  <g fill="white">
+    <!-- Vertical bar -->
+    <rect x="196" y="96" width="120" height="320" rx="12"/>
+    <!-- Horizontal bar -->
+    <rect x="96" y="196" width="320" height="120" rx="12"/>
+  </g>
+  
+  <!-- Chart/Analytics Symbol -->
+  <g fill="#93c5fd" opacity="0.8">
+    <rect x="140" y="300" width="40" height="80" rx="6"/>
+    <rect x="200" y="260" width="40" height="120" rx="6"/>
+    <rect x="260" y="240" width="40" height="140" rx="6"/>
+    <rect x="320" y="220" width="40" height="160" rx="6"/>
+  </g>
+  
+  <!-- Pulse line decoration -->
+  <path d="M 80 160 L 120 160 L 140 120 L 160 180 L 180 140 L 200 160 L 432 160" 
+        stroke="#60a5fa" 
+        stroke-width="8" 
+        stroke-linecap="round" 
+        stroke-linejoin="round"
+        fill="none"/>
+</svg>

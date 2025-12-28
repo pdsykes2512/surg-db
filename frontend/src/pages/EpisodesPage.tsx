@@ -386,10 +386,11 @@ export function EpisodesPage() {
             </svg>
           }
           action={
-            <div className="flex space-x-3">
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
               {patientId && (
                 <Button 
                   variant="secondary"
+                  className="w-full sm:w-auto"
                   onClick={() => navigate('/episodes')}
                 >
                   ← All Episodes
@@ -397,6 +398,7 @@ export function EpisodesPage() {
               )}
               <Button 
                 variant="primary"
+                className="w-full sm:w-auto"
                 onClick={() => setShowModal(true)}
               >
                 + Cancer Episode
@@ -451,9 +453,10 @@ export function EpisodesPage() {
           </div>
 
           {/* Search and Date Filters */}
-          <div className="space-y-3">
-            {/* Search bar - full width on all screens */}
-            <div>
+          <div className="flex flex-col md:flex-row gap-3">
+            {/* Search bar */}
+            <div className="flex-1">
+              <label className="block text-xs font-medium text-gray-600 mb-1">Episode Filter</label>
               <input
                 type="text"
                 placeholder="Search by Episode ID, Patient ID, Cancer Type, or Clinician..."
@@ -463,16 +466,16 @@ export function EpisodesPage() {
               />
             </div>
 
-            {/* Date filters - side by side on all screens */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
+            {/* Date filters - stack on mobile, inline on desktop */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="w-full sm:w-40">
                 <label className="block text-xs font-medium text-gray-600 mb-1">From Date</label>
                 <DateInput
                   value={startDateFilter}
                   onChange={(e) => setStartDateFilter(e.target.value)}
                 />
               </div>
-              <div>
+              <div className="w-full sm:w-40">
                 <label className="block text-xs font-medium text-gray-600 mb-1">To Date</label>
                 <DateInput
                   value={endDateFilter}

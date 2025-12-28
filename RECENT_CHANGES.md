@@ -15,6 +15,59 @@ This file tracks significant changes made to the IMPACT application (formerly su
 
 ---
 
+## 2025-12-28 - Mobile UI Improvements & PWA Support
+
+**Changed by:** AI Session
+**Issue:** "Add Patient" button overlapped title text on mobile devices. User also requested Progressive Web App (PWA) support for iOS and Android.
+
+**Changes:**
+
+### 1. Mobile-Responsive Page Headers
+- **PageHeader.tsx**: Updated layout to stack vertically on mobile (flex-col) and horizontally on desktop (sm:flex-row). Added responsive icon and text sizing.
+- **PatientsPage.tsx**: Made "Add Patient" button full-width on mobile (w-full sm:w-auto)
+- **EpisodesPage.tsx**: Made both action buttons stack vertically on mobile with full-width styling
+- **CancerEpisodesPage.tsx**: Made "Add Episode" button full-width on mobile
+
+### 2. Progressive Web App (PWA) Implementation
+- **manifest.json**: Created web app manifest with app name, icons, theme colors, and display mode
+- **index.html**: Added PWA meta tags for iOS (apple-mobile-web-app-*) and Android, plus manifest link
+- **pwa.ts**: Created service worker registration script with install prompt handling
+- **sw.js**: Implemented service worker with caching strategy (network-first, fallback to cache)
+- **main.tsx**: Imported PWA registration script
+- **vite.config.ts**: Updated build configuration for PWA support
+- **Icon files**: Generated icon-192.png, icon-512.png, apple-touch-icon.png, and icon.svg using ImageMagick
+
+**Files affected:**
+- frontend/src/components/common/PageHeader.tsx
+- frontend/src/pages/PatientsPage.tsx
+- frontend/src/pages/EpisodesPage.tsx
+- frontend/src/pages/CancerEpisodesPage.tsx
+- frontend/index.html
+- frontend/public/manifest.json (new)
+- frontend/public/sw.js (new)
+- frontend/src/pwa.ts (new)
+- frontend/public/icon.svg (new)
+- frontend/public/icon-192.png (new)
+- frontend/public/icon-512.png (new)
+- frontend/public/apple-touch-icon.png (new)
+- frontend/public/generate-icons.sh (new)
+- frontend/src/main.tsx
+- frontend/vite.config.ts
+
+**Testing:**
+1. Test mobile layout: Open app on mobile device or use browser DevTools responsive mode - headers should stack properly
+2. Test PWA on iOS: Open in Safari, tap Share button → "Add to Home Screen" → app should appear as standalone app
+3. Test PWA on Android: Open in Chrome, tap menu → "Install app" or "Add to Home Screen"
+4. Verify service worker: Open DevTools → Application tab → Service Workers should show registered worker
+
+**Notes:**
+- PWA requires HTTPS in production (service workers won't register over HTTP except on localhost)
+- Icons use medical cross with analytics chart design in IMPACT blue (#2563eb)
+- Service worker uses network-first strategy to ensure fresh data while providing offline fallback
+- All page headers now follow mobile-first responsive design pattern from STYLE_GUIDE.md
+
+---
+
 ## 2025-12-28 - Project Rebranding to IMPACT
 
 **Changed by:** AI Session

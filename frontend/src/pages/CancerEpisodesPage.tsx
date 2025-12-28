@@ -160,11 +160,15 @@ export function CancerEpisodesPage() {
         }
         action={
           !showForm && (
-            <Button variant="primary" onClick={() => {
-              setSelectedEpisode(null)
-              setEditMode(false)
-              setShowForm(true)
-            }}>
+            <Button 
+              variant="primary" 
+              className="w-full sm:w-auto"
+              onClick={() => {
+                setSelectedEpisode(null)
+                setEditMode(false)
+                setShowForm(true)
+              }}
+            >
               + Add Episode
             </Button>
           )

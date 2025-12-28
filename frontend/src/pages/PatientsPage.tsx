@@ -222,10 +222,16 @@ export function PatientsPage() {
           </svg>
         }
         action={
-          <Button variant="primary" onClick={() => {
-            setEditingPatient(null);
-            setShowModal(true);
-          }}>+ Add Patient</Button>
+          <Button 
+            variant="primary" 
+            className="w-full sm:w-auto" 
+            onClick={() => {
+              setEditingPatient(null);
+              setShowModal(true);
+            }}
+          >
+            + Add Patient
+          </Button>
         }
       />
 

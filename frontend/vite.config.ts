@@ -20,5 +20,13 @@ export default defineConfig({
         rewrite: (path) => path
       }
     }
+  },
+  build: {
+    // Ensure service worker and manifest are included in build
+    rollupOptions: {
+      input: {
+        main: './index.html'
+      }
+    }
   }
 })
