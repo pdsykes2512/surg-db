@@ -122,11 +122,19 @@ export function PatientsPage() {
     return () => clearTimeout(timeoutId);
   }, [searchTerm, loadPatients]);
 
-  // Handle opening patient modal from navigation state (from HomePage activity)
+  // Handle opening patient modal from navigation state (from HomePage activity or quick actions)
   useEffect(() => {
-    const state = location.state as { openPatient?: string }
+    const state = location.state as { openPatient?: string; addNew?: boolean }
 
-    if (state?.openPatient && patients.length > 0) {
+    // Handle adding new patient from quick action
+    if (state?.addNew) {
+      setEditingPatient(null);
+      setShowModal(true);
+      // Clear the state to avoid reopening on refresh
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+    // Handle opening existing patient from activity
+    else if (state?.openPatient && patients.length > 0) {
       const patient = patients.find(p => p.patient_id === state.openPatient)
       if (patient) {
         handleEdit(patient)

@@ -140,11 +140,19 @@ export function EpisodesPage() {
   // Handle opening modals from navigation state (from HomePage activity or direct navigation)
   useEffect(() => {
     const state = location.state as {
+      addNew?: boolean
       editEpisodeId?: string
       openEpisode?: string
       openTreatment?: string
       openTumour?: string
       openInvestigation?: string
+    }
+
+    // Handle adding new episode from quick action (doesn't require episodes to be loaded)
+    if (state?.addNew) {
+      setShowModal(true);
+      navigate(location.pathname, { replace: true, state: {} });
+      return;
     }
 
     if (!episodes.length) return

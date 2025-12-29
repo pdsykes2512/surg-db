@@ -293,24 +293,33 @@ export function HomePage() {
             <h3 className="text-lg font-medium text-gray-900">Quick Actions</h3>
           </div>
           <div className="space-y-3">
-            <a href="/patients" className="flex items-center p-3 rounded-lg hover:bg-blue-50 transition-colors">
+            <button
+              onClick={() => navigate('/patients', { state: { addNew: true } })}
+              className="w-full flex items-center p-3 rounded-lg hover:bg-blue-50 transition-colors"
+            >
               <svg className="w-5 h-5 text-gray-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
               <span className="text-sm font-medium text-gray-900">Add New Patient</span>
-            </a>
-            <a href="/episodes" className="flex items-center p-3 rounded-lg hover:bg-blue-50 transition-colors">
+            </button>
+            <button
+              onClick={() => navigate('/episodes', { state: { addNew: true } })}
+              className="w-full flex items-center p-3 rounded-lg hover:bg-blue-50 transition-colors"
+            >
               <svg className="w-5 h-5 text-gray-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
               <span className="text-sm font-medium text-gray-900">Record Episode</span>
-            </a>
-            <a href="/reports" className="flex items-center p-3 rounded-lg hover:bg-blue-50 transition-colors">
+            </button>
+            <button
+              onClick={() => navigate('/reports')}
+              className="w-full flex items-center p-3 rounded-lg hover:bg-blue-50 transition-colors"
+            >
               <svg className="w-5 h-5 text-gray-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
               <span className="text-sm font-medium text-gray-900">View Reports</span>
-            </a>
+            </button>
           </div>
         </Card>
 
