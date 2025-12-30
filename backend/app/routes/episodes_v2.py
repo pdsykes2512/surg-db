@@ -21,6 +21,218 @@ from ..auth import get_current_user
 router = APIRouter(prefix="/api/episodes", tags=["episodes"])
 
 
+def flatten_treatment_for_frontend(treatment: dict, clinician_map: dict = None, surname_map: dict = None) -> dict:
+    """
+    Flatten nested treatment structure for frontend compatibility.
+
+    Frontend expects flat structure with direct access to fields like:
+    - surgeon, procedure_name, approach, urgency, admission_date, etc.
+
+    Database has nested structure:
+    - team.primary_surgeon, procedure.primary_procedure, classification.approach, etc.
+
+    This function flattens the nested structure while maintaining both versions
+    for backward compatibility.
+    """
+    flattened = treatment.copy()
+
+    # Flatten classification fields
+    if 'classification' in treatment:
+        flattened['approach'] = treatment['classification'].get('approach')
+        flattened['urgency'] = treatment['classification'].get('urgency')
+
+    # Flatten procedure fields
+    if 'procedure' in treatment:
+        flattened['procedure_name'] = treatment['procedure'].get('primary_procedure')
+        flattened['procedure_type'] = treatment['procedure'].get('procedure_type')
+        flattened['resection_performed'] = treatment['procedure'].get('resection_performed')
+        flattened['robotic_surgery'] = treatment['procedure'].get('robotic_surgery')
+        flattened['conversion_to_open'] = treatment['procedure'].get('conversion_to_open')
+
+    # Flatten team fields with clinician resolution
+    if 'team' in treatment:
+        team = treatment['team']
+
+        # Resolve primary surgeon with surname matching
+        primary_surgeon_id = team.get('primary_surgeon')
+        primary_surgeon_text = team.get('primary_surgeon_text')
+
+        # Try to resolve surgeon name using multiple strategies
+        surgeon_name = None
+        if clinician_map and primary_surgeon_id:
+            # Strategy 1: Resolve by clinician ID
+            surgeon_name = clinician_map.get(primary_surgeon_id)
+
+        if not surgeon_name and surname_map and primary_surgeon_text:
+            # Strategy 2: Match by surname (case-insensitive)
+            surgeon_name = surname_map.get(primary_surgeon_text.upper())
+
+        if not surgeon_name:
+            # Fallback: Use the text value as-is
+            surgeon_name = primary_surgeon_text or primary_surgeon_id
+
+        flattened['surgeon'] = surgeon_name
+
+        # Resolve assistant surgeons with surname matching
+        assistant_ids = team.get('assistant_surgeons', [])
+        assistant_texts = team.get('assistant_surgeons_text', [])
+
+        assistant_names = []
+        if assistant_ids:
+            for idx, surgeon_id in enumerate(assistant_ids):
+                # Try to resolve by ID
+                if clinician_map and surgeon_id:
+                    name = clinician_map.get(surgeon_id)
+                    if name:
+                        assistant_names.append(name)
+                        continue
+
+                # Try to resolve by surname from text
+                if surname_map and idx < len(assistant_texts):
+                    text = assistant_texts[idx]
+                    if text:
+                        name = surname_map.get(text.upper())
+                        if name:
+                            assistant_names.append(name)
+                            continue
+
+                # Fallback to text or ID
+                if idx < len(assistant_texts) and assistant_texts[idx]:
+                    assistant_names.append(assistant_texts[idx])
+                else:
+                    assistant_names.append(surgeon_id)
+        else:
+            # No IDs, try to resolve text names
+            for text in assistant_texts:
+                if surname_map and text:
+                    name = surname_map.get(text.upper())
+                    assistant_names.append(name if name else text)
+                else:
+                    assistant_names.append(text)
+
+        # Take first assistant for backward compatibility
+        flattened['assistant_surgeon'] = assistant_names[0] if assistant_names else None
+        flattened['assistant_surgeons'] = assistant_names
+
+        flattened['surgeon_grade'] = team.get('surgeon_grade')
+        flattened['anaesthetist_grade'] = team.get('anesthetist_grade')
+        flattened['surgical_fellow'] = team.get('surgical_fellow')
+
+    # Flatten perioperative_timeline fields
+    if 'perioperative_timeline' in treatment:
+        timeline = treatment['perioperative_timeline']
+        flattened['admission_date'] = timeline.get('admission_date')
+        flattened['discharge_date'] = timeline.get('discharge_date')
+        flattened['surgery_date'] = timeline.get('surgery_date')
+        flattened['operation_duration_minutes'] = timeline.get('operation_duration_minutes')
+        flattened['length_of_stay'] = timeline.get('length_of_stay_days')
+
+    # Flatten intraoperative fields
+    if 'intraoperative' in treatment:
+        intraop = treatment['intraoperative']
+        flattened['blood_loss_ml'] = intraop.get('blood_loss_ml')
+        flattened['stoma_created'] = intraop.get('stoma_created')
+        flattened['stoma_type'] = intraop.get('stoma_type')
+        flattened['anastomosis_performed'] = intraop.get('anastomosis_performed')
+        flattened['bowel_prep'] = intraop.get('bowel_prep')
+        flattened['defunctioning_stoma'] = intraop.get('defunctioning_stoma')
+
+    # Flatten postoperative_events fields
+    if 'postoperative_events' in treatment:
+        postop = treatment['postoperative_events']
+        if 'return_to_theatre' in postop:
+            flattened['return_to_theatre'] = postop['return_to_theatre'].get('occurred')
+
+    return flattened
+
+
+def enrich_episode_with_treatment_data(episode: dict, treatments: list, clinician_map: dict = None) -> dict:
+    """
+    Enrich episode with fields from primary surgical treatment for frontend display.
+
+    Frontend expects these fields on episode object:
+    - episode.classification (urgency, approach, etc.)
+    - episode.procedure (primary_procedure, approach, etc.)
+    - episode.team (primary_surgeon, assistant_surgeons, etc.)
+
+    These fields actually live in treatment documents, so we populate from first surgical treatment.
+    """
+    # Find first surgical treatment
+    surgical_treatments = [t for t in treatments if t.get('treatment_type') == 'surgery']
+
+    if not surgical_treatments:
+        # No surgery - return episode as-is
+        return episode
+
+    # Get primary surgical treatment (first one)
+    primary_surgery = surgical_treatments[0]
+
+    # Populate classification from treatment
+    episode['classification'] = {
+        'urgency': primary_surgery.get('classification', {}).get('urgency'),
+        'approach': primary_surgery.get('classification', {}).get('approach'),
+        'complexity': None,  # Not in current data model
+        'primary_diagnosis': primary_surgery.get('procedure', {}).get('primary_procedure'),
+        'indication': None  # Not in current data model
+    }
+
+    # Populate procedure from treatment
+    episode['procedure'] = {
+        'primary_procedure': primary_surgery.get('procedure', {}).get('primary_procedure'),
+        'approach': primary_surgery.get('classification', {}).get('approach'),
+        'additional_procedures': [],  # Could add from multiple treatments later
+        'procedure_type': primary_surgery.get('procedure', {}).get('procedure_type'),
+        'robotic_surgery': primary_surgery.get('procedure', {}).get('robotic_surgery'),
+        'conversion_to_open': primary_surgery.get('procedure', {}).get('conversion_to_open')
+    }
+
+    # Populate team from treatment
+    team_data = primary_surgery.get('team', {})
+
+    # Resolve primary surgeon
+    primary_surgeon_id = team_data.get('primary_surgeon')
+    primary_surgeon_text = team_data.get('primary_surgeon_text')
+
+    if clinician_map and primary_surgeon_id:
+        primary_surgeon_name = clinician_map.get(primary_surgeon_id, primary_surgeon_text)
+    else:
+        primary_surgeon_name = primary_surgeon_text
+
+    # Resolve assistant surgeons
+    assistant_ids = team_data.get('assistant_surgeons', [])
+    assistant_texts = team_data.get('assistant_surgeons_text', [])
+
+    assistant_names = []
+    if clinician_map:
+        for surgeon_id in assistant_ids:
+            assistant_names.append(clinician_map.get(surgeon_id, surgeon_id))
+    else:
+        assistant_names = assistant_texts
+
+    episode['team'] = {
+        'primary_surgeon': primary_surgeon_name,
+        'assistant_surgeons': assistant_names,
+        'surgeon_grade': team_data.get('surgeon_grade'),
+        'anesthetist_grade': team_data.get('anesthetist_grade'),
+        'surgical_fellow': team_data.get('surgical_fellow')
+    }
+
+    # Populate perioperative data
+    timeline = primary_surgery.get('perioperative_timeline', {})
+    episode['perioperative'] = {
+        'admission_date': timeline.get('admission_date'),
+        'surgery_date': timeline.get('surgery_date'),
+        'discharge_date': timeline.get('discharge_date'),
+        'length_of_stay_days': timeline.get('length_of_stay_days'),
+        'operation_duration_minutes': timeline.get('operation_duration_minutes')
+    }
+
+    # Populate outcomes
+    episode['outcomes'] = primary_surgery.get('outcomes', {})
+
+    return episode
+
+
 @router.post("/", response_model=Episode, status_code=status.HTTP_201_CREATED)
 async def create_episode(
     episode: EpisodeCreate,
@@ -244,8 +456,9 @@ async def get_all_treatments():
 
 @router.get("/treatments/{treatment_id}")
 async def get_treatment_by_id(treatment_id: str):
-    """Get a specific treatment by its treatment_id"""
+    """Get a specific treatment by its treatment_id (flattened for frontend compatibility)"""
     treatments_collection = await get_treatments_collection()
+    clinicians_collection = await get_clinicians_collection()
 
     # Find the treatment
     treatment = await treatments_collection.find_one({"treatment_id": treatment_id})
@@ -259,7 +472,25 @@ async def get_treatment_by_id(treatment_id: str):
     # Convert ObjectId to string
     treatment["_id"] = str(treatment["_id"])
 
-    return treatment
+    # Build clinician map and surname map for name resolution
+    clinician_map = {}
+    surname_map = {}
+    clinicians = await clinicians_collection.find({}).to_list(length=None)
+    for clinician in clinicians:
+        full_name = f"{clinician.get('first_name', '')} {clinician.get('surname', '')}".strip()
+        if not full_name:
+            full_name = clinician.get('name', str(clinician['_id']))
+        clinician_map[str(clinician['_id'])] = full_name
+
+        # Also map by surname (case-insensitive) for text matching
+        surname = clinician.get('surname', '').strip()
+        if surname:
+            surname_map[surname.upper()] = full_name
+
+    # Flatten nested structure for frontend compatibility
+    flattened_treatment = flatten_treatment_for_frontend(treatment, clinician_map, surname_map)
+
+    return flattened_treatment
 
 
 @router.get("/tumours/{tumour_id}")
@@ -319,7 +550,7 @@ async def list_episodes(
     """List all episodes with pagination and filters"""
     collection = await get_episodes_collection()
     patients_collection = await get_patients_collection()
-    
+
     # Build query filters
     query = {}
     
@@ -346,7 +577,7 @@ async def list_episodes(
             or_conditions.append({"patient_id": {"$in": matching_patient_ids}})
         
         query["$or"] = or_conditions
-    
+
     # Other filters
     if patient_id:
         query["patient_id"] = patient_id
@@ -355,10 +586,12 @@ async def list_episodes(
     if cancer_type:
         query["cancer_type"] = cancer_type.value
     if lead_clinician:
+        # Database now stores names directly (e.g., "Jim Khan", "Parvaiz")
+        # Just filter by the name as-is
         query["lead_clinician"] = lead_clinician
     if episode_status:
         query["episode_status"] = episode_status
-    
+
     # Date range filtering
     # Note: referral_date may be stored as string in database, so we compare as strings
     if start_date or end_date:
@@ -374,9 +607,6 @@ async def list_episodes(
     cursor = collection.find(query).sort(sort_field, -1).skip(skip).limit(limit)
     episodes = await cursor.to_list(length=limit)
     
-    # Get patient collection to fetch MRN
-    patients_collection = await get_patients_collection()
-    
     # Convert ObjectIds to strings and add patient MRN
     for episode in episodes:
         episode["_id"] = str(episode["_id"])
@@ -391,7 +621,9 @@ async def list_episodes(
                     episode["patient_mrn"] = decrypt_field("mrn", mrn)
                 else:
                     episode["patient_mrn"] = None
-    
+
+        # lead_clinician is already stored as a name in the database - no conversion needed
+
     # Return raw dicts without Pydantic validation to support flexible episode structure
     return episodes
 
@@ -434,43 +666,63 @@ async def get_episode(episode_id: str):
     # Build a map of all clinicians for efficient lookup
     all_clinicians = await clinicians_collection.find({}).to_list(length=None)
     clinician_map = {}
+    surname_map = {}  # For matching text surnames like "SENAPATI"
     for clinician in all_clinicians:
-        # Map by _id string
-        clinician_map[str(clinician["_id"])] = f"{clinician.get('first_name', '')} {clinician.get('surname', '')}".strip()
-        # Also map by name (for cases where name is already stored)
         full_name = f"{clinician.get('first_name', '')} {clinician.get('surname', '')}".strip()
+        if not full_name:
+            full_name = clinician.get('name', str(clinician['_id']))
+
+        # Map by _id string
+        clinician_map[str(clinician["_id"])] = full_name
+        # Also map by full name (for cases where name is already stored)
         if full_name:
             clinician_map[full_name] = full_name
+
+        # Also map by surname (case-insensitive) for text matching
+        surname = clinician.get('surname', '').strip()
+        if surname:
+            surname_map[surname.upper()] = full_name
     
     # Convert ObjectIds to strings
     episode["_id"] = str(episode["_id"])
-    
+
+    # Flatten and enrich each treatment for frontend compatibility
+    flattened_treatments = []
     for treatment in treatments:
         treatment["_id"] = str(treatment["_id"])
-        
-        # Resolve clinician names for surgeon and anaesthetist fields
-        if "surgeon" in treatment and treatment["surgeon"]:
-            surgeon_id = treatment["surgeon"]
-            treatment["surgeon_name"] = clinician_map.get(surgeon_id, surgeon_id)
-        
-        if "anaesthetist" in treatment and treatment["anaesthetist"]:
-            anaesthetist_id = treatment["anaesthetist"]
-            treatment["anaesthetist_name"] = clinician_map.get(anaesthetist_id, anaesthetist_id)
-        
+
         # Enrich with computed mortality fields
         treatment = enrich_treatment_with_mortality(treatment, deceased_date)
-    
+
+        # Flatten nested structure for frontend compatibility
+        flattened_treatment = flatten_treatment_for_frontend(treatment, clinician_map, surname_map)
+        flattened_treatments.append(flattened_treatment)
+
     for tumour in tumours:
         tumour["_id"] = str(tumour["_id"])
-    
+
     for investigation in investigations:
         investigation["_id"] = str(investigation["_id"])
-    
-    # Include treatments, tumours, and investigations in response
-    episode["treatments"] = treatments
+
+    # Include flattened treatments, tumours, and investigations in response
+    episode["treatments"] = flattened_treatments
     episode["tumours"] = tumours
     episode["investigations"] = investigations
-    
+
+    # Enrich episode with treatment data for frontend display
+    episode = enrich_episode_with_treatment_data(episode, flattened_treatments, clinician_map)
+
+    # Resolve lead_clinician ID or text to full name
+    if "lead_clinician" in episode and episode["lead_clinician"]:
+        clinician_value = episode["lead_clinician"]
+        # Try to resolve as clinician ID first
+        if clinician_value in clinician_map:
+            episode["lead_clinician"] = clinician_map[clinician_value]
+        # Try to match by surname (case-insensitive)
+        elif clinician_value.upper() in surname_map:
+            episode["lead_clinician"] = surname_map[clinician_value.upper()]
+        # Otherwise keep the text value as-is
+
     # Return raw dict without Pydantic validation to support flexible episode structure
     return episode
 
@@ -624,11 +876,30 @@ async def add_treatment_to_episode(
             {"$set": {"last_modified_at": datetime.utcnow()}}
         )
         
-        # Return created treatment
+        # Return created treatment (flattened for frontend)
         created_treatment = await treatments_collection.find_one({"_id": result.inserted_id})
         if created_treatment:
             created_treatment["_id"] = str(created_treatment["_id"])
-        
+
+            # Build clinician map and surname map for name resolution
+            clinicians_collection = await get_clinicians_collection()
+            all_clinicians = await clinicians_collection.find({}).to_list(length=None)
+            clinician_map = {}
+            surname_map = {}
+            for clinician in all_clinicians:
+                full_name = f"{clinician.get('first_name', '')} {clinician.get('surname', '')}".strip()
+                if not full_name:
+                    full_name = clinician.get('name', str(clinician['_id']))
+                clinician_map[str(clinician['_id'])] = full_name
+
+                # Also map by surname (case-insensitive) for text matching
+                surname = clinician.get('surname', '').strip()
+                if surname:
+                    surname_map[surname.upper()] = full_name
+
+            # Flatten for frontend compatibility
+            created_treatment = flatten_treatment_for_frontend(created_treatment, clinician_map, surname_map)
+
         # Log audit entry
         await log_action(
             audit_collection,
@@ -709,14 +980,33 @@ async def update_treatment_in_episode(
             {"$set": {"last_modified_at": datetime.utcnow()}}
         )
         
-        # Return updated treatment
+        # Return updated treatment (flattened for frontend)
         updated_treatment = await treatments_collection.find_one({
             "treatment_id": treatment_id,
             "episode_id": episode["episode_id"]
         })
         if updated_treatment:
             updated_treatment["_id"] = str(updated_treatment["_id"])
-        
+
+            # Build clinician map and surname map for name resolution
+            clinicians_collection = await get_clinicians_collection()
+            all_clinicians = await clinicians_collection.find({}).to_list(length=None)
+            clinician_map = {}
+            surname_map = {}
+            for clinician in all_clinicians:
+                full_name = f"{clinician.get('first_name', '')} {clinician.get('surname', '')}".strip()
+                if not full_name:
+                    full_name = clinician.get('name', str(clinician['_id']))
+                clinician_map[str(clinician['_id'])] = full_name
+
+                # Also map by surname (case-insensitive) for text matching
+                surname = clinician.get('surname', '').strip()
+                if surname:
+                    surname_map[surname.upper()] = full_name
+
+            # Flatten for frontend compatibility
+            updated_treatment = flatten_treatment_for_frontend(updated_treatment, clinician_map, surname_map)
+
         # Log audit entry
         await log_action(
             audit_collection,

@@ -1,6 +1,6 @@
 import { formatDate, formatTreatmentType, formatSurgeon, formatAnatomicalSite } from '../../utils/formatters'
-import { formatTrustName } from '../../utils/nhsTrusts'
 import { Button } from '../common/Button'
+import { ProviderDisplay } from '../common/ProviderDisplay'
 
 interface TreatmentSummaryModalProps {
   treatment: any
@@ -85,7 +85,7 @@ export function TreatmentSummaryModal({ treatment, onClose, onEdit }: TreatmentS
             />
             <Field label="Treatment Date" value={formatDate(treatment.treatment_date)} />
             <Field label="Surgeon/Oncologist" value={formatSurgeon(treatment.surgeon || treatment.oncologist)} />
-            <Field label="Provider Organisation" value={formatTrustName(treatment.provider_organisation)} />
+            <Field label="Provider Organisation" value={<ProviderDisplay code={treatment.provider_organisation} />} />
             <Field label="Institution" value={treatment.institution} />
           </Section>
 

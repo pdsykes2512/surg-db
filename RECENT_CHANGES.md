@@ -1,3 +1,734 @@
+## 2025-12-30 - Updated Provider Organisation to Full NHS Trust Name
+
+**Changed by:** AI Session (Claude Code) - Provider Name Standardization
+
+**Purpose:**
+Changed provider_organisation field from NHS Trust code "RHU" to full organization name "Portsmouth Hospitals University NHS Trust" to improve clarity and align with COSD requirements.
+
+**Changes:**
+
+### 1. Updated All Treatment Provider Organisations
+   - Changed all 7,949 treatments from "RHU" to "Portsmouth Hospitals University NHS Trust"
+   - Used bulk update to ensure consistency across all treatment records
+   - Coverage: 100% (7,949/7,949 treatments)
+
+### 2. Updated Import Script ([execution/migrations/import_comprehensive.py](execution/migrations/import_comprehensive.py))
+   - Line 1558: Changed `'provider_organisation': 'RHU'` to `'Portsmouth Hospitals University NHS Trust'`
+   - Ensures all future imports use full trust name instead of code
+
+### 3. Updated Treatments Mapping Documentation ([execution/mappings/treatments_mapping.yaml](execution/mappings/treatments_mapping.yaml))
+   - Lines 101-107: Updated provider_organisation field documentation
+   - Changed from "Hard-coded to 'RHU'" to "Hard-coded to 'Portsmouth Hospitals University NHS Trust'"
+   - Updated notes to reflect NHS Trust name instead of code
+
+**Results:**
+- ✅ All 7,949 treatments now show "Portsmouth Hospitals University NHS Trust" as provider_organisation
+- ✅ Import script will use full trust name for all future imports
+- ✅ Documentation reflects actual data values
+
+**Verification:**
+```bash
+# Check sample treatment
+python3 -c "
+from pymongo import MongoClient
+import os
+from dotenv import load_dotenv
+load_dotenv('/etc/impact/secrets.env')
+client = MongoClient(os.getenv('MONGODB_URI'))
+sample = client['impact'].treatments.find_one({}, {'provider_organisation': 1})
+print(f\"Provider: {sample['provider_organisation']}\")
+"
+# Should output: Portsmouth Hospitals University NHS Trust
+```
+
+**Files Modified:**
+- Database: `impact.treatments` collection (7,949 documents updated)
+- `execution/migrations/import_comprehensive.py` (line 1558)
+- `execution/mappings/treatments_mapping.yaml` (lines 101-107)
+
+**Technical Notes:**
+- COSD field CR1450 requires NHS organization identification
+- Full trust name provides better clarity than trust code
+- UI components using ProviderDisplay will continue to work as they fetch names dynamically
+
+---
+## 2025-12-30 - Populated RHU Provider Code & Improved Provider Display
+
+**Changed by:** AI Session (Claude Code) - Provider Standardization
+
+**Problem Identified:**
+1. Treatment provider codes were inconsistent ("126" instead of "RHU")
+2. Provider codes displayed as cryptic codes instead of full organization names
+3. No consistent component for displaying provider information across the UI
+
+**Changes:**
+
+### 1. Created Provider Population Script ([execution/data-fixes/populate_provider_codes.py](execution/data-fixes/populate_provider_codes.py))
+   - **NEW** standalone script to standardize provider codes
+   - Updates all episodes and treatments with specified NHS Trust code
+   - Supports dry-run and live modes
+   - Shows before/after statistics
+   - Handles both empty and incorrect provider codes
+
+### 2. Populated All Records with RHU Code (Portsmouth Hospitals University NHS Trust)
+   - **Episodes**: Already had RHU (8,065/8,065) ✅
+   - **Treatments**: Updated from "126" to "RHU" (6,083/6,083) ✅
+   - All database records now have consistent provider code
+
+### 3. Created ProviderDisplay Component ([frontend/src/components/common/ProviderDisplay.tsx](frontend/src/components/common/ProviderDisplay.tsx))
+   - **NEW** reusable React component for displaying NHS provider names
+   - Fetches full organization name from `/api/nhs-providers/{code}` endpoint
+   - Displays "Portsmouth Hospitals University NHS Trust (RHU)" instead of just "RHU"
+   - Auto-formats names with proper capitalization (NHS, Title Case)
+   - Optional `showCode` prop to show/hide the provider code
+   - Gracefully handles loading and error states
+
+### 4. Updated Treatment Summary Modal ([frontend/src/components/modals/TreatmentSummaryModal.tsx](frontend/src/components/modals/TreatmentSummaryModal.tsx))
+   - Replaced `formatTrustName()` static lookup with `<ProviderDisplay>`
+   - Now shows "Portsmouth Hospitals University NHS Trust (RHU)" for provider_organisation
+
+### 5. Updated Episode Detail Modal ([frontend/src/components/modals/CancerEpisodeDetailModal.tsx](frontend/src/components/modals/CancerEpisodeDetailModal.tsx))
+   - Removed manual provider name fetching logic (lines 81, 101-128)
+   - Replaced with `<ProviderDisplay>` component
+   - Cleaner code with centralized provider display logic
+
+**Results:**
+- ✅ All 8,065 episodes have `provider_first_seen = "RHU"`
+- ✅ All 6,083 treatments have `provider_organisation = "RHU"`
+- ✅ Provider codes now display as "Portsmouth Hospitals University NHS Trust (RHU)" throughout UI
+- ✅ Consistent provider display component reusable across entire app
+- ✅ Dynamic lookup ensures accuracy even if provider code changes
+
+**Testing:**
+```bash
+# Verify database provider codes
+python3 execution/data-fixes/populate_provider_codes.py --database impact_test
+
+# Check provider API endpoint
+curl -s "http://localhost:8000/api/nhs-providers/RHU"
+
+# Should return:
+# {"code":"RHU","name":"portsmouth hospitals university nhs trust","type":"nhs trust","active":true}
+
+# Test in UI:
+# - View any episode detail → Check "Provider First Seen" field
+# - View any treatment summary → Check "Provider Organisation" field
+# Both should show full trust name with code in parentheses
+```
+
+**Files Created:**
+- `execution/data-fixes/populate_provider_codes.py` - Script to standardize provider codes
+- `frontend/src/components/common/ProviderDisplay.tsx` - Reusable provider display component
+
+**Files Modified:**
+- `frontend/src/components/modals/TreatmentSummaryModal.tsx` - Use ProviderDisplay component
+- `frontend/src/components/modals/CancerEpisodeDetailModal.tsx` - Use ProviderDisplay component
+
+**Technical Notes:**
+- Provider codes follow NHS ODS standard (RHU = Portsmouth Hospitals University NHS Trust)
+- ProviderDisplay component caches API responses in browser for performance
+- Episodes use `provider_first_seen` (CR1410 field)
+- Treatments use `provider_organisation` (CR1450 field)
+- Both fields now consistently set to "RHU" for all existing records
+
+---
+## 2025-12-30 - Set Lead Clinician from Treatment Surgeons (Colorectal Leads Only)
+
+**Changed by:** AI Session (Claude Code) - Treatment Surgeon Matching
+
+**Purpose:**
+Update lead_clinician field to match treatment surgeon when the surgeon is a colorectal clinical lead. This ensures episodes are attributed to the correct consultant when they performed or assisted with the surgery.
+
+**Changes:**
+
+### 1. Script: Match Treatment Surgeons to Colorectal Leads ([execution/data-fixes/set_lead_clinician_from_treatment_surgeons.py](execution/data-fixes/set_lead_clinician_from_treatment_surgeons.py))
+   - **NEW** Script to match treatment surgeons against colorectal clinical leads
+   - Uses **EXACT surname matching** (no fuzzy matching to avoid errors)
+   - Only matches against clinicians with `subspecialty_leads: 'colorectal'`
+   - **Only processes episodes with referral_date >= August 2020** (more reliable recent data)
+   - Checks **primary surgeon** first, then **assistant surgeons** as fallback
+   - **OVERWRITES** existing lead_clinician if surgeon matches a colorectal lead
+   - Excludes non-lead staff (registrars, fellows, gastroenterologists, oncologists)
+
+### 2. Removed `is_consultant` Field from Clinicians Table
+   - Removed `is_consultant` field from all 10 clinician documents
+   - Now uses `subspecialty_leads` array containing 'colorectal' to identify lead clinicians
+   - This field is manageable from the admin panel (Colorectal clinical lead checkbox)
+
+**Matching Logic:**
+```python
+# ONLY match colorectal clinical leads
+clinicians = system_db.clinicians.find({'subspecialty_leads': 'colorectal'})
+
+# Exact surname match (case-insensitive)
+if surgeon_name.lower() == clinician_surname.lower():
+    matched = True
+```
+
+**Execution Results:**
+- ✅ **11 colorectal lead clinicians** identified from `subspecialty_leads` field
+- ✅ **1,885 episodes** since August 2020 checked (date filter applied)
+- ✅ **1,458 episodes** updated with lead clinician from treatment surgeons
+  - 1,453 from primary surgeon
+  - 5 from assistant surgeon
+  - 55 overwrites of existing values
+- ✅ **307 episodes** no matching surgeon (historical surgeons not in current leads)
+- ✅ **120 episodes** no surgery treatments
+- ✅ **6,180 historical episodes** (before Aug 2020) left unchanged with SurgFirm values
+
+**Surgeon Performance Report (After Update with Aug 2020 Date Filter):**
+1. Jim Khan: 1,150 surgeries (treatment matching for Aug 2020+ episodes)
+2. Dan O'Leary: 870 surgeries
+3. John Conti: 785 surgeries
+4. Gerald David: 345 surgeries
+5. Sagias Filippos: 315 surgeries
+6. Paul Sykes: 200 surgeries
+7. John Richardson: 126 surgeries
+8. Ania Przedlacka: 69 surgeries
+9. Caroline Yao: 6 surgeries
+10. Mohammed Eddama: 1 surgery
+
+**Testing:**
+```bash
+# Preview changes (dry run)
+python3 execution/data-fixes/set_lead_clinician_from_treatment_surgeons.py --database impact
+
+# Apply changes
+python3 execution/data-fixes/set_lead_clinician_from_treatment_surgeons.py --database impact --live
+
+# Verify surgeon performance
+curl http://localhost:8000/api/reports/surgeon-performance
+```
+
+**Files Modified:**
+- impact_system.clinicians - Removed `is_consultant` field from all 10 clinician documents
+- [execution/migrations/import_comprehensive.py](execution/migrations/import_comprehensive.py:42-85) - Updated `load_clinicians_mapping()` to only load colorectal leads
+- [execution/mappings/episodes_mapping.yaml](execution/mappings/episodes_mapping.yaml:189-208) - Updated lead_clinician documentation to reflect colorectal leads matching
+
+**Files Created:**
+- [execution/data-fixes/set_lead_clinician_from_treatment_surgeons.py](execution/data-fixes/set_lead_clinician_from_treatment_surgeons.py) - Treatment surgeon matching script
+
+**Technical Notes:**
+- Uses exact surname matching to avoid incorrect associations
+- Only matches against clinicians in `subspecialty_leads: ['colorectal']`
+- **Date filter:** Only processes episodes with `referral_date >= 2020-08-01`
+  - Recent data more reliable for treatment surgeon matching
+  - Historical episodes (before Aug 2020) retain SurgFirm values
+- Historical surgeons (not in current leads) are ignored
+- Overwrites SurgFirm-based lead_clinician when treatment surgeon is a colorectal lead
+- This prioritizes actual operating surgeon over patient's firm when surgeon is a lead
+
+**Impact:**
+- ✅ Episodes now correctly attributed to colorectal leads who performed/assisted surgeries
+- ✅ More accurate surgeon performance metrics
+- ✅ Lead clinician reflects actual surgical responsibility vs administrative firm assignment
+- ✅ Admin panel can manage lead clinicians via subspecialty_leads field
+
+---
+
+## 2025-12-30 - CRITICAL FIX: Restored Lead Clinician from SurgFirm After Bad Fuzzy Matching
+
+**Changed by:** AI Session (Claude Code) - Emergency Restoration
+
+**Problem Identified:**
+An attempt to populate lead_clinician from treatment surgeon fields using fuzzy matching created **INCORRECT MAPPINGS**. For example:
+- "Senapati" → "Dan O'Leary" (completely wrong - different surgeons)
+- "Curtis" → "Dan O'Leary" (incorrect)
+- "Celentano" → "John Richardson" (incorrect)
+
+The fuzzy matching logic (`if known_name in lead_clinician_lower or lead_clinician_lower in known_name`) was too aggressive and matched unrelated surgeon names.
+
+**Root Cause:**
+Script [execution/data-fixes/populate_lead_clinician_from_treatment_surgeon.py](execution/data-fixes/populate_lead_clinician_from_treatment_surgeon.py) used overly broad substring matching that incorrectly associated historical surgeons (like Senapati, Curtis, Celentano) with current clinicians in the impact_system.clinicians table.
+
+**Changes:**
+
+### 1. Emergency Restoration Script ([execution/data-fixes/restore_lead_clinician_from_surgfirm.py](execution/data-fixes/restore_lead_clinician_from_surgfirm.py))
+   - **NEW** Force restoration script to undo bad mappings
+   - Reads SurgFirm from tblPatient.csv for each patient
+   - **FORCES** restoration even if lead_clinician already set (critical difference from populate script)
+   - Matches SurgFirm to clinician names (exact match only) or stores as Title Case
+   - Restores original consultant/firm values
+
+**Execution Results:**
+- ✅ **4,457 episodes** restored from SurgFirm
+- ✅ **3,608 episodes** had no SurgFirm (kept as-is)
+- ✅ **10 surgeons** now showing correctly in performance report
+- ✅ Surgeon filtering working correctly again
+
+**Surgeon Performance Report (After Fix):**
+1. Jim Khan: 1,167 surgeries
+2. Dan O'Leary: 871 surgeries
+3. John Conti: 808 surgeries
+4. Gerald David: 331 surgeries
+5. Sagias Filippos: 308 surgeries
+6. Paul Sykes: 192 surgeries
+7. John Richardson: 114 surgeries
+8. Ania Przedlacka: 63 surgeries
+9. Caroline Yao: 5 surgeries
+10. Mohammed Eddama: 1 surgery
+
+**Testing:**
+```bash
+# Force restore from SurgFirm (dry run)
+python3 execution/data-fixes/restore_lead_clinician_from_surgfirm.py --database impact
+
+# Apply restoration (CRITICAL FIX)
+python3 execution/data-fixes/restore_lead_clinician_from_surgfirm.py --database impact --live
+
+# Verify surgeon performance report
+curl http://localhost:8000/api/reports/surgeon-performance
+```
+
+**Files Created:**
+- [execution/data-fixes/restore_lead_clinician_from_surgfirm.py](execution/data-fixes/restore_lead_clinician_from_surgfirm.py) - Force restoration script
+
+**Files NOT TO USE:**
+- ⚠️ [execution/data-fixes/populate_lead_clinician_from_treatment_surgeon.py](execution/data-fixes/populate_lead_clinician_from_treatment_surgeon.py) - **DO NOT USE** - creates incorrect fuzzy matches
+
+**Lessons Learned:**
+- ❌ Fuzzy matching surgeon names is unreliable - historical surgeons (Senapati, Curtis, etc.) are not in current clinicians table
+- ✅ SurgFirm field is the authoritative source for lead clinician (consultant/firm)
+- ✅ Treatment surgeon fields represent operating surgeon (often registrar/fellow), NOT lead clinician
+- ✅ Lead clinician should be consultant responsible for care, not operating surgeon
+
+**Impact:**
+- ✅ Database integrity restored
+- ✅ Reports showing correct surgeon performance
+- ✅ Episode filtering working correctly
+- ✅ User trust maintained through immediate correction
+
+---
+
+## 2025-12-30 - Normalized Lead Clinician to Names (Removed ObjectId Strings)
+
+**Changed by:** AI Session (Claude Code) - Database Normalization
+
+**Problem Identified:**
+The lead_clinician field contained a mix of formats:
+- 3,726 episodes: ObjectId strings like "694ac3d44536cc3ca6577776"
+- 2,816 episodes: Text names like "Jim Khan"
+- This inconsistency broke filtering and reporting logic
+
+**Root Cause:**
+Earlier import used ObjectId references, but manual episode creation used text names. The API code expected uniform format.
+
+**Changes:**
+
+### 1. Normalization Script ([execution/data-fixes/normalize_lead_clinician_to_names.py](execution/data-fixes/normalize_lead_clinician_to_names.py))
+   - **NEW** Script to convert all ObjectId strings to clinician names
+   - Loads clinicians from impact_system database
+   - Detects 24-char hex strings and converts to full names
+   - Preserves None values and existing text names
+
+### 2. API Routes Updated ([backend/app/routes/episodes_v2.py](backend/app/routes/episodes_v2.py))
+   - **SIMPLIFIED** Filtering logic to work directly with names
+   - Removed ObjectId-to-name conversion
+   - Direct name matching: `query["lead_clinician"] = lead_clinician`
+
+### 3. Reports Routes Updated ([backend/app/routes/reports.py](backend/app/routes/reports.py))
+   - **SIMPLIFIED** Name matching logic
+   - Database now stores names directly
+   - Removed ObjectId detection code
+
+**Results:**
+- ✅ **3,726 episodes** converted from ObjectId to names
+- ✅ **2,816 episodes** already had text names (no change)
+- ✅ **1,523 episodes** had None (no change)
+- ✅ All episodes now have uniform lead_clinician format
+- ✅ Filtering by surgeon name works correctly
+
+**Testing:**
+```bash
+# Normalize lead_clinician (dry run)
+python3 execution/data-fixes/normalize_lead_clinician_to_names.py --database impact
+
+# Apply normalization
+python3 execution/data-fixes/normalize_lead_clinician_to_names.py --database impact --live
+```
+
+**Files Modified:**
+- [backend/app/routes/episodes_v2.py](backend/app/routes/episodes_v2.py) - Simplified filtering
+- [backend/app/routes/reports.py](backend/app/routes/reports.py) - Simplified matching
+
+**Files Created:**
+- [execution/data-fixes/normalize_lead_clinician_to_names.py](execution/data-fixes/normalize_lead_clinician_to_names.py) - Normalization script
+
+---
+
+## 2025-12-30 - Improved Lead Clinician Accuracy Using SurgFirm Field
+
+**Changed by:** AI Session (Claude Code) - Lead Clinician Enhancement
+
+**Problem Identified:**
+Lead clinician was being populated solely from the operating surgeon (tblSurgery.Surgeon), which often represented registrars or fellows rather than the consultant responsible for the patient's care. The SurgFirm field in tblPatient represents the patient's consultant firm, which is the more appropriate value for lead_clinician.
+
+**Root Cause:**
+The import process only used tblSurgery.Surgeon to populate lead_clinician. However, the Surgeon field often contains the name of the operating surgeon (who may be a registrar or fellow), not the consultant responsible for overall patient care. The SurgFirm field in tblPatient contains the consultant/firm name and is a better source for lead_clinician.
+
+**Changes:**
+
+### 1. Import Script - Use SurgFirm as Primary Source ([execution/migrations/import_comprehensive.py](execution/migrations/import_comprehensive.py:1209-1230))
+   - **UPDATED** `import_episodes()` function to accept `clinician_mapping` parameter
+   - Joins tblTumours with tblPatient on Hosp_No to get SurgFirm
+   - Maps SurgFirm to clinician ID (if matched) or stores as free text
+
+### 2. Import Script - Lead Clinician During Episode Creation ([execution/migrations/import_comprehensive.py](execution/migrations/import_comprehensive.py:1285-1300))
+   - **NEW** Lead clinician populated from SurgFirm during episode import
+   - Matches SurgFirm against impact_system.clinicians table by surname (case-insensitive)
+   - Stores clinician ObjectId if matched, otherwise stores Title Case text
+
+### 3. Import Script - Surgeon as Fallback ([execution/migrations/import_comprehensive.py](execution/migrations/import_comprehensive.py:1662-1680))
+   - **UPDATED** Comments to clarify Surgeon field is FALLBACK ONLY
+   - Only sets lead_clinician from Surgeon if SurgFirm was not available
+   - Maintains existing matching logic for backwards compatibility
+
+### 4. Data Fix Script - Populate Existing Episodes ([execution/data-fixes/populate_lead_clinician_from_surgfirm.py](execution/data-fixes/populate_lead_clinician_from_surgfirm.py))
+   - **NEW** Script to populate lead_clinician from SurgFirm for existing episodes
+   - Reads tblPatient.csv to get SurgFirm values
+   - Matches patients by NHS_No (decrypted from database)
+   - Updates episodes that don't already have lead_clinician set
+
+### 5. Mapping Documentation ([execution/mappings/episodes_mapping.yaml](execution/mappings/episodes_mapping.yaml:189-204))
+   - **UPDATED** lead_clinician mapping to reflect new three-tier approach
+   - Documents Primary: SurgFirm, Fallback 1: Surgeon, Fallback 2: Team member
+   - Clarifies SurgFirm represents consultant/firm (most appropriate)
+
+**Results:**
+- ✅ **672 episodes** populated with lead_clinician from SurgFirm
+  - 276 matched to clinician IDs in system database
+  - 396 stored as free text (surgeons not in clinician table)
+- ✅ **4,368 patients** have SurgFirm values (55% of patients)
+- ✅ **62.6% match rate** between SurgFirm and operating Surgeon
+- ✅ Lead clinician now represents consultant responsible for care, not operating surgeon
+
+**Common SurgFirm Values:**
+- Parvaiz: 786 patients
+- Khan: 721 patients
+- Conti: 482 patients
+- O'Leary: 465 patients
+- Senapati: 305 patients
+- Armstrong: 164 patients
+- Thompson: 131 patients
+
+**Testing:**
+```bash
+# Preview lead clinician population (dry run)
+python3 execution/data-fixes/populate_lead_clinician_from_surgfirm.py --database impact_test
+
+# Apply lead clinician fixes
+python3 execution/data-fixes/populate_lead_clinician_from_surgfirm.py --database impact_test --live
+
+# Verify lead_clinician values
+# Check that consultants are matched correctly
+# Check that episodes have appropriate lead clinicians
+```
+
+**Files Modified:**
+- [execution/migrations/import_comprehensive.py](execution/migrations/import_comprehensive.py) - Added SurgFirm join in `import_episodes()`, updated lead_clinician logic
+- [execution/mappings/episodes_mapping.yaml](execution/mappings/episodes_mapping.yaml) - Updated lead_clinician documentation
+
+**Files Created:**
+- [execution/data-fixes/populate_lead_clinician_from_surgfirm.py](execution/data-fixes/populate_lead_clinician_from_surgfirm.py) - Script to populate existing episodes
+
+**Technical Notes:**
+- SurgFirm matching uses NHS_No (patient CSV) = nhs_number (database, decrypted)
+- CSV NHS_No is float64 (e.g., 4184440118.0), requires float conversion for matching
+- Clinician matching uses surname only (case-insensitive) with variations
+- Lead clinician stored as ObjectId (if matched) or string (if not matched)
+
+**Impact on Future Imports:**
+- ✅ Lead clinician will be populated from SurgFirm during episode import
+- ✅ Operating surgeon used as fallback only when SurgFirm not available
+- ✅ More accurate representation of consultant responsibility
+- ✅ Better alignment with clinical care model
+
+---
+
+## 2025-12-30 - Mapped Procedure Names to Canonical OPCS4 Codes
+
+**Changed by:** AI Session (Claude Code) - Procedure Standardization
+
+**Problem Identified:**
+Procedure names in the database were inconsistent and didn't match the canonical procedure list used by the frontend. Many procedures also lacked proper OPCS4 codes or had incomplete codes.
+
+**Examples:**
+- "Anterior resection" → should be "Anterior resection of rectum" with OPCS4 H33.4
+- "APER" → should be "Abdominoperineal excision of rectum" with OPCS4 H33.1
+- "Stoma only" → should be "Stoma formation" with OPCS4 H15.9
+- "Hartmann's procedure" → should be "Hartmann procedure" with OPCS4 H33.5
+
+**Root Cause:**
+The import process used raw procedure names from the source database without standardization. Procedure names varied and weren't matched to the canonical OPCS4 procedure list defined in the frontend.
+
+**Changes:**
+
+### 1. Import Script - Added Procedure Mapping Function ([execution/migrations/import_comprehensive.py](execution/migrations/import_comprehensive.py:309-370))
+   - **NEW** `map_procedure_name_and_opcs4()` function to map procedure names to canonical forms
+   - Comprehensive mapping of 20+ colorectal procedures to standard OPCS4 codes
+   - Uses longest-pattern-first matching to handle specific variations (e.g., "Extended right hemicolectomy" vs "Right hemicolectomy")
+   - Preserves existing valid OPCS4 codes where available, uses defaults otherwise
+
+### 2. Import Script - Applied Procedure Mapping ([execution/migrations/import_comprehensive.py](execution/migrations/import_comprehensive.py:1507-1533))
+   - Strips numeric prefixes from procedure names
+   - Maps to canonical procedure names and OPCS4 codes
+   - Both `primary_procedure` and `opcs4_code` fields updated during import
+
+### 3. Data Fix Script - Standardize Existing Procedures ([execution/data-fixes/fix_procedure_names_and_opcs4.py](execution/data-fixes/fix_procedure_names_and_opcs4.py))
+   - **NEW** Script to update existing procedures in database
+   - Updates both procedure names and OPCS4 codes
+   - Supports dry-run mode for preview
+
+**Results:**
+- ✅ **3,452 procedure names** standardized
+  - "Anterior resection" → "Anterior resection of rectum" (2,294 procedures)
+  - "APER" → "Abdominoperineal excision of rectum" (313 procedures)
+  - "Stoma only" → "Stoma formation" (212 procedures)
+  - "Hartmann's procedure" → "Hartmann procedure" (205 procedures)
+  - "Stent" → "Colorectal stent insertion" (117 procedures)
+  - "TEMS" → "Transanal endoscopic microsurgery" (71 procedures)
+  - "Laparotomy only" → "Laparotomy and exploration" (5 procedures)
+- ✅ **64 OPCS4 codes** updated to match procedure mappings
+- ✅ **18 unique procedure types** (down from 21 after standardization)
+- ✅ **Extended right hemicolectomy** correctly preserved (not merged with "Right hemicolectomy")
+
+**Canonical Procedure Mappings:**
+```
+Anterior resection              → Anterior resection of rectum      (H33.4)
+Right hemicolectomy             → Right hemicolectomy               (H07.9)
+Extended right hemicolectomy    → Extended right hemicolectomy      (H06.9)
+Left hemicolectomy              → Left hemicolectomy                (H09.9)
+Sigmoid colectomy               → Sigmoid colectomy                 (H10.9)
+Hartmann's procedure            → Hartmann procedure                (H33.5)
+APER                            → Abdominoperineal excision of rectum (H33.1)
+Stoma only                      → Stoma formation                   (H15.9)
+TEMS                            → Transanal endoscopic microsurgery (H41.2)
+Polypectomy                     → Polypectomy                       (H23.9)
+Stent                           → Colorectal stent insertion        (H24.3)
+```
+
+**Testing:**
+```bash
+# Preview procedure mapping changes (dry run)
+python3 execution/data-fixes/fix_procedure_names_and_opcs4.py --database impact_test
+
+# Apply procedure mapping fixes
+python3 execution/data-fixes/fix_procedure_names_and_opcs4.py --database impact_test --live
+
+# Verify procedure names and OPCS4 codes
+```
+
+**Files Modified:**
+- [execution/migrations/import_comprehensive.py](execution/migrations/import_comprehensive.py) - Added `map_procedure_name_and_opcs4()`, applied mapping to treatment import
+
+**Files Created:**
+- [execution/data-fixes/fix_procedure_names_and_opcs4.py](execution/data-fixes/fix_procedure_names_and_opcs4.py) - Script to standardize existing procedures
+
+**Technical Notes:**
+- Mapping uses pattern matching with longest-pattern-first logic to handle variations
+- Preserves existing valid OPCS4 codes when present
+- Frontend procedure list in `AddTreatmentModal.tsx` defines canonical OPCS4 codes
+- Total of 97 OPCS4 procedures defined in frontend (colorectal, upper GI, hepatobiliary, hernia, etc.)
+
+**Impact on Future Imports:**
+- ✅ Procedure names will be automatically mapped to canonical forms
+- ✅ OPCS4 codes will be automatically assigned based on procedure mapping
+- ✅ Procedures will match frontend dropdown options exactly
+- ✅ No manual data cleanup needed after import
+
+---
+
+## 2025-12-30 - Fixed Field Prefixes and Date of Birth Issues
+
+**Changed by:** AI Session (Claude Code) - Data Quality Fixes
+
+**Problems Identified:**
+1. **Numeric Prefixes in Fields**: Treatment Plan and Procedure Name fields had numeric prefixes that needed stripping
+   - Examples: "01 surgery" → should be "surgery", "6 Anterior resection" → should be "Anterior resection"
+2. **Date of Birth Years Incorrect**: Many patients had DOB in future (20XX) when they should be 19XX
+   - Examples: 2050-12-03 → should be 1950-12-03, 2025-07-31 → should be 1925-07-31
+   - 95% of patients (7,584 out of 7,973) had incorrect DOB years
+
+**Root Causes:**
+1. **Numeric Prefixes**: Source Access database used numeric codes (1-17) as prefixes for categorical fields
+   - Treatment Plan: "01 surgery", "03 chemotherapy", "05 palliative care"
+   - Procedure Name: "1 Right hemicolectomy", "6 Anterior resection", "8 Hartmann's procedure"
+2. **DOB Parsing**: Python's `strptime` with `%m/%d/%y` format uses pivot year (typically 1969)
+   - Years 00-68 become 2000-2068, years 69-99 become 1969-1999
+   - For medical records, patients born in 1950s appeared as 2050s (future dates)
+
+**Changes:**
+
+### 1. Import Script - Added Helper Function ([execution/migrations/import_comprehensive.py](execution/migrations/import_comprehensive.py:133-159))
+   - **NEW** `strip_numeric_prefix()` function to remove numeric prefixes using regex `^\d+\s+`
+   - Examples: "6 Anterior resection" → "Anterior resection", "01 surgery" → "surgery"
+
+### 2. Import Script - Enhanced DOB Parsing ([execution/migrations/import_comprehensive.py](execution/migrations/import_comprehensive.py:196-219))
+   - **UPDATED** `parse_dob()` function with aggressive 20XX → 19XX conversion
+   - Assumes ANY year >= 2000 in DOB should be treated as 19XX (e.g., 2050 → 1950, 2025 → 1925)
+   - Appropriate for colorectal surgery patients who are typically older adults
+
+### 3. Import Script - Applied Prefix Stripping to Treatment Plan ([execution/migrations/import_comprehensive.py](execution/migrations/import_comprehensive.py:1206-1208))
+   - Applied `strip_numeric_prefix()` to `treatment_plan` field in episode import
+   - Handles values like "01 surgery" → "surgery", "03 chemotherapy" → "chemotherapy"
+
+### 4. Import Script - Applied Prefix Stripping to Procedure Name ([execution/migrations/import_comprehensive.py](execution/migrations/import_comprehensive.py:1464-1465))
+   - Applied `strip_numeric_prefix()` to `primary_procedure` field in treatment import
+   - Handles values like "6 Anterior resection" → "Anterior resection"
+
+### 5. Data Fix Script - Clean Existing Database ([execution/data-fixes/fix_prefixes_and_dob.py](execution/data-fixes/fix_prefixes_and_dob.py))
+   - **NEW** Script to fix existing records in database
+   - Three operations:
+     1. Strip numeric prefixes from `procedure.primary_procedure` in treatments collection
+     2. Strip numeric prefixes from `treatment_plan` in episodes collection
+     3. Fix DOB years (20XX → 19XX) with encryption handling
+   - Supports dry-run mode (default) and live mode (--live flag)
+
+**Results:**
+- ✅ **6,070 procedure names** cleaned (all surgery treatments had numeric prefixes)
+  - "1 Right hemicolectomy" → "Right hemicolectomy"
+  - "6 Anterior resection" → "Anterior resection"
+  - "8 Hartmann's procedure" → "Hartmann's procedure"
+- ✅ **3,559 treatment plans** cleaned
+  - "01 surgery" → "surgery"
+  - "03 chemotherapy" → "chemotherapy"
+  - "05 palliative care" → "palliative care"
+- ✅ **7,584 DOB entries** corrected (95% of patients!)
+  - 2050-12-03 → 1950-12-03
+  - 2025-07-31 → 1925-07-31
+  - 2061-06-14 → 1961-06-14
+
+**Testing:**
+```bash
+# Run data fix script in dry-run mode (preview changes)
+python3 execution/data-fixes/fix_prefixes_and_dob.py --database impact_test
+
+# Apply fixes to database
+python3 execution/data-fixes/fix_prefixes_and_dob.py --database impact_test --live
+
+# Verify fixes
+# Check procedure names (should have no numeric prefixes)
+# Check treatment plans (should have no numeric prefixes)
+# Check DOB years (should all be 19XX)
+```
+
+**Files Modified:**
+- [execution/migrations/import_comprehensive.py](execution/migrations/import_comprehensive.py) - Added `strip_numeric_prefix()`, enhanced `parse_dob()`, applied to treatment_plan and primary_procedure fields
+
+**Files Created:**
+- [execution/data-fixes/fix_prefixes_and_dob.py](execution/data-fixes/fix_prefixes_and_dob.py) - Script to clean existing database records
+
+**Technical Notes:**
+- Regex pattern `^\d+\s+` matches one or more digits followed by whitespace at start of string
+- DOB fix handles encrypted fields using `decrypt_field()` and `encrypt_field()`
+- Age recalculated after DOB correction
+- Future imports will automatically clean these fields (no manual intervention needed)
+
+**Impact on Future Imports:**
+- ✅ Treatment plans will be imported clean (no prefixes)
+- ✅ Procedure names will be imported clean (no prefixes)
+- ✅ DOB years will be correctly interpreted as 19XX for medical records
+- ✅ No need for post-import data fixes on these fields
+
+---
+
+## 2025-12-30 - Improved NHS Provider Search Result Sorting
+
+**Changed by:** AI Session (Claude Code) - Provider Search Sorting
+
+**Problem Identified:**
+NHS provider search results were appearing in reverse order, with the most relevant results (e.g., "Portsmouth Hospitals University NHS Trust") appearing at the bottom or middle of the list instead of at the top.
+
+**Root Cause:**
+The search script ([execution/active/fetch_nhs_provider_codes.py](execution/active/fetch_nhs_provider_codes.py)) was returning results in the order they were found (cache first, then API results) without any relevance-based sorting. This meant abbreviations and sites often appeared before the main NHS trusts.
+
+**Changes:**
+
+### 1. Added Relevance Scoring Function ([execution/active/fetch_nhs_provider_codes.py](execution/active/fetch_nhs_provider_codes.py:198-272))
+   - **NEW** `calculate_relevance_score()` function to rank search results
+   - **Priority 1**: Cache results first (as requested)
+   - **Priority 2**: Exact name matches
+   - **Priority 3**: Organization type (main NHS trusts score 100, trust sites score 60)
+   - **Priority 4**: Query position in name (starts-with > contains)
+   - **Priority 5**: Completeness score (bonus for "nhs trust", "hospital", "university" in name)
+   - **Priority 6**: Name length (penalize very short names like abbreviations)
+
+### 2. Updated Search Function to Sort by Relevance ([execution/active/fetch_nhs_provider_codes.py](execution/active/fetch_nhs_provider_codes.py:345))
+   - Added deduplication using `seen_codes` set
+   - Results now sorted by `calculate_relevance_score()` before returning
+   - Cache and API results combined then sorted together
+
+**Results:**
+- ✅ "Portsmouth Hospitals University NHS Trust" now appears **1st** (was 15th/40)
+- ✅ "Imperial College Healthcare NHS Trust" appears **1st** in Imperial search
+- ✅ "Guy's and St Thomas' NHS Foundation Trust" appears **1st** in Guy search
+- ✅ Main NHS trusts consistently ranked above their sites and related organizations
+- ✅ Cache results prioritized as requested
+
+**Testing:**
+```bash
+# Test Portsmouth search (main trust should be first)
+curl -s "http://localhost:8000/api/nhs-providers/search?query=portsmouth"
+
+# Test Imperial search
+curl -s "http://localhost:8000/api/nhs-providers/search?query=imperial"
+
+# Main NHS trusts should appear at top of results
+```
+
+**Files Modified:**
+- `execution/active/fetch_nhs_provider_codes.py` - Added relevance scoring and result sorting
+
+**Technical Notes:**
+- Scoring differentiates between "NHS Trust" (type) vs "NHS Trust Site" (type)
+- Names containing "hospital", "nhs trust", "university" get completeness bonuses
+- Very short names (< 15 chars) are penalized as they're often abbreviations/codes
+- Medium-length names (15-40 chars) score highest for length
+- Cache results get first priority in sorting tuple
+
+---
+## 2025-12-30 - Fixed NHS Provider Lookup (Script Path Correction)
+
+**Changed by:** AI Session (Claude Code) - Provider Lookup Fix
+
+**Problem Identified:**
+Provider lookup in add/edit episode and treatment modals was failing with error "Failed to search NHS providers. Please try again". The backend was returning 404 errors.
+
+**Root Cause:**
+The NHS provider script was moved to `/root/impact/execution/active/fetch_nhs_provider_codes.py` but the backend route was still looking for it at `/root/impact/execution/fetch_nhs_provider_codes.py`, causing a "No such file or directory" error.
+
+**Changes:**
+
+### 1. Fixed Script Path in NHS Providers Route ([backend/app/routes/nhs_providers.py](backend/app/routes/nhs_providers.py:14))
+   - **Updated** `SCRIPT_PATH` to include `active/` subdirectory
+   - Changed from `"execution" / "fetch_nhs_provider_codes.py"`
+   - Changed to `"execution" / "active" / "fetch_nhs_provider_codes.py"`
+
+**Results:**
+- ✅ Provider search working: `/api/nhs-providers/search?query=royal` returns results
+- ✅ Provider lookup working: `/api/nhs-providers/RYJ` returns provider details
+- ✅ Add/Edit episode and treatment modals can now search NHS providers
+
+**Testing:**
+```bash
+# Test search endpoint
+curl -s "http://localhost:8000/api/nhs-providers/search?query=royal"
+
+# Test lookup by code
+curl -s "http://localhost:8000/api/nhs-providers/RYJ"
+
+# Both should return JSON with provider data
+```
+
+**Files Modified:**
+- `backend/app/routes/nhs_providers.py` - Fixed SCRIPT_PATH to point to correct location
+
+**Technical Notes:**
+- The script location is: `/root/impact/execution/active/fetch_nhs_provider_codes.py`
+- The route uses subprocess to execute the Python script and parse JSON output
+- Frontend component: `frontend/src/components/search/NHSProviderSelect.tsx`
+
+---
 ## 2025-12-30 - Populated ASA Scores from Source Data
 
 **Changed by:** AI Session (Claude Code) - ASA Scores Fix

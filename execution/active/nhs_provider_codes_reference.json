@@ -1,0 +1,2022 @@
+{
+  "providers": {
+    "0AEAC": {
+      "name": "prospect hospital",
+      "type": "commissioning support unit site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "5NL42": {
+      "name": "progress house",
+      "type": "primary care trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8A013": {
+      "name": "prospect house nh (barnsley)",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8C776": {
+      "name": "probert court",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8CT53": {
+      "name": "prospect hospice",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8DA87": {
+      "name": "prospect house nh (malpas)",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8DE25": {
+      "name": "prospect house (prescot)",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8DL03": {
+      "name": "prospect house nh (ashton-under-lyne)",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8E262": {
+      "name": "promedics ltd",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8EP51": {
+      "name": "pro physio",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8F375": {
+      "name": "procter m (dr)",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8G529": {
+      "name": "procedure room on 3rd floor of consulting suite",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8GG63": {
+      "name": "proud gwen",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8GH83": {
+      "name": "progress counselling limited",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8HK98": {
+      "name": "proeconomy ltd",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8GY51": {
+      "name": "protechnic exeter ltd",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8HL48": {
+      "name": "procheckup ltd",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8HP55": {
+      "name": "professional care services ltd",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8HT94": {
+      "name": "provision systems (uk) ltd",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8HW64": {
+      "name": "process master ltd",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8HX26": {
+      "name": "protomed ltd",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8J750": {
+      "name": "proav ltd",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8J055": {
+      "name": "proactis group ltd",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8J190": {
+      "name": "protea cardiology limited",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8JP96": {
+      "name": "process flows uk limited",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8J964": {
+      "name": "progress housing group",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8JG30": {
+      "name": "professional linguists limited",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8JE60": {
+      "name": "probo medical ltd",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8JJ13": {
+      "name": "project 6",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8JM02": {
+      "name": "promatica ltd",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8JK31": {
+      "name": "proximie llc",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8JQ18": {
+      "name": "progress childrens services limited",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8JR90": {
+      "name": "project altai ltd",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8JR91": {
+      "name": "pro-mapp limited",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8JV09": {
+      "name": "proportion marketing limited",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8JV40": {
+      "name": "professional standards authority for health and social care",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8JW70": {
+      "name": "progressive support ltd",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8JW84": {
+      "name": "provide medical ltd",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8JY45": {
+      "name": "project cosmic",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8K291": {
+      "name": "profile pharma ltd",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8K384": {
+      "name": "prometheus medical ltd",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8K719": {
+      "name": "pro-lab diagnostics",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8K750": {
+      "name": "prospitalia h-trak",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8KG45": {
+      "name": "promatica digital",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8KA87": {
+      "name": "procure health limited",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8KC01": {
+      "name": "prospects services",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8KK01": {
+      "name": "prodec networks ltd",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8KG21": {
+      "name": "pro healthcare services limited",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8KJ60": {
+      "name": "prostate care limited",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8KL27": {
+      "name": "prova health limited",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "03NWD": {
+      "name": "porter brook medical centre",
+      "type": "clinical commissioning group site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "503RK": {
+      "name": "portland street kindergarten",
+      "type": "local authority site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "5C450": {
+      "name": "portsoken health and community centre",
+      "type": "primary care trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "5M2M1": {
+      "name": "portcullis community centre",
+      "type": "primary care trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "5N4WD": {
+      "name": "porter brook medical centre",
+      "type": "primary care trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "5QM04": {
+      "name": "portland hospital",
+      "type": "primary care trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "5QM23": {
+      "name": "portesham",
+      "type": "primary care trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "697E0": {
+      "name": "portsmouth pathology service",
+      "type": "pathology lab",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "7A3NJ": {
+      "name": "porthcawl infant welfare clinic",
+      "type": "local health board site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "7A3P6": {
+      "name": "port talbot resource centre",
+      "type": "local health board site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "813": {
+      "name": "portsmouth city council",
+      "type": "local authority",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "813AA": {
+      "name": "portsmouth city council public health",
+      "type": "local authority site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8AW08": {
+      "name": "portland nh",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8C060": {
+      "name": "porthgwara nh",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8C594": {
+      "name": "portland house nh (shrewsbury)",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8DN36": {
+      "name": "portugal prints (westminster ass for mental health)",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8DQ16": {
+      "name": "portland physiotherapy clinic",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8E296": {
+      "name": "porter martyn (orthopaedist)",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8FW76": {
+      "name": "portland house nh (hove)",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8J225": {
+      "name": "portals uk limited",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8K073": {
+      "name": "portal voice & data ltd",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8K751": {
+      "name": "portsmouth diocesan council for social responsibility",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "A1G3F": {
+      "name": "portslade health centre",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "A46H": {
+      "name": "porthgwara nursing home llp",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "A4XJ": {
+      "name": "portelet care ltd",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "A75F": {
+      "name": "portland college",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "A81057001": {
+      "name": "port clarence health centre",
+      "type": "branch surgery",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "A864": {
+      "name": "portland care services ltd",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "A91155": {
+      "name": "portsmouth medical centre",
+      "type": "prescribing cost centre",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "A91222": {
+      "name": "portsmouth combined medical centre",
+      "type": "other prescribing cost centre",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "A9A5A": {
+      "name": "portway lifestyle centre",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "AMV4": {
+      "name": "portelet manor limited",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "ANG51": {
+      "name": "portcullis medical practice",
+      "type": "independent sector h/c provider site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "AP6X": {
+      "name": "porthaven care homes limited",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "ANVC": {
+      "name": "porthaven care homes llp",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "APCR": {
+      "name": "porthaven care homes no 2 limited",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "APLK": {
+      "name": "portland house care limited",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "APRE": {
+      "name": "portelet cottage limited",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "AR407": {
+      "name": "portswood solent surgery",
+      "type": "independent sector h/c provider site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "AR7": {
+      "name": "portsmouth primary care alliance ltd",
+      "type": "independent sector healthcare provider",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "AR701": {
+      "name": "portsmouth primary care alliance ltd - havant rd",
+      "type": "independent sector h/c provider site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "ARY8": {
+      "name": "portfolio homecare limited",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "AYK3": {
+      "name": "porthaven care homes no 3 limited",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "B8T1W": {
+      "name": "portsmouth and south eastern hampshire",
+      "type": "independent sector h/c provider site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "C0O2X": {
+      "name": "portland medical centre",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "C36Q": {
+      "name": "portsmouth elder care limited",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "C4LV": {
+      "name": "portland care 5 limited",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "C4LX": {
+      "name": "portland care 4 limited",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "C4LY": {
+      "name": "portland care 3 limited",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "C4M0": {
+      "name": "portland care 2 limited",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "EE116581": {
+      "name": "portsmouth high school gdst",
+      "type": "school",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "FQG76": {
+      "name": "portsmouth pharmacy",
+      "type": "pharmacy",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "L7P6U": {
+      "name": "portsmouth cdc",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "NT9C2": {
+      "name": "portsmouth pet/ct centre",
+      "type": "independent sector h/c provider site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "NTPP3": {
+      "name": "portsmouth adult community ophthalmology assessment (smtc)",
+      "type": "independent sector h/c provider site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "NWA01": {
+      "name": "portsmouth technopole (echotech ltd)",
+      "type": "independent sector h/c provider site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "Q6D4A": {
+      "name": "portsmouth artificial eye service",
+      "type": "independent sector h/c provider site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "R1CDP": {
+      "name": "portsmouth academy for girls",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "R1C84": {
+      "name": "portsmouth college",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "R1C97": {
+      "name": "portsmouth civic offices",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "R1CAF": {
+      "name": "portsmouth foyer",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "RHU": {
+      "name": "portsmouth hospitals university nhs trust",
+      "type": "nhs trust",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "RTHC7": {
+      "name": "portsmouth renal",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "RXX4H": {
+      "name": "portsmouth disability forum",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "RXX4F": {
+      "name": "portsmouth drug interventions programme",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "RYE14": {
+      "name": "portsmouth pts",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "TP3Y2": {
+      "name": "portsmouth n h extra",
+      "type": "optical site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "TP8MV": {
+      "name": "portsmouth north end specsavers limited",
+      "type": "optical site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "U19124": {
+      "name": "portsmouth north pcn",
+      "type": "primary care network",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "U72114": {
+      "name": "portsmouth south coast pcn",
+      "type": "primary care network",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "U7M3M": {
+      "name": "portsmouth research hub - azd2816 covid19 trials",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "VN1Q9": {
+      "name": "portsmouth shared lives service",
+      "type": "social care site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "WYE": {
+      "name": "portsmouth magistrates court",
+      "type": "non residential institution",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "X6Z2U": {
+      "name": "portsmouth research hub",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "Y05178": {
+      "name": "portsmouth primary care alliance ltd",
+      "type": "other prescribing cost centre",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "C5V7O": {
+      "name": "portsmouth college",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "C6W0B": {
+      "name": "portsmouth foyer",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "H0Z0G": {
+      "name": "portsmouth civic offices",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "Y1J5K": {
+      "name": "portsmouth academy for girls",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "Y08675": {
+      "name": "portsmouth continence service",
+      "type": "prescribing cost centre",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "7A1S7": {
+      "name": "rhuddlan health centre",
+      "type": "local health board site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8JT84": {
+      "name": "rhubarb business services limited",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "M8E7X": {
+      "name": "rhubarb farm cic",
+      "type": "independent sector healthcare provider",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "RGT54": {
+      "name": "rhuematology sw",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "15NCN": {
+      "name": "royal devon and exeter hospital",
+      "type": "clinical commissioning group site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "5CC19": {
+      "name": "royal blackburn hospital",
+      "type": "primary care trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "5J520": {
+      "name": "royal oldham hospital",
+      "type": "primary care trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "5M2C5": {
+      "name": "royal shrewsbury hospital (copthorne)",
+      "type": "primary care trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "5MKC5": {
+      "name": "royal shrewsbury hospital (copthorne)",
+      "type": "primary care trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "5N4HH": {
+      "name": "royal hallamshire hospital",
+      "type": "primary care trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "5QM11": {
+      "name": "royal manor health care",
+      "type": "primary care trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "5QM13": {
+      "name": "royal crescent surgery",
+      "type": "primary care trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "690J0": {
+      "name": "royal sussex county hospital laboratory",
+      "type": "pathology lab",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "690V0": {
+      "name": "royal hallamshire hospital laboratory",
+      "type": "pathology lab",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "618": {
+      "name": "royal borough of windsor and maidenhead",
+      "type": "local authority",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "618AA": {
+      "name": "royal borough of windsor & maidenhead- tinkers lane",
+      "type": "local authority site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "69KTV": {
+      "name": "royal national orthopaedic hospital laboratory",
+      "type": "pathology lab",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "693U0": {
+      "name": "royal preston hospital laboratory",
+      "type": "pathology lab",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "69430": {
+      "name": "royal cornwall hospitals & west cornwall hospital laboratory",
+      "type": "pathology lab",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "69440": {
+      "name": "royal devon & exeter hospital (wonford) laboratory",
+      "type": "pathology lab",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "69470": {
+      "name": "royal liverpool university hospital laboratory",
+      "type": "pathology lab",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "694A0": {
+      "name": "royal shrewsbury hospital laboratory",
+      "type": "pathology lab",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "694B0": {
+      "name": "royal surrey county hospital laboratory",
+      "type": "pathology lab",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "697H0": {
+      "name": "royal free hospital microbiology department",
+      "type": "pathology lab",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "697R0": {
+      "name": "royal albert edward infirmary pathology department",
+      "type": "pathology lab",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "69850": {
+      "name": "royal brompton hospital laboratory medicine dept",
+      "type": "pathology lab",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "698P0": {
+      "name": "royal united hospitals bath - pathology services",
+      "type": "pathology lab",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "703": {
+      "name": "royal borough of greenwich",
+      "type": "local authority",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "707": {
+      "name": "royal borough of kensington and chelsea",
+      "type": "local authority",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "729": {
+      "name": "royal borough of kingston upon thames",
+      "type": "local authority",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "7A1A5": {
+      "name": "royal alexandra hospital",
+      "type": "local health board site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "7A6AR": {
+      "name": "royal gwent hospital",
+      "type": "local health board site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8A030": {
+      "name": "royal court nh",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8AG67": {
+      "name": "royal mencap society (fareham)",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8C970": {
+      "name": "royal leamington spa nh",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8C973": {
+      "name": "royal midland counties home for disabled",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8AX16": {
+      "name": "royal park nh",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8CK39": {
+      "name": "royal star & garter home",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8CJ52": {
+      "name": "royal masonic benevolent institution",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8CM25": {
+      "name": "royal bay nh",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8D179": {
+      "name": "royal association for deaf people",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8E573": {
+      "name": "royal manor nh",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8EW86": {
+      "name": "royal ros",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8FA23": {
+      "name": "royal association for the deaf",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8FT83": {
+      "name": "royal masonic benevolent institution",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8G462": {
+      "name": "royal pharmaceutical society of great britain",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8GH74": {
+      "name": "royal college of general practitioners",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8HV48": {
+      "name": "royal college of paediatrics & child health",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8J008": {
+      "name": "royal college of physicians of london",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8J277": {
+      "name": "royal college of anaesthetists",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8J307": {
+      "name": "royal mencap society",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8K304": {
+      "name": "royal college of psychiatrists' (the)",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "A05P": {
+      "name": "royal british legion",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "A0E1": {
+      "name": "royal variety charity",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "RYJ": {
+      "name": "imperial college healthcare nhs trust",
+      "type": "nhs trust",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "EE132151": {
+      "name": "portman early childhood centre",
+      "type": "school",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "FJJ16": {
+      "name": "portmans pharmacy",
+      "type": "pharmacy",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "FMH15": {
+      "name": "portmans pharmacy",
+      "type": "pharmacy",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "J2R4X": {
+      "name": "portman clinic",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "V131696": {
+      "name": "portman healthcare limited (bicester)",
+      "type": "general dental practice",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "V169050": {
+      "name": "portman healthcare ltd",
+      "type": "general dental practice",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "V285351": {
+      "name": "portman smile clinic ilkley",
+      "type": "general dental practice",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "V307951": {
+      "name": "portman road (dental surgery)",
+      "type": "general dental practice",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "V42732": {
+      "name": "portman dentalcare",
+      "type": "general dental practice",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "V83440": {
+      "name": "portman dental & implant clinic",
+      "type": "private dental practice",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "V83453": {
+      "name": "portman healthcare ltd - bolton",
+      "type": "private dental practice",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "V83454": {
+      "name": "portman healthcare ltd - ellesmere port",
+      "type": "private dental practice",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "V83455": {
+      "name": "portman healthcare ltd - glossop",
+      "type": "private dental practice",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "V83456": {
+      "name": "portman healthcare ltd - yeovil",
+      "type": "private dental practice",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "V83457": {
+      "name": "portman healthcare ltd - louth",
+      "type": "private dental practice",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "V83458": {
+      "name": "portmanhealthcare ltd - nottingham",
+      "type": "private dental practice",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "V83459": {
+      "name": "portman healthcare ltd - southend-on-sea",
+      "type": "private dental practice",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "V83460": {
+      "name": "portman healthcare ltd - cornwall",
+      "type": "private dental practice",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "V83461": {
+      "name": "portman healthcare ltd - wilmslow",
+      "type": "private dental practice",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "V83462": {
+      "name": "portman healthcare ltd - york",
+      "type": "private dental practice",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "V50615": {
+      "name": "portman smile clinic rainham",
+      "type": "general dental practice",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "V50627": {
+      "name": "portman smile clinic sittingbourne",
+      "type": "general dental practice",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "V50649": {
+      "name": "portman smile clinic margate",
+      "type": "general dental practice",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "V80202": {
+      "name": "portmore dental practice",
+      "type": "private dental practice",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "V80391": {
+      "name": "portman healthcare limited",
+      "type": "private dental practice",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "V82825": {
+      "name": "portman smile clinic",
+      "type": "general dental practice",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "V95144": {
+      "name": "portman smile clinic - hailsham",
+      "type": "general dental practice",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8JY24": {
+      "name": "porchlight",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8FN63": {
+      "name": "imperial college",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8GD42": {
+      "name": "imperial physiotherapy",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8HL46": {
+      "name": "imperial college london",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8JC47": {
+      "name": "imperial civil enforcement solutions",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "A3KN": {
+      "name": "imperial care homes ltd",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "A6EC": {
+      "name": "imperial midlands ltd",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "ACV3": {
+      "name": "imperial care uk ltd",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "AEC2": {
+      "name": "imperial lodge ltd",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "AMR7": {
+      "name": "imperial care services limited",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "ANN5": {
+      "name": "imperial healthcare (uk) ltd",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "AYL0": {
+      "name": "imperial breeze healthcare ltd",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "C413": {
+      "name": "imperial breeze healthcare south east ltd",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "C5XE": {
+      "name": "imperial care consortium ltd",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "C81028": {
+      "name": "imperial road surgery",
+      "type": "prescribing cost centre",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "DJ8": {
+      "name": "imperial college health partners",
+      "type": "independent sector healthcare provider",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "DJ801": {
+      "name": "imperial college health partners",
+      "type": "independent sector h/c provider site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "DJ802": {
+      "name": "imperial college health partners (imperial college)",
+      "type": "independent sector h/c provider site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "DX404": {
+      "name": "imperial road surgery",
+      "type": "independent sector h/c provider site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "E87677": {
+      "name": "imperial college health centre",
+      "type": "prescribing cost centre",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "E9N9N": {
+      "name": "imperial college hepatology",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "EE120014": {
+      "name": "imperial avenue infant school",
+      "type": "school",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "EE133887": {
+      "name": "imperial college of science, technology and medicine",
+      "type": "school",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "F3N6T": {
+      "name": "imperial college healthcare nhs trust - preg cov covid19 trials",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "FJE33": {
+      "name": "imperial pharmacy",
+      "type": "pharmacy",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "FJX06": {
+      "name": "imperial pharmacy",
+      "type": "pharmacy",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "L83628": {
+      "name": "imperial surgery",
+      "type": "prescribing cost centre",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "RV30I": {
+      "name": "imperial college health centre",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "RXTA4": {
+      "name": "imperial court - dips",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "RYJ53": {
+      "name": "imperial community services",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "V01189": {
+      "name": "imperial dental group - weoley castle",
+      "type": "general dental practice",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "V04828": {
+      "name": "imperial dental group - monument rd",
+      "type": "general dental practice",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "V06030": {
+      "name": "imperial dental group - cradley heath",
+      "type": "general dental practice",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "V06276": {
+      "name": "imperial dental station street",
+      "type": "general dental practice",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "V08090": {
+      "name": "imperial dental group - ombersley rd",
+      "type": "general dental practice",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "V09738": {
+      "name": "imperial dental care",
+      "type": "general dental practice",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "V24513": {
+      "name": "imperial dental group - tenbury wells",
+      "type": "general dental practice",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "VM1QW": {
+      "name": "imperial lodge",
+      "type": "social care site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "VNAVV": {
+      "name": "imperial breeze healthcare ltd",
+      "type": "social care site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "VNLK6": {
+      "name": "imperial breeze healthcare south east",
+      "type": "social care site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "X7U1G": {
+      "name": "imperial college healthcare nhs trust - oxford covid19 trials",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "Y2J6N": {
+      "name": "imperial road surgery",
+      "type": "independent sector h/c provider site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "Z6X6L": {
+      "name": "imperial college healthcare nhs trust - octave duo covid19 trials",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "EE149733": {
+      "name": "imperial college london mathematics school",
+      "type": "school",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "EE149904": {
+      "name": "imperial oak school",
+      "type": "school",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "D0B1I": {
+      "name": "imperial services nw ltd",
+      "type": "pharmacy headquarter",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "I9X9L": {
+      "name": "imperial road surgery",
+      "type": "branch surgery",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8C985": {
+      "name": "guys cross nh & the warwick",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8D791": {
+      "name": "guy's nuffield house",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8DH45": {
+      "name": "guy's court nh",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8G933": {
+      "name": "guy fawkes beauty clinic",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8K163": {
+      "name": "guymark uk limited",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "A3EY": {
+      "name": "guyatt house care ltd",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "AN0H": {
+      "name": "guysfield house limited",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "EE144288": {
+      "name": "guyhirn cofe vc primary school",
+      "type": "school",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "J8F1S": {
+      "name": "guys and st thomas hospital - janssen covid19 trials",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "K2J3Z": {
+      "name": "guy's and st thomas' nhs foundation trust - comcov2 covid19 trials",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "M2E0A": {
+      "name": "guywood practice",
+      "type": "branch surgery",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "NV515": {
+      "name": "guys hospital",
+      "type": "independent sector h/c provider site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "NV113": {
+      "name": "guys hospital",
+      "type": "independent sector h/c provider site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "Q9E6O": {
+      "name": "guys and st thomas' nhs foundation trust - cov boost covid19 trials",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "RJ1": {
+      "name": "guy's and st thomas' nhs foundation trust",
+      "type": "nhs trust",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "RJ100": {
+      "name": "guy's and st thomas' hospitals",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "RJ121": {
+      "name": "guy's hospital",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "RJE67": {
+      "name": "guy hilton research centre",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "S8S5T": {
+      "name": "guy's and st thomas' nhs foundation trust - oxford covid19 trials",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "V06802": {
+      "name": "guys dental surgery",
+      "type": "general dental practice",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "VL3HQ": {
+      "name": "guysfield residential home",
+      "type": "social care site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "VL5Y9": {
+      "name": "guyatt house",
+      "type": "social care site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "VLMPV": {
+      "name": "guys cross nursing home",
+      "type": "social care site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "VNEHM": {
+      "name": "guyatt house care",
+      "type": "social care site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "VNG7T": {
+      "name": "guy's court residential care home",
+      "type": "social care site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "X0R5F": {
+      "name": "guys hospital - covid vaccination centre",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "X4A0M": {
+      "name": "guys marsh healthcare",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "Y03796": {
+      "name": "guy's & st thomas' community services",
+      "type": "other prescribing cost centre",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "A3J2M": {
+      "name": "guy's and st thomas' occupational health",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "040": {
+      "name": "rhondda, cynon, taff ua",
+      "type": "local authority",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "7A1LG": {
+      "name": "rhosllanerchrugog clinic",
+      "type": "local health board site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "7A128": {
+      "name": "rhos-on-sea clinic",
+      "type": "local health board site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "7A736": {
+      "name": "rhayader health clinic",
+      "type": "local health board site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "7A1S6": {
+      "name": "rhostyllen clinic",
+      "type": "local health board site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "7A1SM": {
+      "name": "rhyl community drugs & alcohol service",
+      "type": "local health board site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "7A3QP": {
+      "name": "rhos community centre",
+      "type": "local health board site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "7A44A": {
+      "name": "rhiwbina health centre",
+      "type": "local health board site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "7A44B": {
+      "name": "rhoose health centre",
+      "type": "local health board site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "7A5NT": {
+      "name": "rhydyfelin health centre",
+      "type": "local health board site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "7A5QA": {
+      "name": "rhondda mental health clinic",
+      "type": "local health board site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "7A5QF": {
+      "name": "rhonnda community (outpatients)",
+      "type": "local health board site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "7A5RR": {
+      "name": "rhiwgarn infants school",
+      "type": "local health board site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "7A5YH": {
+      "name": "rhondda cynon taf locality office - cwm taf local health board",
+      "type": "local health board site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "7A6TG": {
+      "name": "rhymney integrated health and social care centre",
+      "type": "local health board site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8A596": {
+      "name": "rhodes farm nh",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8AD50": {
+      "name": "rhodes farm clinic",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8FL69": {
+      "name": "rhys-williams stuart (consultant surgeon)",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8JV78": {
+      "name": "rheumatology clinical trials group, king's college london",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8JW32": {
+      "name": "rhythmic care uk ltd",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8K085": {
+      "name": "rhm telecommunications ltd",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8K170": {
+      "name": "rhino play limited",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8WA41": {
+      "name": "rhos priory",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "8WE78": {
+      "name": "rhoserchan",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "A4XP": {
+      "name": "rhodes care home ltd",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "A6M6K": {
+      "name": "rhak gurmail limited",
+      "type": "optical headquarters",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "AEQ5": {
+      "name": "rhodsac community living ltd",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "AGRH": {
+      "name": "rhondda cynon taff county borough council adults and children's services",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "AH67": {
+      "name": "rhyd y cleifion ltd",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "AH91": {
+      "name": "rhos cyf",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "ANG05": {
+      "name": "rhodes claremont street",
+      "type": "independent sector h/c provider site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "ANG66": {
+      "name": "rhodes albrighton",
+      "type": "independent sector h/c provider site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "AT4V": {
+      "name": "rhythmic care uk ltd",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "C0L7": {
+      "name": "rhombus care group limited",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "C3YG": {
+      "name": "rhc 360 solutions ltd",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "C5CW": {
+      "name": "rhesus care ltd",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "DE806": {
+      "name": "rhodes wood",
+      "type": "independent sector h/c provider site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "EE100021": {
+      "name": "rhyl community primary school",
+      "type": "school",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "EE102128": {
+      "name": "rhodes avenue primary school",
+      "type": "school",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "EE144726": {
+      "name": "rhodes wood hospital school",
+      "type": "school",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "EE148921": {
+      "name": "rhyddings",
+      "type": "school",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "F1B9D": {
+      "name": "rh optics ltd",
+      "type": "optical headquarters",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "FCV56": {
+      "name": "rhodes tc chemist",
+      "type": "pharmacy",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "FHD57": {
+      "name": "rhodes pharmacy",
+      "type": "pharmacy",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "FWM65": {
+      "name": "rhoose pharmacy",
+      "type": "pharmacy",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "L4G9F": {
+      "name": "rhodium pharma ltd",
+      "type": "pharmacy headquarter",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "NMJ2C": {
+      "name": "rhyd alyn",
+      "type": "independent sector h/c provider site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "126": {
+      "name": "basingstoke and deane borough council",
+      "type": "local authority",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    }
+  },
+  "reference_note": "NHS Provider (Trust) Codes verified from ODS API - https://directory.spineservices.nhs.uk/STU3/",
+  "last_updated": "2025-12-30 05:03:10"
+}

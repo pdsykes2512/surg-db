@@ -7,7 +7,7 @@ from bson import ObjectId
 from ..database import get_database
 from ..models.clinician import Clinician, ClinicianCreate, ClinicianUpdate
 from ..models.user import User
-from ..auth import get_current_user, require_admin
+from ..auth import get_current_user, require_admin, get_system_database
 
 router = APIRouter(prefix="/api/admin/clinicians", tags=["Admin - Clinician Management"])
 
@@ -17,7 +17,7 @@ async def list_clinicians(
     skip: int = 0,
     limit: int = 1000,
     current_user: dict = Depends(get_current_user),
-    db: AsyncIOMotorDatabase = Depends(get_database)
+    db: AsyncIOMotorDatabase = Depends(get_system_database)
 ):
     """
     List all clinicians, sorted by surname (paginated)
@@ -36,7 +36,7 @@ async def list_clinicians(
 async def create_clinician(
     clinician_data: ClinicianCreate,
     current_user: dict = Depends(require_admin),
-    db: AsyncIOMotorDatabase = Depends(get_database)
+    db: AsyncIOMotorDatabase = Depends(get_system_database)
 ):
     """
     Create a new clinician (Admin only)
@@ -67,7 +67,7 @@ async def update_clinician(
     clinician_id: str,
     clinician_data: ClinicianUpdate,
     current_user: dict = Depends(require_admin),
-    db: AsyncIOMotorDatabase = Depends(get_database)
+    db: AsyncIOMotorDatabase = Depends(get_system_database)
 ):
     """
     Update a clinician (Admin only)
@@ -107,7 +107,7 @@ async def update_clinician(
 async def delete_clinician(
     clinician_id: str,
     current_user: dict = Depends(require_admin),
-    db: AsyncIOMotorDatabase = Depends(get_database)
+    db: AsyncIOMotorDatabase = Depends(get_system_database)
 ):
     """
     Delete a clinician (Admin only)

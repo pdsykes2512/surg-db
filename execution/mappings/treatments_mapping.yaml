@@ -1,0 +1,625 @@
+# Treatment (Surgery) Data Mapping: Access DB → IMPACT MongoDB
+#
+# This file defines the field-by-field mapping from the Access database (acpdata_v3_db.mdb)
+# to the IMPACT MongoDB treatments collection, based on the working surgdb structure.
+#
+# Source Table in Access DB:
+#   - tblSurgery: Contains surgical treatment data
+#
+# Target: MongoDB 'treatments' collection
+#
+# Note: Currently only surgical treatments are imported. Oncology treatments
+#       (radiotherapy/chemotherapy) could be added from tblOncology in future.
+
+# ==============================================================================
+# TOP-LEVEL IDENTIFIERS
+# ==============================================================================
+
+treatment_id:
+  description: "Unique treatment identifier (system-generated)"
+  source: "Generated from patient_id + sequence number"
+  algorithm: "Format: T-{patient_id}-{sequence:02d}"
+  data_type: "string"
+  required: true
+  function: "generate_treatment_id(patient_id, sequence)"
+  notes: "Sequential per patient (T-ABC123-01, T-ABC123-02, etc.)"
+
+patient_id:
+  description: "Reference to patient record"
+  source: "Derived from tblSurgery.Hosp_No via patient mapping"
+  algorithm: "Look up patient_id from hosp_no_to_patient_id mapping"
+  data_type: "string"
+  required: true
+  notes: "Foreign key to patients collection"
+
+episode_id:
+  description: "Reference to episode record"
+  source: "Derived from (patient_id, TumSeqNo) via episode mapping"
+  algorithm: "Look up episode_id from episode_mapping[(patient_id, tum_seqno)]"
+  data_type: "string"
+  required: true
+  notes: "Foreign key to episodes collection"
+
+# ==============================================================================
+# TREATMENT CLASSIFICATION
+# ==============================================================================
+
+treatment_type:
+  description: "Type of treatment"
+  source: "NOT IN ACCESS DB"
+  algorithm: "Fixed value: 'surgery'"
+  data_type: "string (enum: surgery/radiotherapy/chemotherapy/other)"
+  required: true
+  default: "surgery"
+  notes: "All records in tblSurgery are surgical treatments"
+
+treatment_date:
+  description: "Date treatment performed (COSD CR0710)"
+  source: "tblSurgery.Surgery"
+  algorithm: "Parse to YYYY-MM-DD"
+  data_type: "string (ISO date)"
+  required: true
+  function: "parse_date(row.get('Surgery'))"
+  notes: "Primary date for treatment. Used to detect duplicates."
+
+treatment_intent:
+  description: "Intent of treatment (curative vs palliative)"
+  source: "tblSurgery.Curative"
+  algorithm: "Map to curative/palliative via map_treatment_intent()"
+  data_type: "string (enum: curative/palliative)"
+  required: false
+  function: "map_treatment_intent(row.get('Curative'))"
+  notes: "Standardized COSD values"
+
+# ==============================================================================
+# COSD MANDATORY FIELDS
+# ==============================================================================
+
+opcs4_code:
+  description: "OPCS-4 procedure code (COSD CR0720)"
+  source: "tblSurgery.OPCS4"
+  algorithm: "Strip whitespace, null if empty"
+  data_type: "string"
+  required: false
+  notes: "Office of Population Censuses and Surveys Classification of Interventions and Procedures"
+
+asa_score:
+  description: "ASA physical status score (COSD CR6010)"
+  source: "tblSurgery.ASA"
+  algorithm: "Map to integer 1-5 via map_asa()"
+  data_type: "integer"
+  required: false
+  function: "map_asa(row.get('ASA'))"
+  mapping:
+    "1": 1
+    "2": 2
+    "3": 3
+    "4": 4
+    "5": 5
+  notes: "American Society of Anesthesiologists physical status classification"
+
+provider_organisation:
+  description: "Organisation providing treatment (COSD CR1450)"
+  source: "Hard-coded to 'Portsmouth Hospitals University NHS Trust'"
+  algorithm: "Always set to 'Portsmouth Hospitals University NHS Trust'"
+  data_type: "string"
+  required: true
+  notes: "NHS Trust providing colorectal surgical services"
+
+# ==============================================================================
+# CLASSIFICATION OBJECT
+# ==============================================================================
+
+classification:
+  description: "Treatment classification details"
+
+  urgency:
+    source: "tblSurgery.ModeOp"
+    algorithm: "Map to standard values via map_urgency()"
+    data_type: "string (enum: elective/urgent/emergency)"
+    function: "map_urgency(row.get('ModeOp'))"
+    mapping:
+      "Elective": "elective"
+      "Urgent": "urgent"
+      "Emergency": "emergency"
+    notes: "Urgency category of surgery"
+
+  approach:
+    source: "Multiple fields: Robotic, LapType, LapProc"
+    algorithm: "Priority logic via determine_surgical_approach()"
+    data_type: "string (enum: open/laparoscopic/robotic/converted_to_open)"
+    function: "determine_surgical_approach(row)"
+    priority_logic: |
+      1. If Robotic == true → "robotic"
+      2. If "converted to open" in LapType → "converted_to_open"
+      3. Otherwise use LapProc mapping
+    notes: "IMPORTANT: Check robotic first, then conversion, then laparoscopic field"
+
+# ==============================================================================
+# PROCEDURE OBJECT
+# ==============================================================================
+
+procedure:
+  description: "Surgical procedure details"
+
+  primary_procedure:
+    source: "tblSurgery.ProcName"
+    algorithm: "Strip whitespace, null if empty"
+    data_type: "string"
+    notes: "Free text description of primary procedure"
+
+  procedure_type:
+    source: "tblSurgery.ProcType"
+    algorithm: "Map to standard values via map_procedure_type()"
+    data_type: "string (enum: resection/stoma_only/other)"
+    function: "map_procedure_type(row.get('ProcType'))"
+    notes: "Category of procedure performed"
+
+  resection_performed:
+    source: "tblSurgery.ProcResect"
+    algorithm: "Map to yes/no via map_yes_no()"
+    data_type: "string (enum: yes/no)"
+    function: "map_yes_no(row.get('ProcResect'))"
+
+  robotic_surgery:
+    source: "tblSurgery.Robotic"
+    algorithm: "Map to yes/no via map_yes_no()"
+    data_type: "string (enum: yes/no)"
+    function: "map_yes_no(row.get('Robotic'))"
+    notes: "Boolean in Access DB"
+
+  conversion_to_open:
+    source: "tblSurgery.Convert"
+    algorithm: "Map to yes/no via map_yes_no()"
+    data_type: "string (enum: yes/no)"
+    function: "map_yes_no(row.get('Convert'))"
+    notes: "Whether laparoscopic/robotic converted to open"
+
+  anterior_resection_type:
+    source: "tblSurgery.AR_high_low"
+    algorithm: "Strip whitespace, null if empty"
+    data_type: "string"
+    notes: "High vs low anterior resection (user requested field)"
+
+# ==============================================================================
+# PERIOPERATIVE TIMELINE OBJECT
+# ==============================================================================
+
+perioperative_timeline:
+  description: "Dates and durations"
+
+  admission_date:
+    source: "tblSurgery.Surgery (default)"
+    algorithm: "Default to surgery date"
+    data_type: "string (ISO date)"
+    notes: "Admission date not separately recorded in Access DB"
+
+  surgery_date:
+    source: "tblSurgery.Surgery"
+    algorithm: "Parse to YYYY-MM-DD"
+    data_type: "string (ISO date)"
+    function: "parse_date(row.get('Surgery'))"
+
+  operation_duration_minutes:
+    source: "tblSurgery.Total_op_time"
+    algorithm: "Convert to int, null if NaN"
+    data_type: "integer"
+    notes: "Total operation time in minutes"
+
+  discharge_date:
+    source: "tblSurgery.Date_Dis"
+    algorithm: "Parse to YYYY-MM-DD"
+    data_type: "string (ISO date)"
+    function: "parse_date(row.get('Date_Dis'))"
+
+  length_of_stay_days:
+    source: "Calculated from Surgery and Date_Dis"
+    algorithm: "Days between surgery_date and discharge_date"
+    data_type: "integer"
+    function: "(discharge_date - surgery_date).days"
+    notes: "Calculated field, not in Access DB"
+
+# ==============================================================================
+# TEAM OBJECT
+# ==============================================================================
+
+team:
+  description: "Surgical team members"
+
+  primary_surgeon:
+    source: "tblSurgery.Surgeon (matched to clinicians table)"
+    algorithm: "Case-insensitive match to active clinicians via match_surgeon_to_clinician()"
+    data_type: "string (clinician_id or null)"
+    function: "match_surgeon_to_clinician(surgeon_name, clinician_mapping)"
+    notes: "MongoDB ObjectID if matched, null if not found in clinicians table"
+
+  primary_surgeon_text:
+    source: "tblSurgery.Surgeon"
+    algorithm: "Strip whitespace, null if empty"
+    data_type: "string"
+    notes: "Original surgeon name from Access DB for display/fallback"
+
+  surgeon_grade:
+    source: "tblSurgery.SurGrad"
+    algorithm: "Map to standard values via map_surgeon_grade()"
+    data_type: "string (enum: consultant/specialist_registrar/other)"
+    function: "map_surgeon_grade(row.get('SurGrad'))"
+    mapping:
+      "Consultant": "consultant"
+      "SpR": "specialist_registrar"
+      "Registrar": "specialist_registrar"
+
+  assistant_surgeons:
+    source: "tblSurgery.Assistnt, Assistn2 (matched to clinicians)"
+    algorithm: "Array of matched clinician IDs"
+    data_type: "array of strings"
+    function: "match_surgeon_to_clinician() for Assistnt and Assistn2"
+    notes: "Up to 2 assistant surgeons, stored as clinician IDs if matched"
+
+  assistant_surgeons_text:
+    source: "tblSurgery.Assistnt, Assistn2"
+    algorithm: "Array of original names"
+    data_type: "array of strings"
+    notes: "Original names for display/fallback"
+
+  anesthetist_grade:
+    source: "tblSurgery.AneGrad"
+    algorithm: "Map to standard values via map_surgeon_grade()"
+    data_type: "string (enum: consultant/specialist_registrar/other)"
+    function: "map_surgeon_grade(row.get('AneGrad'))"
+
+  surgical_fellow:
+    source: "tblSurgery.SurgFellow"
+    algorithm: "Strip whitespace, null if empty"
+    data_type: "string"
+    notes: "Surgical fellow involvement"
+
+# ==============================================================================
+# INTRAOPERATIVE OBJECT
+# ==============================================================================
+
+intraoperative:
+  description: "Intraoperative details"
+
+  stoma_created:
+    source: "tblSurgery.Stoma"
+    algorithm: "Map to yes/no via map_yes_no()"
+    data_type: "string (enum: yes/no)"
+    function: "map_yes_no(row.get('Stoma'))"
+
+  stoma_type:
+    source: "tblSurgery.StomDone"
+    algorithm: "Map to standard values via map_stoma_type()"
+    data_type: "string (enum: ileostomy/colostomy/other)"
+    function: "map_stoma_type(row.get('StomDone'))"
+    notes: "USER FIX: Use StomDone (what was done) NOT StomType (planned)"
+
+  stoma_closure_date:
+    source: "tblSurgery.DatClose"
+    algorithm: "Parse to YYYY-MM-DD"
+    data_type: "string (ISO date)"
+    function: "parse_date(row.get('DatClose'))"
+
+  defunctioning_stoma:
+    source: "Calculated from Anastom AND Stoma"
+    algorithm: "Return 'yes' only if BOTH anastomosis AND stoma performed"
+    data_type: "string (enum: yes/no)"
+    function: "is_defunctioning_stoma(row)"
+    logic: "if Anastom == true AND Stoma == true then 'yes' else 'no'"
+    notes: "USER REQUESTED: Defunctioning stoma only when both anastomosis and stoma created"
+
+  anastomosis_performed:
+    source: "tblSurgery.Anastom"
+    algorithm: "Map to yes/no via map_yes_no()"
+    data_type: "string (enum: yes/no)"
+    function: "map_yes_no(row.get('Anastom'))"
+
+  anastomosis_height_cm:
+    source: "tblSurgery.Hgt_anast"
+    algorithm: "Convert to float, null if NaN"
+    data_type: "float"
+    notes: "Height of anastomosis from anal verge in cm"
+
+  laparoscopic_duration_minutes:
+    source: "tblSurgery.Lap_op_time"
+    algorithm: "Convert to int, null if NaN"
+    data_type: "integer"
+    notes: "Duration of laparoscopic portion"
+
+  docking_time_minutes:
+    source: "tblSurgery.Dock_time"
+    algorithm: "Convert to int, null if NaN"
+    data_type: "integer"
+    notes: "Robotic docking time"
+
+  blood_loss_ml:
+    source: "tblSurgery.bl_loss_ mm"
+    algorithm: "Safe convert to int via safe_to_int()"
+    data_type: "integer"
+    function: "safe_to_int(row.get('bl_loss_ mm'))"
+    notes: "Estimated blood loss in milliliters"
+
+  bowel_prep:
+    source: "tblSurgery.Bowel_prep"
+    algorithm: "Map to standard values via map_bowel_prep()"
+    data_type: "string (enum: full/enema_only/none)"
+    function: "map_bowel_prep(row.get('Bowel_prep'))"
+
+  thromboprophylaxis:
+    source: "tblSurgery.ThromboP"
+    algorithm: "Strip whitespace, null if empty"
+    data_type: "string"
+    notes: "Thromboprophylaxis given"
+
+  antibiotic_prophylaxis:
+    source: "tblSurgery.AntiProp"
+    algorithm: "Strip whitespace, null if empty"
+    data_type: "string"
+    notes: "Antibiotic prophylaxis given"
+
+  extraction_site:
+    source: "tblSurgery.extraction_site"
+    algorithm: "Map to standard values via map_extraction_site()"
+    data_type: "string (enum: pfannenstiel/midline/extended_port/other)"
+    function: "map_extraction_site(row.get('extraction_site'))"
+    notes: "Specimen extraction site for laparoscopic/robotic"
+
+  extraction_size_cm:
+    source: "tblSurgery.extraction_meas_cm"
+    algorithm: "Safe convert to float via safe_to_float()"
+    data_type: "float"
+    function: "safe_to_float(row.get('extraction_meas_cm'))"
+
+  previous_abdominal_surgery:
+    source: "tblSurgery.prev_ab_surg_YN"
+    algorithm: "Map to yes/no via map_yes_no()"
+    data_type: "string (enum: yes/no)"
+    function: "map_yes_no(row.get('prev_ab_surg_YN'))"
+
+# ==============================================================================
+# POSTOPERATIVE EVENTS OBJECT
+# ==============================================================================
+
+postoperative_events:
+  description: "Postoperative complications and events"
+
+  return_to_theatre:
+    occurred:
+      source: "tblSurgery.re_op"
+      algorithm: "Map to yes/no via map_yes_no()"
+      data_type: "string (enum: yes/no)"
+      function: "map_yes_no(row.get('re_op'))"
+      notes: "USER REQUESTED: Whether patient returned to theatre"
+
+  complications:
+    source: "Multiple complication fields"
+    algorithm: "Parse via parse_complications()"
+    data_type: "array of strings"
+    function: "parse_complications(row)"
+    fields_used:
+      - MJ_Leak: Major anastomotic leak
+      - MJ_Abs: Major abscess
+      - MJ_Bleed: Major bleeding
+      - MJ_Obst: Major obstruction
+      - MI_Leak: Minor anastomotic leak
+      - MI_Abs: Minor abscess
+      - MI_Bleed: Minor bleeding
+      - MI_Obst: Minor obstruction
+      - WI: Wound infection
+      - CI: Chest infection
+      - MI: Myocardial infarction
+      - UTI: Urinary tract infection
+      - Cardio: Cardiovascular complications
+    notes: "Array of complication types that occurred"
+
+  post_op_complications:
+    source: "tblSurgery.Post_Op"
+    algorithm: "Strip whitespace, null if empty"
+    data_type: "string"
+    notes: "USER REQUESTED: Free text field for post-op complications"
+
+  post_op_ileus:
+    source: "tblSurgery.PO_ileus"
+    algorithm: "Map to yes/no via map_yes_no()"
+    data_type: "string (enum: yes/no)"
+    function: "map_yes_no(row.get('PO_ileus'))"
+
+  post_op_ct_collection:
+    source: "tblSurgery.PO_CT_coll"
+    algorithm: "Map to yes/no via map_yes_no()"
+    data_type: "string (enum: yes/no)"
+    function: "map_yes_no(row.get('PO_CT_coll'))"
+
+# ==============================================================================
+# OUTCOMES OBJECT
+# ==============================================================================
+
+outcomes:
+  description: "Treatment outcomes"
+
+  readmission_30day:
+    source: "tblSurgery.Post_IP"
+    algorithm: "Map to yes/no via map_yes_no()"
+    data_type: "string (enum: yes/no)"
+    function: "map_yes_no(row.get('Post_IP'))"
+    notes: "USER REQUESTED: Use Post_IP field (NOT Major_C)"
+
+  mortality_30day:
+    source: "Calculated later from deceased_date"
+    algorithm: "Compare deceased_date to surgery_date"
+    data_type: "boolean"
+    default: false
+    notes: "Calculated after all imports complete"
+
+  mortality_90day:
+    source: "Calculated later from deceased_date"
+    algorithm: "Compare deceased_date to surgery_date"
+    data_type: "boolean"
+    default: false
+    notes: "Calculated after all imports complete"
+
+# ==============================================================================
+# CLINICAL TRIAL OBJECT
+# ==============================================================================
+
+clinical_trial:
+  description: "Clinical trial participation"
+
+  enrolled:
+    source: "tblSurgery.Clin_Trial"
+    algorithm: "Map to yes/no via map_yes_no()"
+    data_type: "string (enum: yes/no)"
+    function: "map_yes_no(row.get('Clin_Trial'))"
+
+  trial_name:
+    source: "tblSurgery.ClinTrial_name"
+    algorithm: "Strip whitespace, null if empty"
+    data_type: "string"
+
+# ==============================================================================
+# SYSTEM METADATA
+# ==============================================================================
+
+created_at:
+  source: "System generated"
+  algorithm: "datetime.utcnow()"
+  data_type: "datetime"
+  required: true
+
+updated_at:
+  source: "System generated"
+  algorithm: "datetime.utcnow()"
+  data_type: "datetime"
+  required: true
+
+# ==============================================================================
+# EPISODE UPDATES
+# ==============================================================================
+
+# After treatment is created, the following episode fields are updated:
+#
+# 1. treatment_ids array:
+#    - treatment_id is pushed to episode.treatment_ids
+#
+# 2. lead_clinician:
+#    - Set from primary_surgeon if episode.lead_clinician is currently null
+#    - Uses clinician ID if matched, otherwise uses cleaned text name
+#    - Function: map_lead_clinician()
+#    - Only sets if not already populated
+#
+# 3. no_treatment:
+#    - Set from tblSurgery.NoSurg field
+#    - Map via map_yes_no()
+#    - Indicates patient did not receive surgery
+
+# ==============================================================================
+# FIELDS IN ACCESS DB NOT CURRENTLY MAPPED
+# ==============================================================================
+
+# PRE-OPERATIVE FIELDS (not currently captured):
+# - Pre_Op: Pre-operative treatment flag
+# - Pre_Yes: Pre-operative treatment details
+# - Date_Th: Pre-operative therapy date
+#
+# SURGERY PERFORMED FLAG:
+# - SurgPerf: Surgery performed flag (redundant - all records are surgeries)
+# - NoSurg: No surgery reason (mapped to episode.no_treatment instead)
+# - NoSurgS: No surgery specification
+#
+# CNS FIELDS (some in episodes):
+# - CNS: CNS involvement (in episodes)
+# - CNS_date: CNS date
+# - CNS_seen: CNS seen
+# - CNS_presence: CNS presence at surgery
+#
+# TIMING FIELDS:
+# - SurgTim: Surgery time (time of day)
+#
+# ADDITIONAL SURGEON FIELDS:
+# - SurCode, AssCode, AssCod2, AperCode: Surgeon codes
+# - AperSurg, AperGrad: Aperineural surgeon and grade
+#
+# SPLENIC FLEXURE MOBILIZATION:
+# - SF_mob: Splenic flexure mobilization
+#
+# NO TOUCH TECHNIQUE:
+# - NTP_lap: No touch technique laparoscopic
+#
+# PROCEDURE DETAILS:
+# - ProcResect: Procedure resection (mapped to resection_performed)
+# - ProcName_other: Other procedure name
+# - Division: Division technique
+# - AnasType: Anastomosis type
+#
+# PALLIATIVE/UNCERTAIN INTENT DETAILS:
+# - Pall_Yes, Pall_Spec: Palliative details
+# - Unc_Yes, Unc_Spec: Uncertain curative intent details
+# - updated from uncertain: Flag for updates
+#
+# COMPLICATION DETAIL FIELDS:
+# - CompSpec: Complication specification
+# - OtherCom: Other complications text
+# - Major_C: Major complication (NOT used per user - using Post_IP instead)
+# - LapComp: Laparoscopic complications
+# - PortComp: Port complications
+#
+# DISCHARGE DETAILS:
+# - Date_Ready_Dis: Date ready for discharge
+#
+# REFERRAL/SEEN DATES:
+# - DateRefS: Date referred to surgeon
+# - DateSeen: Date seen by surgeon
+#
+# POST-OP MANAGEMENT:
+# - Post_Op_othercom: Other post-op complications flag
+# - Comp: Complications text
+# - PO_analgesia: Post-op analgesia
+# - immed_po_ward: Immediate post-op ward
+#
+# PORT DETAILS (robotic/laparoscopic):
+# - ports_5mm, ports_8mm, ports_10mm: Number of ports by size
+#
+# PREVIOUS SURGERY DETAILS:
+# - desc_ab_surg: Description of previous abdominal surgery
+#
+# APR SPECIFIC:
+# - APR_prone: APR performed prone
+#
+# SENIOR SIGN-OFF:
+# - snr_sgn_name, snr_sgn_code: Senior sign-off details
+#
+# OTHER FLAGS:
+# - GR: Unknown flag
+# - anal_verge: Anal verge measurement
+#
+# ADMINISTRATIVE:
+# - Su_SeqNo: Surgery sequence number
+# - Unit_ID: Unit identifier
+# - DEntered, DUpdated: Entry/update dates
+# - Created, Updated: User who created/updated
+
+# ==============================================================================
+# NOTES
+# ==============================================================================
+
+# 1. Duplicate detection:
+#    Treatments are considered duplicates if they have same patient_id,
+#    treatment_date, and treatment_type
+#
+# 2. Surgical approach priority logic (IMPORTANT):
+#    Must check in this order:
+#    - Robotic field first (overrides all)
+#    - LapType for "converted to open" text
+#    - LapProc for standard laparoscopic mapping
+#
+# 3. Stoma type field fix:
+#    Use StomDone (what was actually done) NOT StomType (what was planned)
+#
+# 4. Defunctioning stoma logic:
+#    Only mark as defunctioning if BOTH anastomosis AND stoma created
+#
+# 5. Readmission field:
+#    Use Post_IP (in-patient readmission) NOT Major_C per user specification
+#
+# 6. Mortality flags:
+#    Calculated after import by comparing deceased_date to surgery_date

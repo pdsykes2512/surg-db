@@ -6,9 +6,15 @@ from jose import JWTError, jwt
 import bcrypt
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
-from .database import get_database
+from .database import Database
 from .models.user import User, UserInDB, TokenData, UserRole
 from .config import settings
+
+
+# System database dependency
+def get_system_database():
+    """Get system database for dependency injection"""
+    return Database.get_system_database()
 
 # OAuth2 scheme
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
@@ -71,7 +77,7 @@ async def authenticate_user(db: AsyncIOMotorDatabase, email: str, password: str)
 
 async def get_current_user(
     token: str = Depends(oauth2_scheme),
-    db: AsyncIOMotorDatabase = Depends(get_database)
+    db: AsyncIOMotorDatabase = Depends(get_system_database)
 ) -> dict:
     """Get the current authenticated user from JWT token"""
     credentials_exception = HTTPException(

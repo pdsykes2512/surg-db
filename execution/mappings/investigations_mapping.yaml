@@ -1,0 +1,424 @@
+# Investigations Data Mapping: Access DB → IMPACT MongoDB
+#
+# This file defines the field-by-field mapping from the Access database (acpdata_v3_db.mdb)
+# to the IMPACT MongoDB investigations collection, based on the working surgdb structure.
+#
+# Source Table in Access DB:
+#   - tblTumour: Contains imaging/investigation dates and results
+#
+# Target: MongoDB 'investigations' collection
+#
+# Note: Each tumour can have multiple investigations (CT, MRI, colonoscopy, etc.)
+#       Each investigation type creates a separate investigation record.
+
+# ==============================================================================
+# INVESTIGATION TYPES FROM tblTumour
+# ==============================================================================
+
+# Four types of investigations are extracted from each tblTumour record:
+# 1. CT Abdomen/Pelvis (ct_abdomen) - from Dt_CT_Abdo
+# 2. CT Colonography (ct_colonography) - from Dt_CT_pneumo
+# 3. Colonoscopy (colonoscopy) - from Date_Col
+# 4. MRI Primary (mri_primary) - from Dt_MRI1 with TNM staging details
+
+# ==============================================================================
+# INVESTIGATION 1: CT ABDOMEN/PELVIS
+# ==============================================================================
+
+ct_abdomen:
+  description: "CT Abdomen/Pelvis investigation"
+  condition: "Created only if Dt_CT_Abdo is not null"
+
+  investigation_id:
+    source: "Generated"
+    algorithm: "Format: INV-{patient_id}-CTA-{seq:02d}"
+    data_type: "string"
+    notes: "CTA = CT Abdomen"
+
+  patient_id:
+    source: "Derived from tblTumour.Hosp_No"
+    algorithm: "Look up via hosp_no_to_patient_id mapping"
+    data_type: "string"
+
+  episode_id:
+    source: "Derived from (patient_id, TumSeqno)"
+    algorithm: "Look up via episode_mapping"
+    data_type: "string"
+
+  tumour_id:
+    source: "Derived from (patient_id, TumSeqno)"
+    algorithm: "Look up via tumour_mapping"
+    data_type: "string"
+
+  type:
+    source: "NOT IN ACCESS DB"
+    algorithm: "Fixed value: 'imaging'"
+    data_type: "string (enum: imaging/endoscopy/laboratory/pathology)"
+    default: "imaging"
+
+  subtype:
+    source: "NOT IN ACCESS DB"
+    algorithm: "Fixed value: 'ct_abdomen'"
+    data_type: "string"
+    default: "ct_abdomen"
+
+  date:
+    source: "tblTumour.Dt_CT_Abdo"
+    algorithm: "Parse to YYYY-MM-DD"
+    data_type: "string (ISO date)"
+    function: "parse_date(row.get('Dt_CT_Abdo'))"
+
+  result:
+    source: "tblTumour.CT_Abdo_result"
+    algorithm: "Clean result text via clean_result_text()"
+    data_type: "string"
+    function: "clean_result_text(row.get('CT_Abdo_result'))"
+    notes: "Removes leading numbers (e.g., '1 Normal' → 'normal')"
+
+  findings:
+    source: "NOT IN ACCESS DB"
+    algorithm: "Empty object"
+    data_type: "object"
+    default: "{}"
+    notes: "Could be populated with structured findings in future"
+
+  report_url:
+    source: "NOT IN ACCESS DB"
+    algorithm: "null"
+    data_type: "string"
+    default: "null"
+    notes: "Link to PACS/radiology system (not available)"
+
+# ==============================================================================
+# INVESTIGATION 2: CT COLONOGRAPHY
+# ==============================================================================
+
+ct_colonography:
+  description: "CT Colonography (CT Pneumocolon) investigation"
+  condition: "Created only if Dt_CT_pneumo is not null"
+
+  investigation_id:
+    source: "Generated"
+    algorithm: "Format: INV-{patient_id}-CTC-{seq:02d}"
+    data_type: "string"
+    notes: "CTC = CT Colonography"
+
+  patient_id:
+    source: "Derived from tblTumour.Hosp_No"
+    algorithm: "Look up via hosp_no_to_patient_id mapping"
+    data_type: "string"
+
+  episode_id:
+    source: "Derived from (patient_id, TumSeqno)"
+    algorithm: "Look up via episode_mapping"
+    data_type: "string"
+
+  tumour_id:
+    source: "Derived from (patient_id, TumSeqno)"
+    algorithm: "Look up via tumour_mapping"
+    data_type: "string"
+
+  type:
+    source: "NOT IN ACCESS DB"
+    algorithm: "Fixed value: 'imaging'"
+    data_type: "string (enum: imaging/endoscopy/laboratory/pathology)"
+    default: "imaging"
+
+  subtype:
+    source: "NOT IN ACCESS DB"
+    algorithm: "Fixed value: 'ct_colonography'"
+    data_type: "string"
+    default: "ct_colonography"
+
+  date:
+    source: "tblTumour.Dt_CT_pneumo"
+    algorithm: "Parse to YYYY-MM-DD"
+    data_type: "string (ISO date)"
+    function: "parse_date(row.get('Dt_CT_pneumo'))"
+
+  result:
+    source: "tblTumour.CT_pneumo_result"
+    algorithm: "Clean result text via clean_result_text()"
+    data_type: "string"
+    function: "clean_result_text(row.get('CT_pneumo_result'))"
+    notes: "Removes leading numbers (e.g., '2 Abnormal' → 'abnormal')"
+
+  findings:
+    source: "NOT IN ACCESS DB"
+    algorithm: "Empty object"
+    data_type: "object"
+    default: "{}"
+
+  report_url:
+    source: "NOT IN ACCESS DB"
+    algorithm: "null"
+    data_type: "string"
+    default: "null"
+
+# ==============================================================================
+# INVESTIGATION 3: COLONOSCOPY
+# ==============================================================================
+
+colonoscopy:
+  description: "Colonoscopy investigation"
+  condition: "Created only if Date_Col is not null"
+
+  investigation_id:
+    source: "Generated"
+    algorithm: "Format: INV-{patient_id}-COL-{seq:02d}"
+    data_type: "string"
+    notes: "COL = Colonoscopy"
+
+  patient_id:
+    source: "Derived from tblTumour.Hosp_No"
+    algorithm: "Look up via hosp_no_to_patient_id mapping"
+    data_type: "string"
+
+  episode_id:
+    source: "Derived from (patient_id, TumSeqno)"
+    algorithm: "Look up via episode_mapping"
+    data_type: "string"
+
+  tumour_id:
+    source: "Derived from (patient_id, TumSeqno)"
+    algorithm: "Look up via tumour_mapping"
+    data_type: "string"
+
+  type:
+    source: "NOT IN ACCESS DB"
+    algorithm: "Fixed value: 'endoscopy'"
+    data_type: "string (enum: imaging/endoscopy/laboratory/pathology)"
+    default: "endoscopy"
+    notes: "Colonoscopy is an endoscopic investigation"
+
+  subtype:
+    source: "NOT IN ACCESS DB"
+    algorithm: "Fixed value: 'colonoscopy'"
+    data_type: "string"
+    default: "colonoscopy"
+
+  date:
+    source: "tblTumour.Date_Col"
+    algorithm: "Parse to YYYY-MM-DD"
+    data_type: "string (ISO date)"
+    function: "parse_date(row.get('Date_Col'))"
+
+  result:
+    source: "NOT IN ACCESS DB"
+    algorithm: "Default to 'abnormal'"
+    data_type: "string"
+    default: "abnormal"
+    notes: "All colonoscopies in database led to cancer diagnosis, so abnormal"
+
+  findings:
+    source: "NOT IN ACCESS DB"
+    algorithm: "Empty object"
+    data_type: "object"
+    default: "{}"
+    notes: "Could include Col_scpy field in future for detailed results"
+
+  report_url:
+    source: "NOT IN ACCESS DB"
+    algorithm: "null"
+    data_type: "string"
+    default: "null"
+
+# ==============================================================================
+# INVESTIGATION 4: MRI PRIMARY
+# ==============================================================================
+
+mri_primary:
+  description: "MRI of primary tumour (mainly rectal cancer)"
+  condition: "Created only if Dt_MRI1 is not null"
+
+  investigation_id:
+    source: "Generated"
+    algorithm: "Format: INV-{patient_id}-MRI-{seq:02d}"
+    data_type: "string"
+    notes: "MRI = MRI Primary"
+
+  patient_id:
+    source: "Derived from tblTumour.Hosp_No"
+    algorithm: "Look up via hosp_no_to_patient_id mapping"
+    data_type: "string"
+
+  episode_id:
+    source: "Derived from (patient_id, TumSeqno)"
+    algorithm: "Look up via episode_mapping"
+    data_type: "string"
+
+  tumour_id:
+    source: "Derived from (patient_id, TumSeqno)"
+    algorithm: "Look up via tumour_mapping"
+    data_type: "string"
+
+  type:
+    source: "NOT IN ACCESS DB"
+    algorithm: "Fixed value: 'imaging'"
+    data_type: "string (enum: imaging/endoscopy/laboratory/pathology)"
+    default: "imaging"
+
+  subtype:
+    source: "NOT IN ACCESS DB"
+    algorithm: "Fixed value: 'mri_primary'"
+    data_type: "string"
+    default: "mri_primary"
+
+  date:
+    source: "tblTumour.Dt_MRI1"
+    algorithm: "Parse to YYYY-MM-DD"
+    data_type: "string (ISO date)"
+    function: "parse_date(row.get('Dt_MRI1'))"
+
+  result:
+    source: "NOT IN ACCESS DB"
+    algorithm: "Default to 'abnormal'"
+    data_type: "string"
+    default: "abnormal"
+    notes: "All MRIs in database showed cancer"
+
+  findings:
+    description: "Structured MRI findings object"
+
+    t_stage:
+      source: "tblTumour.MRI1_T"
+      algorithm: "Map to simple format via map_tnm_stage()"
+      data_type: "string"
+      function: "map_tnm_stage(row.get('MRI1_T'))"
+      notes: "T stage from MRI report"
+
+    n_stage:
+      source: "tblTumour.MRI1_N"
+      algorithm: "Map to simple format via map_tnm_stage()"
+      data_type: "string"
+      function: "map_tnm_stage(row.get('MRI1_N'))"
+      notes: "N stage from MRI report"
+
+    crm_status:
+      source: "tblTumour.MRI1_CRM"
+      algorithm: "Map to yes/no/uncertain via map_crm_status()"
+      data_type: "string (enum: yes/no/uncertain)"
+      function: "map_crm_status(row.get('MRI1_CRM'))"
+      notes: "Circumferential resection margin involvement"
+
+    crm_distance_mm:
+      source: "tblTumour.MRI1_dist"
+      algorithm: "Convert to float, null if NaN"
+      data_type: "float"
+      notes: "Distance to CRM in millimeters"
+
+    emvi:
+      source: "tblTumour.EMVI"
+      algorithm: "Map to yes/no via map_yes_no()"
+      data_type: "string (enum: yes/no)"
+      function: "map_yes_no(row.get('EMVI'))"
+      notes: "Extramural vascular invasion"
+
+  report_url:
+    source: "NOT IN ACCESS DB"
+    algorithm: "null"
+    data_type: "string"
+    default: "null"
+
+# ==============================================================================
+# SYSTEM METADATA (ALL INVESTIGATION TYPES)
+# ==============================================================================
+
+created_at:
+  source: "System generated"
+  algorithm: "datetime.utcnow()"
+  data_type: "datetime"
+  required: true
+
+updated_at:
+  source: "System generated"
+  algorithm: "datetime.utcnow()"
+  data_type: "datetime"
+  required: true
+
+# ==============================================================================
+# INVESTIGATION ID SEQUENCING
+# ==============================================================================
+
+# Investigation IDs use type-specific prefixes to avoid collisions:
+# - INV-{patient_id}-CTA-{seq} for CT Abdomen
+# - INV-{patient_id}-CTC-{seq} for CT Colonography
+# - INV-{patient_id}-COL-{seq} for Colonoscopy
+# - INV-{patient_id}-MRI-{seq} for MRI Primary
+#
+# Sequence number increments within each tumour record processing.
+# This ensures each investigation has a unique ID.
+
+# ==============================================================================
+# HELPER FUNCTIONS
+# ==============================================================================
+
+clean_result_text:
+  description: "Remove leading numbers from result text"
+  purpose: "Access DB stored results as '1 Normal', '2 Abnormal', etc."
+  algorithm: |
+    1. Strip whitespace
+    2. Use regex to match pattern: ^\d+\s+(.+)$
+    3. If match, extract group(1) and convert to lowercase
+    4. Otherwise return original text in lowercase
+  examples:
+    "1 Normal" → "normal"
+    "2 Abnormal" → "abnormal"
+    "Abnormal" → "abnormal"
+  notes: "Standardizes result values for consistency"
+
+# ==============================================================================
+# FIELDS IN ACCESS DB NOT CURRENTLY MAPPED
+# ==============================================================================
+
+# BARIUM ENEMA (not currently imported):
+# - Date_Bar: Barium enema date
+# - Bar_Enem: Barium enema result
+#
+# SECOND MRI (not currently imported):
+# - Dt_MRI2: Second MRI date
+# - M2result: Second MRI result
+#
+# ENDOSCOPIC ULTRASOUND (not currently imported):
+# - Dt_Endo: Endoscopic ultrasound date
+# - Endo_T: EUS T stage
+#
+# ADDITIONAL ABDOMINAL IMAGING (not currently imported):
+# - Dt_Abdo: Other abdominal imaging date
+# - Abresult: Other abdominal imaging result
+#
+# COLONOSCOPY DETAILS (not currently imported):
+# - Col_scpy: Colonoscopy result text (could be added to findings)
+# - Rea_Inco: Reason incomplete
+# - ColC_Ov/Ble/Per/Oth: Colonoscopy complications
+# - Oth_Spec: Other complications specification
+#
+# FLEXIBLE SIGMOIDOSCOPY (not currently imported):
+# - Fle_Sig: Flexible sigmoidoscopy result
+# - Date_Fle: Flexible sigmoidoscopy date
+
+# ==============================================================================
+# NOTES
+# ==============================================================================
+
+# 1. Investigations are extracted from tblTumour, not a separate table
+#    Each tumour record contains dates and results for various investigations
+#
+# 2. Investigation records are only created if the date field is not null
+#    If Dt_CT_Abdo is null, no CT Abdomen investigation is created
+#
+# 3. The clean_result_text() function is critical for standardizing results
+#    Access DB stored coded results like "1 Normal", "2 Abnormal"
+#
+# 4. MRI Primary is the only investigation with structured findings object
+#    Other investigations use simple result text
+#
+# 5. Colonoscopy results default to "abnormal" because all patients in
+#    database had cancer detected on colonoscopy
+#
+# 6. Investigation type is important for filtering/grouping:
+#    - type: imaging/endoscopy/laboratory/pathology
+#    - subtype: ct_abdomen/ct_colonography/colonoscopy/mri_primary
+#
+# 7. The TumSeqno format must match episode/tumour imports (use number, not string)
+#    Bug fix: row.get('TumSeqno', 0) not str(row.get('TumSeqno', ''))

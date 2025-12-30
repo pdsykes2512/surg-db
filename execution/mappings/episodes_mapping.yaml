@@ -1,0 +1,358 @@
+# Episode Data Mapping: Access DB → IMPACT MongoDB
+#
+# This file defines the field-by-field mapping from the Access database (acpdata_v3_db.mdb)
+# to the IMPACT MongoDB episodes collection, based on the working surgdb structure.
+#
+# Source Table in Access DB:
+#   - tblTumour: Contains referral, MDT, and diagnosis data (one record per episode)
+#
+# Target: MongoDB 'episodes' collection
+#
+# Note: Episodes represent a care pathway for a specific condition/tumour.
+#       Each patient can have multiple episodes (multiple tumours).
+
+# ==============================================================================
+# TOP-LEVEL IDENTIFIERS
+# ==============================================================================
+
+episode_id:
+  description: "Unique episode identifier (system-generated)"
+  source: "Generated from patient_id + sequence number"
+  algorithm: "Format: E-{patient_id}-{sequence:02d}"
+  data_type: "string"
+  required: true
+  function: "generate_episode_id(patient_id, sequence)"
+  notes: "Sequential per patient (E-ABC123-01, E-ABC123-02, etc.)"
+
+patient_id:
+  description: "Reference to patient record"
+  source: "Derived from tblTumour.Hosp_No via patient mapping"
+  algorithm: "Look up patient_id from hosp_no_to_patient_id mapping"
+  data_type: "string"
+  required: true
+  notes: "Foreign key to patients collection"
+
+# ==============================================================================
+# CONDITION INFORMATION
+# ==============================================================================
+
+condition_type:
+  description: "Type of condition"
+  source: "NOT IN ACCESS DB"
+  algorithm: "Fixed value: 'cancer'"
+  data_type: "string"
+  required: true
+  default: "cancer"
+  notes: "All records in this database are cancer episodes"
+
+cancer_type:
+  description: "Specific cancer type"
+  source: "NOT IN ACCESS DB"
+  algorithm: "Fixed value: 'bowel'"
+  data_type: "string"
+  required: true
+  default: "bowel"
+  notes: "All records are colorectal/bowel cancer"
+
+# ==============================================================================
+# REFERRAL INFORMATION
+# ==============================================================================
+
+referral_date:
+  description: "Date patient was referred"
+  source: "tblTumour.DtRef"
+  algorithm: "Parse to YYYY-MM-DD, fallback to Dt_Diag if missing"
+  data_type: "string (ISO date)"
+  required: false
+  function: "parse_date(row.get('DtRef')) or parse_date(row.get('Dt_Diag'))"
+  notes: "Use diagnosis date as fallback if referral date missing"
+
+referral_source:
+  description: "Source of referral"
+  source: "tblTumour.RefType"
+  algorithm: "Map to COSD-compliant values via map_referral_source()"
+  data_type: "string (enum: gp/consultant/screening/emergency/other)"
+  required: false
+  function: "map_referral_source(row.get('RefType'))"
+  mapping:
+    "GP": "gp"
+    "Consultant": "consultant"
+    "Screening": "screening"
+    "Emergency": "emergency"
+    "Other": "other"
+  notes: "Standardized to COSD referral source values"
+
+referral_priority:
+  description: "Priority of referral"
+  source: "tblTumour.Priority"
+  algorithm: "Map to COSD-compliant values via map_referral_priority()"
+  data_type: "string (enum: routine/urgent/two_week_wait)"
+  required: false
+  function: "map_referral_priority(row.get('Priority'))"
+  mapping:
+    "R": "routine"
+    "U": "urgent"
+    "TW": "two_week_wait"
+  notes: "Two-week wait = suspected cancer referral"
+
+# ==============================================================================
+# FIRST CONSULTATION
+# ==============================================================================
+
+first_seen_date:
+  description: "Date of first consultation"
+  source: "tblTumour.Dt_Visit"
+  algorithm: "Parse to YYYY-MM-DD, fallback to Dt_Diag if missing"
+  data_type: "string (ISO date)"
+  required: false
+  function: "parse_date(row.get('Dt_Visit')) or parse_date(row.get('Dt_Diag'))"
+  notes: "Use diagnosis date as fallback if first seen date missing"
+
+provider_first_seen:
+  description: "Organization code where first seen"
+  source: "NOT IN ACCESS DB"
+  algorithm: "Fixed value: 'RHU'"
+  data_type: "string"
+  required: false
+  default: "RHU"
+  notes: "Portsmouth Hospitals University NHS Trust code"
+
+# ==============================================================================
+# MDT INFORMATION
+# ==============================================================================
+
+mdt_discussion_date:
+  description: "Date case discussed at MDT"
+  source: "tblSurgery.MDT_DATE (populated later from treatments import)"
+  algorithm: "Initially null, updated when treatments are imported"
+  data_type: "string (ISO date)"
+  required: false
+  notes: "MDT date stored in surgery table, updated after treatment import"
+
+mdt_team:
+  description: "MDT team/organization code"
+  source: "tblTumour.Mdt_org"
+  algorithm: "Strip whitespace, null if empty"
+  data_type: "string"
+  required: false
+  notes: "5-character organization code"
+
+mdt_meeting_type:
+  description: "Type of MDT meeting"
+  source: "NOT IN ACCESS DB"
+  algorithm: "Fixed value: 'Colorectal MDT'"
+  data_type: "string"
+  required: false
+  default: "Colorectal MDT"
+  notes: "Single specialty colorectal database"
+
+# ==============================================================================
+# TREATMENT PLANNING
+# ==============================================================================
+
+treatment_intent:
+  description: "Intent of treatment (curative vs palliative)"
+  source: "tblTumour.careplan"
+  algorithm: "Extract 'curative' or 'palliative' from free text"
+  data_type: "string (enum: curative/palliative)"
+  required: false
+  function: |
+    treatment_intent_val = str(row.get('careplan', '')).strip().lower()
+    if 'curative' in treatment_intent_val:
+        return 'curative'
+    elif 'palliative' in treatment_intent_val:
+        return 'palliative'
+    else:
+        return None
+  notes: "Text field containing treatment care plan"
+
+treatment_plan:
+  description: "Planned treatment approach"
+  source: "tblTumour.plan_treat"
+  algorithm: "Direct copy, strip whitespace, null if empty"
+  data_type: "string"
+  required: false
+  notes: "Free text description of treatment plan"
+
+no_treatment:
+  description: "Whether patient received no treatment"
+  source: "tblSurgery.NoSurg (populated later from treatments import)"
+  algorithm: "Initially null, updated when treatments are imported"
+  data_type: "boolean"
+  required: false
+  notes: "Flag for patients who did not receive surgery/treatment"
+
+# ==============================================================================
+# CLINICAL TEAM
+# ==============================================================================
+
+lead_clinician:
+  description: "Lead clinician responsible for patient's care"
+  source: "tblPatient.SurgFirm (primary), fallback to tblSurgery.Surgeon or treatment team"
+  algorithm: |
+    1. Primary: tblPatient.SurgFirm (patient's consultant firm) matched to colorectal clinical leads
+    2. Fallback 1: tblSurgery.Surgeon (operating surgeon) if SurgFirm not available
+    3. Fallback 2: Any team member from surgery matched to colorectal clinical leads
+    Case-insensitive matching against clinicians where subspecialty_leads contains 'colorectal'
+  data_type: "string (full name if matched to lead) or string (free text if not matched)"
+  required: false
+  function: "match_surgeon_to_clinician() during episode import, fallback during treatment import"
+  notes: |
+    - SurgFirm represents patient's consultant/firm (most appropriate for lead_clinician)
+    - Surgeon field may be registrar/fellow, not consultant
+    - ONLY matches against COLORECTAL CLINICAL LEADS (subspecialty_leads: 'colorectal')
+    - Excludes non-lead staff (registrars, fellows, gastroenterologists, oncologists)
+    - Matches to impact_system.clinicians table by surname (case-insensitive)
+    - Stores full clinician name (e.g., "Jim Khan") if matched to a colorectal lead
+    - Stores original name as Title Case text if not matched to a colorectal lead
+    - After import, run set_lead_clinician_from_treatment_surgeons.py to prioritize operating surgeon
+
+cns_involved:
+  description: "Clinical Nurse Specialist involvement"
+  source: "tblTumour.CNS"
+  algorithm: "Map to yes/no via map_yes_no()"
+  data_type: "string (enum: yes/no)"
+  required: false
+  function: "map_yes_no(row.get('CNS'))"
+  notes: "Boolean in Access, standardized to yes/no string"
+
+# ==============================================================================
+# PATIENT STATUS
+# ==============================================================================
+
+performance_status:
+  description: "WHO/ECOG performance status"
+  source: "tblTumour.performance"
+  algorithm: "Map to integer 0-4 via map_performance_status()"
+  data_type: "integer"
+  required: false
+  function: "map_performance_status(row.get('performance'))"
+  mapping:
+    "0": 0
+    "1": 1
+    "2": 2
+    "3": 3
+    "4": 4
+  notes: "WHO performance status scale (0 = fully active, 4 = bedbound)"
+
+episode_status:
+  description: "Current status of episode"
+  source: "NOT IN ACCESS DB"
+  algorithm: "Default to 'active'"
+  data_type: "string (enum: active/completed/cancelled)"
+  required: true
+  default: "active"
+  notes: "Episodes are assumed active unless closed by follow-up data"
+
+# ==============================================================================
+# LINKED RECORDS
+# ==============================================================================
+
+treatment_ids:
+  description: "Array of linked treatment IDs"
+  source: "Populated later when treatments are imported"
+  algorithm: "Initially empty array, updated when treatments created"
+  data_type: "array of strings"
+  required: true
+  default: "[]"
+  notes: "Links to treatments collection"
+
+tumour_ids:
+  description: "Array of linked tumour IDs"
+  source: "Populated when tumours are imported (same episode)"
+  algorithm: "Tumour ID added when tumour created for this episode"
+  data_type: "array of strings"
+  required: true
+  default: "[]"
+  notes: "Links to tumours collection, updated immediately after episode creation"
+
+follow_up:
+  description: "Array of follow-up records"
+  source: "tblFollowUp (populated later from follow-up import)"
+  algorithm: "Initially empty array, updated when follow-ups imported"
+  data_type: "array of objects"
+  required: true
+  default: "[]"
+  notes: "Follow-up data appended from tblFollowUp table"
+
+# ==============================================================================
+# SYSTEM METADATA
+# ==============================================================================
+
+created_at:
+  source: "System generated"
+  algorithm: "datetime.utcnow()"
+  data_type: "datetime"
+  required: true
+
+updated_at:
+  source: "System generated"
+  algorithm: "datetime.utcnow()"
+  data_type: "datetime"
+  required: true
+
+# ==============================================================================
+# FIELDS IN ACCESS DB NOT CURRENTLY MAPPED
+# ==============================================================================
+
+# These fields exist in tblTumour but are not mapped to episodes:
+#
+# SCREENING FIELDS (not relevant to episode level):
+# - Screened: Screening program flag
+# - Scrn_Yes: Screening details
+# - BCSP: Bowel Cancer Screening Program flag
+#
+# DIAGNOSIS FIELDS (mapped to tumours instead):
+# - Dt_Diag: Diagnosis date (used in tumours)
+# - TumSite: Tumour site (in tumours)
+# - TumICD10: ICD-10 code (in tumours)
+# - Sync/TumSync/SynICD10: Synchronous tumours (in tumours)
+# - Height: Tumour height from anal verge (in tumours)
+# - Fle_Sig: Flexible sigmoidoscopy (in tumours)
+#
+# STAGING FIELDS (mapped to investigations/tumours):
+# - All imaging dates and results (mapped to investigations table)
+# - preTNM_T/N/M: Pre-treatment TNM (in tumours)
+# - DM_Liver/Lung/Bone/Other: Distant metastases (in tumours)
+#
+# ADMINISTRATIVE FIELDS:
+# - Unit_ID: Unit identifier (single-site database)
+# - DEntered/DUpdated: Original entry dates (replaced by created_at/updated_at)
+# - Created/Updated: User who created/updated (not relevant in IMPACT)
+#
+# REFERRAL DETAIL FIELDS (not currently captured):
+# - Delay: Delay flag
+# - TWC_referral: Two-week cancer referral (captured in referral_priority)
+# - internal_referral_source: Internal referral details
+# - emergency_referral: Emergency referral flag
+# - other: Other referral details
+# - referral_code_NBOCAP: NBOCAP referral code
+#
+# COLONOSCOPY FIELDS (partially in investigations):
+# - Date_Col: Colonoscopy date (mapped to investigations)
+# - Col_scpy: Colonoscopy result (mapped to investigations)
+# - Rea_Inco: Reason incomplete
+# - ColC_Ov/Ble/Per/Oth: Colonoscopy complications
+# - Oth_Spec: Other complications specification
+#
+# BARIUM FIELDS (not currently mapped):
+# - Date_Bar: Barium enema date
+# - Bar_Enem: Barium result
+#
+# TREATMENT OUTCOME FIELDS:
+# - Mod_Duke: Modified Duke's classification
+# - Nonca_treat: Non-cancer treatment
+# - monit_intent: Monitoring intent
+
+# ==============================================================================
+# IMPORT SEQUENCE NOTES
+# ==============================================================================
+
+# Episodes are created BEFORE tumours and treatments because:
+# 1. Tumours need episode_id reference
+# 2. Treatments need episode_id reference
+# 3. Episode fields are later updated by treatments (MDT date, lead clinician, no_treatment)
+# 4. Episode fields are later updated by follow-ups (follow_up array)
+#
+# Mapping key: (patient_id, TumSeqno) → episode_id
+# This allows tumours and treatments to find their parent episode

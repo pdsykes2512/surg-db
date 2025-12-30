@@ -170,7 +170,7 @@ async def get_backup_status(current_user=Depends(require_admin)):
             "note": latest_backup.note
         } if latest_backup else None,
         "database": {
-            "name": latest_backup.database if latest_backup else "surgdb",
+            "name": latest_backup.database if latest_backup else "impact",
             "total_documents": total_docs
         }
     }

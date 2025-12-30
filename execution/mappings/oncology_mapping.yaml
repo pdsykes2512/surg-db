@@ -1,0 +1,269 @@
+# Oncology (Non-Surgical Treatments) Data Mapping: Access DB → IMPACT MongoDB
+#
+# This file defines the field-by-field mapping from the Access database (acpdata_v3_db.mdb)
+# to the IMPACT MongoDB treatments collection (oncology treatments), based on the working surgdb structure.
+#
+# Source Table in Access DB:
+#   - tblOncology: Contains radiotherapy and chemotherapy treatment data
+#
+# Target: MongoDB 'treatments' collection (INSERT operation)
+#
+# Note: Each oncology record can create up to 2 treatment records:
+#       1. Radiotherapy treatment (if RadioTh = true)
+#       2. Chemotherapy treatment (if ChemoTh = true)
+
+# ==============================================================================
+# RADIOTHERAPY TREATMENT
+# ==============================================================================
+
+radiotherapy:
+  description: "Radiotherapy treatment record"
+  condition: "Created only if RadioTh = true AND RT_Start is not null"
+
+  treatment_id:
+    source: "Generated"
+    algorithm: "Format: T-{patient_id}-{1000+seq}"
+    data_type: "string"
+    notes: "Uses 1000+ sequence to differentiate from surgery treatments"
+
+  patient_id:
+    source: "Derived from tblOncology.Hosp_No"
+    algorithm: "Look up via hosp_no_to_patient_id mapping"
+    data_type: "string"
+
+  episode_id:
+    source: "Derived from (patient_id, TumSeqNo)"
+    algorithm: "Look up via episode_mapping"
+    data_type: "string"
+
+  treatment_type:
+    source: "NOT IN ACCESS DB"
+    algorithm: "Fixed value: 'radiotherapy'"
+    data_type: "string (enum: surgery/radiotherapy/chemotherapy/other)"
+    default: "radiotherapy"
+
+  treatment_date:
+    source: "tblOncology.RT_Start"
+    algorithm: "Parse to YYYY-MM-DD"
+    data_type: "string (ISO date)"
+    function: "parse_date(row.get('RT_Start'))"
+    notes: "Used to detect duplicates"
+
+  timing:
+    source: "tblOncology.RT_when"
+    algorithm: "Map to standard values via map_treatment_timing()"
+    data_type: "string (enum: neoadjuvant/adjuvant/palliative)"
+    function: "map_treatment_timing(row.get('RT_when'))"
+    mapping:
+      "Pre-operative": "neoadjuvant"
+      "Post-operative": "adjuvant"
+      "Palliative": "palliative"
+    notes: "Timing relative to surgery"
+
+  technique:
+    source: "tblOncology.RT_Type"
+    algorithm: "Map to standard values via map_rt_technique()"
+    data_type: "string (enum: long_course/short_course/contact)"
+    function: "map_rt_technique(row.get('RT_Type'))"
+    mapping:
+      "Long course": "long_course"
+      "Short course": "short_course"
+      "Contact": "contact"
+    notes: "Radiotherapy technique/fractionation"
+
+  start_date:
+    source: "tblOncology.RT_Start"
+    algorithm: "Parse to YYYY-MM-DD"
+    data_type: "string (ISO date)"
+    function: "parse_date(row.get('RT_Start'))"
+
+  end_date:
+    source: "tblOncology.RT_Finish"
+    algorithm: "Parse to YYYY-MM-DD"
+    data_type: "string (ISO date)"
+    function: "parse_date(row.get('RT_Finish'))"
+
+  trial_enrollment:
+    source: "tblOncology.RT_Trial"
+    algorithm: "Map to yes/no via map_yes_no()"
+    data_type: "string (enum: yes/no)"
+    function: "map_yes_no(row.get('RT_Trial'))"
+    notes: "Clinical trial participation"
+
+  created_at:
+    source: "System generated"
+    algorithm: "datetime.utcnow()"
+    data_type: "datetime"
+
+  updated_at:
+    source: "System generated"
+    algorithm: "datetime.utcnow()"
+    data_type: "datetime"
+
+# ==============================================================================
+# CHEMOTHERAPY TREATMENT
+# ==============================================================================
+
+chemotherapy:
+  description: "Chemotherapy treatment record"
+  condition: "Created only if ChemoTh = true AND Ch_Start is not null"
+
+  treatment_id:
+    source: "Generated"
+    algorithm: "Format: T-{patient_id}-{1000+seq}"
+    data_type: "string"
+    notes: "Uses 1000+ sequence to differentiate from surgery treatments"
+
+  patient_id:
+    source: "Derived from tblOncology.Hosp_No"
+    algorithm: "Look up via hosp_no_to_patient_id mapping"
+    data_type: "string"
+
+  episode_id:
+    source: "Derived from (patient_id, TumSeqNo)"
+    algorithm: "Look up via episode_mapping"
+    data_type: "string"
+
+  treatment_type:
+    source: "NOT IN ACCESS DB"
+    algorithm: "Fixed value: 'chemotherapy'"
+    data_type: "string (enum: surgery/radiotherapy/chemotherapy/other)"
+    default: "chemotherapy"
+
+  treatment_date:
+    source: "tblOncology.Ch_Start"
+    algorithm: "Parse to YYYY-MM-DD"
+    data_type: "string (ISO date)"
+    function: "parse_date(row.get('Ch_Start'))"
+    notes: "Used to detect duplicates"
+
+  timing:
+    source: "tblOncology.Ch_When"
+    algorithm: "Map to standard values via map_treatment_timing()"
+    data_type: "string (enum: neoadjuvant/adjuvant/palliative)"
+    function: "map_treatment_timing(row.get('Ch_When'))"
+    mapping:
+      "Pre-operative": "neoadjuvant"
+      "Post-operative": "adjuvant"
+      "Palliative": "palliative"
+    notes: "Timing relative to surgery"
+
+  regimen:
+    description: "Chemotherapy regimen details object"
+
+    regimen_name:
+      source: "tblOncology.Ch_Type"
+      algorithm: "Strip whitespace, null if empty"
+      data_type: "string"
+      notes: "Chemotherapy regimen name (e.g., FOLFOX, CAPOX)"
+
+  start_date:
+    source: "tblOncology.Ch_Start"
+    algorithm: "Parse to YYYY-MM-DD"
+    data_type: "string (ISO date)"
+    function: "parse_date(row.get('Ch_Start'))"
+
+  trial_enrollment:
+    source: "tblOncology.Ch_Trial"
+    algorithm: "Map to yes/no via map_yes_no()"
+    data_type: "string (enum: yes/no)"
+    function: "map_yes_no(row.get('Ch_Trial'))"
+    notes: "Clinical trial participation"
+
+  trial_name:
+    source: "tblOncology.Ch_Trial_name"
+    algorithm: "Strip whitespace, null if empty"
+    data_type: "string"
+    notes: "Name of clinical trial if enrolled"
+
+  created_at:
+    source: "System generated"
+    algorithm: "datetime.utcnow()"
+    data_type: "datetime"
+
+  updated_at:
+    source: "System generated"
+    algorithm: "datetime.utcnow()"
+    data_type: "datetime"
+
+# ==============================================================================
+# DUPLICATE DETECTION
+# ==============================================================================
+
+duplicate_check:
+  description: "How duplicates are detected"
+  radiotherapy:
+    fields: "patient_id + treatment_type + treatment_date"
+    notes: "Skip if RT treatment already exists for this patient on this date"
+  chemotherapy:
+    fields: "patient_id + treatment_type + treatment_date"
+    notes: "Skip if chemo treatment already exists for this patient on this date"
+
+# ==============================================================================
+# EPISODE UPDATES
+# ==============================================================================
+
+episode_updates:
+  description: "After treatment creation, episode is updated"
+  operation: "$push treatment_id to episode.treatment_ids array"
+  notes: "Links oncology treatment to parent episode"
+
+# ==============================================================================
+# TREATMENT ID SEQUENCING
+# ==============================================================================
+
+treatment_id_sequence:
+  description: "Treatment ID numbering strategy"
+  surgery: "T-{patient_id}-01, T-{patient_id}-02, etc."
+  oncology: "T-{patient_id}-1001, T-{patient_id}-1002, etc."
+  reason: "Using 1000+ sequence avoids collisions with surgery treatment IDs"
+  counter: "oncology_treatment_counter[patient_id] tracks sequence per patient"
+
+# ==============================================================================
+# FIELDS IN ACCESS DB NOT CURRENTLY MAPPED
+# ==============================================================================
+
+# ONCOLOGY REFERRAL:
+# - ref_onc: Referred to oncology (boolean flag, redundant if treatment given)
+#
+# MISCELLANEOUS:
+# - misc_info: Miscellaneous information (free text, not structured)
+#
+# ADMINISTRATIVE:
+# - On_Seqno: Oncology sequence number
+# - Unit_ID: Unit identifier
+# - Hosp_No, TumSeqNo: Linking fields (used for matching only)
+# - DEntered, DUpdated: Entry/update dates
+# - Created, Updated: User who created/updated
+
+# ==============================================================================
+# NOTES
+# ==============================================================================
+
+# 1. One tblOncology record can create TWO treatment records:
+#    - One radiotherapy (if RadioTh = true)
+#    - One chemotherapy (if ChemoTh = true)
+#    Both treatments linked to same episode
+#
+# 2. Timing values are standardized:
+#    - neoadjuvant: before surgery
+#    - adjuvant: after surgery
+#    - palliative: no curative intent
+#
+# 3. Radiotherapy techniques:
+#    - long_course: ~5 weeks, higher dose (50.4 Gy)
+#    - short_course: 1 week (25 Gy in 5 fractions)
+#    - contact: brachytherapy/contact radiotherapy
+#
+# 4. Chemotherapy regimen names stored as free text:
+#    Common regimens: FOLFOX, CAPOX, FOLFIRI, FOLFOXIRI
+#
+# 5. Trial enrollment tracked separately for RT and chemo:
+#    Some patients may be in trial for one modality but not the other
+#
+# 6. Treatment dates used for duplicate detection:
+#    Prevents creating duplicate treatments if import runs multiple times
+#
+# 7. Episode linkage:
+#    Both RT and chemo treatments are pushed to episode.treatment_ids
+#    This maintains complete treatment timeline in episode record

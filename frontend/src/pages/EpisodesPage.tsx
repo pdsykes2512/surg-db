@@ -423,8 +423,8 @@ export function EpisodesPage() {
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Patient Information</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 text-sm">
                 <div>
-                  <span className="text-gray-500">Record Number:</span>
-                  <p className="font-medium text-gray-900">{patientInfo.record_number}</p>
+                  <span className="text-gray-500">MRN:</span>
+                  <p className="font-medium text-gray-900">{patientInfo.mrn}</p>
                 </div>
                 <div>
                   <span className="text-gray-500">NHS Number:</span>

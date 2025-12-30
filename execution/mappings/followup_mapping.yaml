@@ -1,0 +1,262 @@
+# Follow-Up Data Mapping: Access DB → IMPACT MongoDB
+#
+# This file defines the field-by-field mapping from the Access database (acpdata_v3_db.mdb)
+# to the IMPACT MongoDB episodes collection (follow-up updates), based on the working surgdb structure.
+#
+# Source Table in Access DB:
+#   - tblFollowUp: Contains post-treatment follow-up data
+#
+# Target: MongoDB 'episodes' collection (UPDATE operation - append to follow_up array)
+#
+# Note: Follow-up data is APPENDED to episode.follow_up array.
+#       Each tblFollowUp record becomes an object in the array.
+#       One episode can have multiple follow-up records.
+
+# ==============================================================================
+# OPERATION TYPE
+# ==============================================================================
+
+operation: "UPDATE"
+description: "Follow-up data appended to episode.follow_up array"
+update_method: "$push to episode.follow_up array"
+matching_key: "episode_id (via episode_mapping[(patient_id, TumSeqNo)])"
+
+# ==============================================================================
+# FOLLOW-UP RECORD STRUCTURE
+# ==============================================================================
+
+follow_up_record:
+  description: "Follow-up record object (appended to episode.follow_up array)"
+
+  follow_up_date:
+    source: "tblFollowUp.Date_FU"
+    algorithm: "Parse to YYYY-MM-DD"
+    data_type: "string (ISO date)"
+    function: "parse_date(row.get('Date_FU'))"
+    notes: "Date of follow-up appointment or contact"
+
+  modality:
+    source: "tblFollowUp.ModeFol"
+    algorithm: "Map to standard values via map_followup_modality()"
+    data_type: "string (enum: clinic/telephone/other)"
+    function: "map_followup_modality(row.get('ModeFol'))"
+    mapping:
+      "Clinic": "clinic"
+      "Telephone": "telephone"
+      "Virtual": "telephone"
+      "Other": "other"
+    notes: "How follow-up was conducted"
+
+  # ============================================================================
+  # LOCAL RECURRENCE OBJECT
+  # ============================================================================
+
+  local_recurrence:
+    description: "Local recurrence information"
+
+    occurred:
+      source: "tblFollowUp.Local"
+      algorithm: "Map to yes/no via map_yes_no()"
+      data_type: "string (enum: yes/no)"
+      function: "map_yes_no(row.get('Local'))"
+      notes: "Whether local recurrence detected"
+
+    date:
+      source: "tblFollowUp.LocalDat"
+      algorithm: "Parse to YYYY-MM-DD"
+      data_type: "string (ISO date)"
+      function: "parse_date(row.get('LocalDat'))"
+      notes: "Date local recurrence diagnosed"
+
+    diagnosis:
+      source: "tblFollowUp.LocalDia"
+      algorithm: "Strip whitespace, null if empty"
+      data_type: "string"
+      notes: "Diagnostic method for local recurrence"
+
+  # ============================================================================
+  # DISTANT RECURRENCE OBJECT
+  # ============================================================================
+
+  distant_recurrence:
+    description: "Distant recurrence/metastases information"
+
+    occurred:
+      source: "tblFollowUp.Distant"
+      algorithm: "Map to yes/no via map_yes_no()"
+      data_type: "string (enum: yes/no)"
+      function: "map_yes_no(row.get('Distant'))"
+      notes: "Whether distant recurrence detected"
+
+    date:
+      source: "tblFollowUp.DistDate"
+      algorithm: "Parse to YYYY-MM-DD"
+      data_type: "string (ISO date)"
+      function: "parse_date(row.get('DistDate'))"
+      notes: "Date distant recurrence diagnosed"
+
+    sites:
+      description: "Sites of distant recurrence"
+
+      liver:
+        source: "tblFollowUp.DS_Liver"
+        algorithm: "Map to yes/no via map_yes_no()"
+        data_type: "string (enum: yes/no)"
+        function: "map_yes_no(row.get('DS_Liver'))"
+
+      lung:
+        source: "tblFollowUp.DS_Lung"
+        algorithm: "Map to yes/no via map_yes_no()"
+        data_type: "string (enum: yes/no)"
+        function: "map_yes_no(row.get('DS_Lung'))"
+
+      bone:
+        source: "tblFollowUp.DS_Bone"
+        algorithm: "Map to yes/no via map_yes_no()"
+        data_type: "string (enum: yes/no)"
+        function: "map_yes_no(row.get('DS_Bone'))"
+
+      other:
+        source: "tblFollowUp.DS_Other"
+        algorithm: "Map to yes/no via map_yes_no()"
+        data_type: "string (enum: yes/no)"
+        function: "map_yes_no(row.get('DS_Other'))"
+        notes: "Other metastatic sites"
+
+  # ============================================================================
+  # INVESTIGATIONS OBJECT
+  # ============================================================================
+
+  investigations:
+    description: "Follow-up investigations performed"
+
+    ct:
+      description: "CT scan during follow-up"
+
+      performed:
+        source: "tblFollowUp.CT_FU"
+        algorithm: "Map to yes/no via map_yes_no()"
+        data_type: "string (enum: yes/no)"
+        function: "map_yes_no(row.get('CT_FU'))"
+
+      date:
+        source: "tblFollowUp.CT_date"
+        algorithm: "Parse to YYYY-MM-DD"
+        data_type: "string (ISO date)"
+        function: "parse_date(row.get('CT_date'))"
+
+    colonoscopy:
+      description: "Colonoscopy during follow-up"
+
+      performed:
+        source: "tblFollowUp.Col_FU"
+        algorithm: "Map to yes/no via map_yes_no()"
+        data_type: "string (enum: yes/no)"
+        function: "map_yes_no(row.get('Col_FU'))"
+
+      date:
+        source: "tblFollowUp.Col_Date"
+        algorithm: "Parse to YYYY-MM-DD"
+        data_type: "string (ISO date)"
+        function: "parse_date(row.get('Col_Date'))"
+
+  # ============================================================================
+  # PALLIATIVE REFERRAL OBJECT
+  # ============================================================================
+
+  palliative_referral:
+    description: "Palliative care referral"
+
+    referred:
+      source: "tblFollowUp.Ref_Pall"
+      algorithm: "Map to yes/no via map_yes_no()"
+      data_type: "string (enum: yes/no)"
+      function: "map_yes_no(row.get('Ref_Pall'))"
+      notes: "Whether referred to palliative care"
+
+    date:
+      source: "tblFollowUp.Dat_Pall"
+      algorithm: "Parse to YYYY-MM-DD"
+      data_type: "string (ISO date)"
+      function: "parse_date(row.get('Dat_Pall'))"
+      notes: "Date of palliative care referral"
+
+# ==============================================================================
+# FIELDS IN ACCESS DB NOT CURRENTLY MAPPED
+# ==============================================================================
+
+# WOUND RECURRENCE:
+# - WoundRec: Wound recurrence flag
+# - WoundDat: Wound recurrence date
+#
+# PORT SITE RECURRENCE:
+# - PortRec: Port site recurrence (laparoscopic/robotic)
+# - PortDat: Port site recurrence date
+#
+# OTHER SITES:
+# - Ot_Speci: Other site specification (for distant recurrence)
+#
+# REFERRALS:
+# - Ref_Only: Oncology referral only
+# - Ref_livres: Liver resection referral
+#
+# LIVER RESECTION:
+# - Liv_res: Liver resection performed
+# - DateLivres: Date of liver resection
+#
+# COMMENTS:
+# - comment: Free text comments
+#
+# VIRTUAL FOLLOW-UP:
+# - virtual_FU: Virtual follow-up flag (mapped to modality)
+#
+# ORDERING:
+# - DR_order: Doctor order
+#
+# LAST FOLLOW-UP FLAG:
+# - Last_FU: Flag for last follow-up
+#
+# ADMINISTRATIVE:
+# - Fu_SeqNo: Follow-up sequence number
+# - Unit_ID: Unit identifier
+# - Hosp_No, TumSeqNo: Linking fields (used for matching only)
+# - DEntered, DUpdated: Entry/update dates
+# - Created, Updated: User who created/updated
+
+# ==============================================================================
+# NOTES
+# ==============================================================================
+
+# 1. Follow-up data is appended to episode, not stored as separate collection
+#    Each episode has a follow_up array containing multiple follow-up records
+#
+# 2. Multiple follow-up records per episode:
+#    Patients have regular follow-up (e.g., 3 months, 6 months, 1 year, etc.)
+#    Each visit creates a new entry in the follow_up array
+#
+# 3. Recurrence detection is critical for outcomes:
+#    - Local recurrence: at original tumour site
+#    - Distant recurrence: metastases to other organs
+#
+# 4. Common distant recurrence sites for colorectal cancer:
+#    - Liver (most common)
+#    - Lung
+#    - Bone (less common)
+#    - Other: peritoneum, brain, distant lymph nodes
+#
+# 5. Follow-up investigations:
+#    - CT: surveillance imaging for metastases
+#    - Colonoscopy: surveillance for new primary tumours or anastomotic recurrence
+#
+# 6. Palliative referral indicates transition from curative to palliative care:
+#    Usually occurs when recurrence is not amenable to curative treatment
+#
+# 7. Follow-up modality evolution:
+#    - Traditional: clinic visits
+#    - Modern: telephone/virtual follow-up increasingly used
+#    - COVID-19 accelerated shift to virtual follow-up
+#
+# 8. Data structure allows easy retrieval of:
+#    - All follow-ups for an episode: episode.follow_up array
+#    - Recurrence rate: count episodes with local_recurrence.occurred = 'yes'
+#    - Time to recurrence: difference between surgery date and recurrence date

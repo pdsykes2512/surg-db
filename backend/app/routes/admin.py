@@ -6,8 +6,8 @@ from bson import ObjectId
 from pydantic import BaseModel, Field
 
 from ..database import get_database
+from ..auth import get_current_user, get_password_hash, require_admin, get_system_database
 from ..models.user import User, UserCreate, UserUpdate, UserRole
-from ..auth import get_current_user, get_password_hash, require_admin
 
 router = APIRouter(prefix="/api/admin/users", tags=["Admin - User Management"])
 
@@ -20,7 +20,7 @@ class PasswordChange(BaseModel):
 @router.get("", response_model=List[User])
 async def list_users(
     current_user: dict = Depends(require_admin),
-    db: AsyncIOMotorDatabase = Depends(get_database),
+    db: AsyncIOMotorDatabase = Depends(get_system_database),
     role: str = None,
     is_active: bool = None
 ):
@@ -49,7 +49,7 @@ async def list_users(
 async def create_user(
     user_data: UserCreate,
     current_user: dict = Depends(require_admin),
-    db: AsyncIOMotorDatabase = Depends(get_database)
+    db: AsyncIOMotorDatabase = Depends(get_system_database)
 ):
     """Create a new user (Admin only)"""
     # Check if user already exists
@@ -84,7 +84,7 @@ async def create_user(
 async def get_user(
     user_id: str,
     current_user: dict = Depends(require_admin),
-    db: AsyncIOMotorDatabase = Depends(get_database)
+    db: AsyncIOMotorDatabase = Depends(get_system_database)
 ):
     """Get a user by ID (Admin only)"""
     try:
@@ -104,7 +104,7 @@ async def update_user(
     user_id: str,
     user_data: UserUpdate,
     current_user: dict = Depends(require_admin),
-    db: AsyncIOMotorDatabase = Depends(get_database)
+    db: AsyncIOMotorDatabase = Depends(get_system_database)
 ):
     """Update a user (Admin only)"""
     try:
@@ -157,7 +157,7 @@ async def update_user(
 async def delete_user(
     user_id: str,
     current_user: dict = Depends(require_admin),
-    db: AsyncIOMotorDatabase = Depends(get_database)
+    db: AsyncIOMotorDatabase = Depends(get_system_database)
 ):
     """Delete a user (Admin only)"""
     try:
@@ -176,7 +176,7 @@ async def change_user_password(
     user_id: str,
     password_data: PasswordChange,
     current_user: dict = Depends(require_admin),
-    db: AsyncIOMotorDatabase = Depends(get_database)
+    db: AsyncIOMotorDatabase = Depends(get_system_database)
 ):
     """Change a user's password (Admin only)"""
     try:

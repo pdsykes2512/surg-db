@@ -1,0 +1,403 @@
+# Tumour Data Mapping: Access DB → IMPACT MongoDB
+#
+# This file defines the field-by-field mapping from the Access database (acpdata_v3_db.mdb)
+# to the IMPACT MongoDB tumours collection, based on the working surgdb structure.
+#
+# Source Table in Access DB:
+#   - tblTumour: Contains diagnosis, staging, and imaging data
+#   - tblPathology: Updates pathological staging (imported separately)
+#
+# Target: MongoDB 'tumours' collection
+
+# ==============================================================================
+# TOP-LEVEL IDENTIFIERS
+# ==============================================================================
+
+tumour_id:
+  description: "Unique tumour identifier (system-generated)"
+  source: "Generated from patient_id + sequence number"
+  algorithm: "Format: TUM-{patient_id}-{sequence:02d}"
+  data_type: "string"
+  required: true
+  function: "generate_tumour_id(patient_id, sequence)"
+  notes: "Sequential per patient (TUM-ABC123-01, TUM-ABC123-02, etc.)"
+
+patient_id:
+  description: "Reference to patient record"
+  source: "Derived from tblTumour.Hosp_No via patient mapping"
+  algorithm: "Look up patient_id from hosp_no_to_patient_id mapping"
+  data_type: "string"
+  required: true
+  notes: "Foreign key to patients collection"
+
+episode_id:
+  description: "Reference to episode record"
+  source: "Derived from (patient_id, TumSeqno) via episode mapping"
+  algorithm: "Look up episode_id from episode_mapping[(patient_id, tum_seqno)]"
+  data_type: "string"
+  required: true
+  notes: "Foreign key to episodes collection"
+
+# ==============================================================================
+# TUMOUR CLASSIFICATION
+# ==============================================================================
+
+tumour_type:
+  description: "Classification of tumour"
+  source: "NOT IN ACCESS DB"
+  algorithm: "Default to 'primary'"
+  data_type: "string (enum: primary/recurrence/metastasis)"
+  required: true
+  default: "primary"
+  notes: "All tumours in this database are primary colorectal cancers"
+
+# ==============================================================================
+# DIAGNOSIS INFORMATION
+# ==============================================================================
+
+diagnosis_date:
+  description: "Date of diagnosis (COSD CR2030)"
+  source: "tblTumour.Dt_Diag"
+  algorithm: "Parse to YYYY-MM-DD"
+  data_type: "string (ISO date)"
+  required: false
+  function: "parse_date(row.get('Dt_Diag'))"
+  notes: "Key COSD field for cancer waiting times"
+
+icd10_code:
+  description: "ICD-10 diagnosis code (COSD CR0370)"
+  source: "tblTumour.TumICD10"
+  algorithm: "Strip whitespace, null if empty"
+  data_type: "string"
+  required: false
+  notes: "WHO International Classification of Diseases code"
+
+site:
+  description: "Anatomical site of tumour"
+  source: "tblTumour.TumSite"
+  algorithm: "Map to standardized values via map_tumour_site()"
+  data_type: "string"
+  required: false
+  function: "map_tumour_site(row.get('TumSite'))"
+  mapping:
+    "Sigmoid": "sigmoid_colon"
+    "Rectum": "rectum"
+    "Caecum": "caecum"
+    "Ascending": "ascending_colon"
+    "Descending": "descending_colon"
+    "Transverse": "transverse_colon"
+    "Rectosigmoid": "rectosigmoid_junction"
+  notes: "Standardized anatomical location names"
+
+# ==============================================================================
+# TNM STAGING
+# ==============================================================================
+
+tnm_version:
+  description: "TNM classification edition"
+  source: "NOT IN ACCESS DB"
+  algorithm: "Default to '8' (TNM 8th edition)"
+  data_type: "string"
+  required: false
+  default: "8"
+  notes: "TNM 8th edition is standard for this period"
+
+clinical_t:
+  description: "Clinical T stage (COSD CR0520)"
+  source: "tblTumour.preTNM_T"
+  algorithm: "Map to simple format via map_tnm_stage()"
+  data_type: "string"
+  required: false
+  function: "map_tnm_stage(row.get('preTNM_T'))"
+  notes: "Pre-treatment T stage (0, 1, 2, 3, 4a, 4b, etc.)"
+
+clinical_n:
+  description: "Clinical N stage (COSD CR0540)"
+  source: "tblTumour.preTNM_N"
+  algorithm: "Map to simple format via map_tnm_stage()"
+  data_type: "string"
+  required: false
+  function: "map_tnm_stage(row.get('preTNM_N'))"
+  notes: "Pre-treatment N stage (0, 1, 2, etc.)"
+
+clinical_m:
+  description: "Clinical M stage (COSD CR0560)"
+  source: "tblTumour.preTNM_M"
+  algorithm: "Map to simple format via map_tnm_stage()"
+  data_type: "string"
+  required: false
+  function: "map_tnm_stage(row.get('preTNM_M'))"
+  notes: "Pre-treatment M stage (0, 1, 1a, 1b, etc.)"
+
+pathological_t:
+  description: "Pathological T stage (COSD CR0520)"
+  source: "tblPathology.TNM_Tumr (populated later)"
+  algorithm: "Initially null, updated when pathology imported"
+  data_type: "string"
+  required: false
+  notes: "Post-surgery histological T stage"
+
+pathological_n:
+  description: "Pathological N stage (COSD CR0540)"
+  source: "tblPathology.TNM_Nods (populated later)"
+  algorithm: "Initially null, updated when pathology imported"
+  data_type: "string"
+  required: false
+  notes: "Post-surgery histological N stage"
+
+pathological_m:
+  description: "Pathological M stage (COSD CR0560)"
+  source: "tblPathology.TNM_Mets (populated later)"
+  algorithm: "Initially null, updated when pathology imported"
+  data_type: "string"
+  required: false
+  notes: "Post-surgery histological M stage"
+
+# ==============================================================================
+# RECTAL CANCER SPECIFIC
+# ==============================================================================
+
+distance_from_anal_verge_cm:
+  description: "Distance of tumour from anal verge (rectal cancers)"
+  source: "tblTumour.Height"
+  algorithm: "Convert to float, null if NaN"
+  data_type: "float"
+  required: false
+  notes: "Measured in centimeters, important for rectal cancer planning"
+
+# ==============================================================================
+# IMAGING RESULTS OBJECT
+# ==============================================================================
+
+imaging_results:
+  description: "Pre-treatment imaging results summary"
+
+  ct_chest:
+    description: "CT chest/thorax results"
+    result:
+      source: "tblTumour.CT_pneumo"
+      algorithm: "Map to yes/no via map_yes_no()"
+      data_type: "string (enum: yes/no)"
+      function: "map_yes_no(row.get('CT_pneumo'))"
+    date:
+      source: "tblTumour.Dt_CT_pneumo"
+      algorithm: "Parse to YYYY-MM-DD"
+      data_type: "string (ISO date)"
+      function: "parse_date(row.get('Dt_CT_pneumo'))"
+    notes: "CT colonography/pneumocolon for staging"
+
+  ct_abdomen:
+    description: "CT abdomen/pelvis results"
+    result:
+      source: "tblTumour.CT_Abdo"
+      algorithm: "Map to yes/no via map_yes_no()"
+      data_type: "string (enum: yes/no)"
+      function: "map_yes_no(row.get('CT_Abdo'))"
+    date:
+      source: "tblTumour.Dt_CT_Abdo"
+      algorithm: "Parse to YYYY-MM-DD"
+      data_type: "string (ISO date)"
+      function: "parse_date(row.get('Dt_CT_Abdo'))"
+    notes: "Standard staging investigation for colorectal cancer"
+
+  mri_primary:
+    description: "MRI of primary tumour (mainly rectal)"
+    date:
+      source: "tblTumour.Dt_MRI1"
+      algorithm: "Parse to YYYY-MM-DD"
+      data_type: "string (ISO date)"
+      function: "parse_date(row.get('Dt_MRI1'))"
+    t_stage:
+      source: "tblTumour.MRI1_T"
+      algorithm: "Map to simple format via map_tnm_stage()"
+      data_type: "string"
+      function: "map_tnm_stage(row.get('MRI1_T'))"
+      notes: "T stage from MRI report"
+    n_stage:
+      source: "tblTumour.MRI1_N"
+      algorithm: "Map to simple format via map_tnm_stage()"
+      data_type: "string"
+      function: "map_tnm_stage(row.get('MRI1_N'))"
+      notes: "N stage from MRI report"
+    crm_status:
+      source: "tblTumour.MRI1_CRM"
+      algorithm: "Map to yes/no/uncertain via map_crm_status()"
+      data_type: "string (enum: yes/no/uncertain)"
+      function: "map_crm_status(row.get('MRI1_CRM'))"
+      notes: "Circumferential resection margin involvement"
+    crm_distance_mm:
+      source: "tblTumour.MRI1_dist"
+      algorithm: "Convert to float, null if NaN"
+      data_type: "float"
+      notes: "Distance to CRM in millimeters"
+    emvi:
+      source: "tblTumour.EMVI"
+      algorithm: "Map to yes/no via map_yes_no()"
+      data_type: "string (enum: yes/no)"
+      function: "map_yes_no(row.get('EMVI'))"
+      notes: "Extramural vascular invasion"
+
+# ==============================================================================
+# METASTASES OBJECT
+# ==============================================================================
+
+distant_metastases:
+  description: "Distant metastases sites"
+
+  liver:
+    source: "tblTumour.DM_Liver"
+    algorithm: "Map to yes/no via map_yes_no()"
+    data_type: "string (enum: yes/no)"
+    function: "map_yes_no(row.get('DM_Liver'))"
+
+  lung:
+    source: "tblTumour.DM_Lung"
+    algorithm: "Map to yes/no via map_yes_no()"
+    data_type: "string (enum: yes/no)"
+    function: "map_yes_no(row.get('DM_Lung'))"
+
+  bone:
+    source: "tblTumour.DM_Bone"
+    algorithm: "Map to yes/no via map_yes_no()"
+    data_type: "string (enum: yes/no)"
+    function: "map_yes_no(row.get('DM_Bone'))"
+
+  other:
+    source: "tblTumour.DM_Other"
+    algorithm: "Map to yes/no via map_yes_no()"
+    data_type: "string (enum: yes/no)"
+    function: "map_yes_no(row.get('DM_Other'))"
+    notes: "Other sites (peritoneum, brain, etc.)"
+
+# ==============================================================================
+# SCREENING OBJECT
+# ==============================================================================
+
+screening:
+  description: "Screening programme information"
+
+  screening_programme:
+    source: "tblTumour.BCSP"
+    algorithm: "Map to yes/no via map_yes_no()"
+    data_type: "string (enum: yes/no)"
+    function: "map_yes_no(row.get('BCSP'))"
+    notes: "Bowel Cancer Screening Programme"
+
+  screened:
+    source: "tblTumour.Screened"
+    algorithm: "Map to yes/no via map_yes_no()"
+    data_type: "string (enum: yes/no)"
+    function: "map_yes_no(row.get('Screened'))"
+
+# ==============================================================================
+# SYNCHRONOUS TUMOURS
+# ==============================================================================
+
+synchronous:
+  description: "Presence of synchronous tumours"
+  source: "tblTumour.Sync"
+  algorithm: "Map to yes/no via map_yes_no()"
+  data_type: "string (enum: yes/no)"
+  function: "map_yes_no(row.get('Sync'))"
+  notes: "Multiple primary colorectal tumours at presentation"
+
+synchronous_description:
+  description: "Description of synchronous tumours"
+  source: "tblTumour.TumSync"
+  algorithm: "Strip whitespace, null if empty"
+  data_type: "string"
+  required: false
+  notes: "Free text description of additional tumours"
+
+# ==============================================================================
+# SYSTEM METADATA
+# ==============================================================================
+
+created_at:
+  source: "System generated"
+  algorithm: "datetime.utcnow()"
+  data_type: "datetime"
+  required: true
+
+updated_at:
+  source: "System generated"
+  algorithm: "datetime.utcnow()"
+  data_type: "datetime"
+  required: true
+
+# ==============================================================================
+# FIELDS IN ACCESS DB NOT CURRENTLY MAPPED
+# ==============================================================================
+
+# REFERRAL FIELDS (mapped to episodes instead):
+# - RefType, DtRef, Priority: Referral information (in episodes)
+# - Mdt_org, Ref_MDT: MDT information (in episodes)
+# - Dt_Visit: First visit date (in episodes)
+# - careplan, plan_treat: Treatment planning (in episodes)
+# - performance: Performance status (in episodes)
+#
+# COLONOSCOPY FIELDS (mapped to investigations):
+# - Date_Col: Colonoscopy date (in investigations)
+# - Col_scpy: Colonoscopy result (in investigations)
+# - Rea_Inco: Reason incomplete
+# - ColC_Ov/Ble/Per/Oth: Colonoscopy complications
+#
+# ADDITIONAL IMAGING (mapped to investigations):
+# - Dt_MRI2, M2result: Second MRI
+# - Dt_Endo, Endo_T: Endoscopic ultrasound
+# - Dt_Abdo, Abresult: Other abdominal imaging
+# - Date_Bar, Bar_Enem: Barium enema
+#
+# BIOPSY/PATHOLOGY FIELDS (in tblPathology):
+# - All histology fields handled by tblPathology import
+#
+# SYNCHRONOUS TUMOUR DETAIL FLAGS:
+# - Sync_1 through Sync_10: Individual synchronous tumour flags
+# - Sync_cancer: Synchronous cancer details
+# - SynICD10: ICD-10 for synchronous tumour
+#
+# SCREENING DETAIL:
+# - Scrn_Yes: Screening details
+#
+# FLEXIBLE SIGMOIDOSCOPY:
+# - Fle_Sig: Flexible sigmoidoscopy result
+# - Date_Fle: Flexible sigmoidoscopy date
+#
+# STAGING CLASSIFICATION:
+# - Mod_Duke: Modified Duke's classification (calculated from TNM)
+#
+# ADMINISTRATIVE:
+# - Unit_ID: Unit identifier
+# - TumSeqno: Sequence number (used for mapping only)
+# - DEntered/DUpdated: Original dates
+# - Created/Updated: Original users
+#
+# DELAY/WAITING TIMES:
+# - Delay: Delay flag (handled in waiting times)
+# - TWC_referral: Two-week cancer referral
+#
+# OTHER:
+# - Ot_Speci: Other specification (for metastases)
+# - internal_referral_source: Internal referral
+# - emergency_referral: Emergency flag
+# - other: Other notes
+# - MDT_disc: MDT discussion
+# - Nonca_treat: Non-cancer treatment
+# - monit_intent: Monitoring intent
+# - referral_code_NBOCAP: NBOCAP referral code
+
+# ==============================================================================
+# NOTES
+# ==============================================================================
+
+# 1. The tblTumour table serves dual purpose:
+#    - Episode data (referral, MDT) → episodes collection
+#    - Tumour data (diagnosis, staging) → tumours collection
+#
+# 2. TumSeqno is the linking field within a patient's record:
+#    - Used to link episodes, tumours, treatments, pathology, oncology, follow-up
+#    - Mapping: (patient_id, TumSeqno) → episode_id, tumour_id
+#
+# 3. Pathological staging is initially null and updated when tblPathology is imported
+#
+# 4. After tumour is created, its tumour_id is pushed to the parent episode's tumour_ids array

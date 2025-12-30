@@ -195,67 +195,146 @@ def get_organization_by_code(code: str, use_cache: bool = True) -> Optional[Dict
         return None
 
 
+def calculate_relevance_score(org: Dict, query: str) -> tuple:
+    """
+    Calculate relevance score for sorting search results.
+    Returns tuple for sorting (higher priority items sort first).
+    """
+    name = org.get("name", "").lower()
+    org_type = org.get("type", "").lower()
+    query_lower = query.lower()
+    source = org.get("source", "")
+
+    # Priority 1: Cache results first (as requested by user)
+    cache_bonus = 1 if source == "cache" else 0
+
+    # Priority 2: Exact match
+    exact_match = 1 if name == query_lower else 0
+
+    # Priority 3: Organization type (main NHS trusts before sites/other)
+    type_score = 0
+    # Main NHS trusts (not sites) get highest priority
+    if org_type == "nhs trust":
+        type_score = 100
+    elif "foundation trust" in org_type and "site" not in org_type:
+        type_score = 95
+    # Hospitals and trusts with "hospital" in name
+    elif "hospital" in name and ("nhs trust" in org_type or "foundation" in org_type):
+        type_score = 90
+    elif "hospital" in org_type or "hospital" in name:
+        type_score = 85
+    # NHS trust sites (lower than main trusts)
+    elif "nhs trust site" in org_type:
+        type_score = 60
+    # Other types
+    elif "clinical commissioning" in org_type:
+        type_score = 70
+    elif any(x in org_type for x in ["pathology", "laboratory", "primary care"]):
+        type_score = 50
+    elif any(x in org_type for x in ["local authority", "non-nhs"]):
+        type_score = 20
+    else:
+        type_score = 40
+
+    # Priority 4: Query position in name (starts-with is better than contains)
+    position_score = 0
+    if name.startswith(query_lower):
+        position_score = 100
+    elif name.startswith(query_lower.split()[0]):  # Starts with first word
+        position_score = 90
+    elif f" {query_lower}" in name:  # Word boundary match
+        position_score = 80
+    elif query_lower in name:
+        position_score = 70
+
+    # Priority 5: Prefer complete organization names (containing "nhs trust", "hospital", etc.)
+    completeness_score = 0
+    if "nhs trust" in name or "nhs foundation" in name:
+        completeness_score = 50
+    if "hospital" in name:
+        completeness_score += 30
+    if "university" in name:
+        completeness_score += 10
+
+    # Priority 6: Name length (penalize very short names, prefer medium length)
+    # Very short names are often abbreviations or codes, not full org names
+    if len(name) < 15:
+        length_score = 20  # Low score for very short names
+    elif len(name) < 40:
+        length_score = 100  # Best score for medium-length names
+    elif len(name) < 60:
+        length_score = 80
+    else:
+        length_score = 50  # Penalize very long names
+
+    # Return tuple for sorting (sorts in descending order by each element)
+    # Using negative values because we want descending sort
+    return (-cache_bonus, -exact_match, -type_score, -position_score, -completeness_score, -length_score, name)
+
+
 def search_organizations(query: str, active_only: bool = True, use_cache: bool = True) -> List[Dict]:
     """
     Search for organizations by name (partial match supported).
-    
+
     Args:
         query: Search query string (supports partial matching)
         active_only: Only return active organizations
         use_cache: Check local cache first
-        
+
     Returns:
-        List of matching organizations
+        List of matching organizations sorted by relevance
     """
     results = []
-    
+    seen_codes = set()
+
     # Check cache first
     if use_cache:
         cache_results = search_cache(query)
         if cache_results:
             print(f"ℹ Found {len(cache_results)} matches in local cache", file=sys.stderr)
-            results.extend(cache_results)
-    
+            for result in cache_results:
+                if result["code"] not in seen_codes:
+                    seen_codes.add(result["code"])
+                    results.append(result)
+
     # Also query API with partial name matching
     # The API supports wildcard searches with *
     url = f"{ODS_BASE_URL}/Organization"
-    
+
     # Try multiple search strategies for better partial matching
     search_queries = [
         query,  # Exact query
         f"{query}*",  # Prefix match
         f"*{query}*",  # Contains match
     ]
-    
-    api_codes_seen = set()
-    
+
     for search_query in search_queries:
         params = {
             "name": search_query,
             "_count": 50,
         }
-        
+
         if active_only:
             params["active"] = "true"
-        
+
         try:
             print(f"ℹ Querying ODS API with: {search_query}", file=sys.stderr)
             response = requests.get(url, params=params, timeout=10)
             response.raise_for_status()
-            
+
             data = response.json()
-            
+
             # Parse FHIR Bundle response
             entries = data.get("entry", [])
             for entry in entries:
                 resource = entry.get("resource", {})
                 code = resource.get("id", "")
-                
+
                 # Skip if already seen
-                if code in api_codes_seen:
+                if code in seen_codes:
                     continue
-                api_codes_seen.add(code)
-                
+                seen_codes.add(code)
+
                 # Extract type from extensions
                 org_type = ""
                 extensions = resource.get("extension", [])
@@ -268,7 +347,7 @@ def search_organizations(query: str, active_only: bool = True, use_cache: bool =
                                 break
                         if org_type:
                             break
-                
+
                 org_info = {
                     "code": code,
                     "name": resource.get("name", ""),
@@ -276,20 +355,23 @@ def search_organizations(query: str, active_only: bool = True, use_cache: bool =
                     "type": org_type,
                     "source": "api"
                 }
-                
+
                 # Auto-save to cache
                 save_to_cache(code, org_info)
-                
+
                 results.append(org_info)
-            
+
             # If we found results, don't try other search patterns
             if entries:
                 break
-                
+
         except Exception as e:
             print(f"Error searching with '{search_query}': {e}", file=sys.stderr)
             continue
-    
+
+    # Sort results by relevance
+    results.sort(key=lambda org: calculate_relevance_score(org, query))
+
     return results
 
 

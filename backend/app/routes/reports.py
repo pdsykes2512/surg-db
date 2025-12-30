@@ -45,11 +45,11 @@ async def get_summary_report() -> Dict[str, Any]:
                           if t.get('outcomes', {}).get('readmission_30day') == 'yes')
 
         # Use boolean mortality fields (auto-populated from deceased_date)
-        mortality_30d_count = sum(1 for t in treatments if t.get('mortality_30day') == True)
-        mortality_90d_count = sum(1 for t in treatments if t.get('mortality_90day') == True)
+        mortality_30d_count = sum(1 for t in treatments if t.get('outcomes', {}).get('mortality_30day') == True)
+        mortality_90d_count = sum(1 for t in treatments if t.get('outcomes', {}).get('mortality_90day') == True)
 
         return_to_theatre = sum(1 for t in treatments
-                               if t.get('postoperative_events', {}).get('return_to_theatre', {}).get('occurred') == 'yes')
+                               if t.get('outcomes', {}).get('return_to_theatre') == 'yes')
         escalation_of_care = sum(1 for t in treatments
                                 if t.get('postoperative_events', {}).get('icu_admission'))
 
@@ -167,13 +167,14 @@ async def get_surgeon_performance() -> Dict[str, Any]:
             clinician_ids.add(clinician_id)
     
     # Get all episodes to build episode_id -> lead_clinician mapping
+    # Database now stores lead_clinician as names (e.g., "Jim Khan")
     all_episodes = await episodes_collection.find({}).to_list(length=None)
     episode_to_lead_clinician = {}
     for episode in all_episodes:
         episode_id = episode.get('episode_id')
         lead_clinician_name = episode.get('lead_clinician')
         if episode_id and lead_clinician_name:
-            # Try to match the name to a clinician ID
+            # Try to match the name to a clinician ID (for filtering to active surgeons)
             lead_clinician_lower = lead_clinician_name.lower()
             matched_id = None
             for known_name, cid in clinician_name_to_id.items():
@@ -226,12 +227,12 @@ async def get_surgeon_performance() -> Dict[str, Any]:
             stats['readmissions'] += 1
 
         # Use boolean mortality fields (auto-populated from deceased_date)
-        if treatment.get('mortality_30day') == True:
+        if treatment.get('outcomes', {}).get('mortality_30day') == True:
             stats['mortality_30day'] += 1
-        if treatment.get('mortality_90day') == True:
+        if treatment.get('outcomes', {}).get('mortality_90day') == True:
             stats['mortality_90day'] += 1
 
-        if treatment.get('postoperative_events', {}).get('return_to_theatre', {}).get('occurred') == 'yes':
+        if treatment.get('outcomes', {}).get('return_to_theatre') == 'yes':
             stats['return_to_theatre_count'] += 1
         if treatment.get('postoperative_events', {}).get('icu_admission'):
             stats['icu_admissions'] += 1

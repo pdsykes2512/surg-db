@@ -10,7 +10,8 @@ class Settings(BaseSettings):
     
     # MongoDB settings
     mongodb_uri: str = "mongodb://surg-db.vps:27017"
-    mongodb_db_name: str = "surg_outcomes"
+    mongodb_db_name: str = "impact"  # Clinical audit data
+    mongodb_system_db_name: str = "impact_system"  # System data (users, clinicians)
     
     # API settings
     api_host: str = "0.0.0.0"

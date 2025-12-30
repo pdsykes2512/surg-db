@@ -13,11 +13,15 @@ Usage:
     # Decrypt
     nhs_number = decrypt_field('nhs_number', encrypted_nhs)
 
-Sensitive Fields:
+Sensitive Fields (UK GDPR Article 32 + Caldicott Principles):
     - nhs_number: NHS patient identifier
-    - mrn: Medical record number
+    - mrn: Medical record number (PAS number)
+    - hospital_number: Legacy hospital identifier
+    - first_name: Patient given name
+    - last_name: Patient surname
+    - date_of_birth: Patient DOB (quasi-identifier)
+    - deceased_date: Date of death
     - postcode: Geographic identifier (partial)
-    - date_of_birth: Patient DOB
 """
 
 import os
@@ -38,12 +42,23 @@ load_dotenv()
 ENCRYPTION_KEY_FILE = Path(os.getenv('ENCRYPTION_KEY_FILE', '/root/.field-encryption-key'))
 SALT_FILE = Path(os.getenv('ENCRYPTION_SALT_FILE', '/root/.field-encryption-salt'))
 
-# Sensitive fields that require encryption
+# Sensitive fields that require encryption (UK GDPR Article 32 + Caldicott Principles)
 ENCRYPTED_FIELDS = {
-    'nhs_number',
-    'mrn',
-    'postcode',
-    'date_of_birth'
+    # Direct identifiers
+    'nhs_number',           # National identifier
+    'mrn',                  # Medical record number (PAS number)
+    'hospital_number',      # Legacy hospital identifier
+
+    # Personal identifiers
+    'first_name',          # Given name
+    'last_name',           # Surname/family name
+
+    # Sensitive dates
+    'date_of_birth',       # DOB is quasi-identifier
+    'deceased_date',       # Date of death
+
+    # Geographic identifiers
+    'postcode'             # UK postcode (partial identifier)
 }
 
 # Encryption prefix to identify encrypted values
@@ -251,27 +266,42 @@ def encrypt_document(document: dict) -> dict:
 
 def decrypt_document(document: dict) -> dict:
     """
-    Decrypt all encrypted fields in a MongoDB document
+    Decrypt all encrypted fields in a MongoDB document (recursively handles nested dicts)
 
     Args:
         document: MongoDB document (dict)
 
     Returns:
-        Document with decrypted fields
+        Document with decrypted fields (including nested fields)
 
     Example:
-        >>> doc = {'nhs_number': 'ENC:gAAAAABh...', 'name': 'John Smith'}
+        >>> doc = {
+        ...     'nhs_number': 'ENC:gAAAAABh...',
+        ...     'demographics': {'first_name': 'ENC:gAAAAABh...'},
+        ...     'name': 'John Smith'
+        ... }
         >>> decrypt_document(doc)
-        {'nhs_number': '1234567890', 'name': 'John Smith'}
+        {
+            'nhs_number': '1234567890',
+            'demographics': {'first_name': 'John'},
+            'name': 'John Smith'
+        }
     """
     if not isinstance(document, dict):
         return document
 
-    decrypted_doc = document.copy()
+    decrypted_doc = {}
 
-    for field_name, value in decrypted_doc.items():
-        if isinstance(value, str) and value.startswith(ENCRYPTION_PREFIX):
+    for field_name, value in document.items():
+        # Handle nested dictionaries recursively
+        if isinstance(value, dict):
+            decrypted_doc[field_name] = decrypt_document(value)
+        # Handle encrypted string values
+        elif isinstance(value, str) and value.startswith(ENCRYPTION_PREFIX):
             decrypted_doc[field_name] = decrypt_field(field_name, value)
+        # Pass through all other values unchanged
+        else:
+            decrypted_doc[field_name] = value
 
     return decrypted_doc
 

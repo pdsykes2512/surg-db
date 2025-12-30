@@ -3,7 +3,6 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
-from ..database import get_database
 from ..models.user import User, UserCreate, Token
 from ..auth import (
     authenticate_user,
@@ -11,6 +10,7 @@ from ..auth import (
     get_password_hash,
     get_current_user,
     require_admin,
+    get_system_database,
     ACCESS_TOKEN_EXPIRE_MINUTES
 )
 from ..middleware import limiter, AUTH_LIMIT
@@ -23,7 +23,7 @@ router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 async def login(
     request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
-    db: AsyncIOMotorDatabase = Depends(get_database)
+    db: AsyncIOMotorDatabase = Depends(get_system_database)
 ):
     """
     Login with email and password to get JWT token
@@ -74,7 +74,7 @@ async def register(
     request: Request,
     user_data: UserCreate,
     current_user: dict = Depends(require_admin),
-    db: AsyncIOMotorDatabase = Depends(get_database)
+    db: AsyncIOMotorDatabase = Depends(get_system_database)
 ):
     """
     Register a new user (ADMIN ONLY - requires authentication)

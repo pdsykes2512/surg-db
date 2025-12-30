@@ -27,6 +27,7 @@ interface SummaryReport {
     }
   }
   urgency_breakdown?: Record<string, number>
+  asa_breakdown?: Record<string, number>
 }
 
 interface SurgeonPerformance {
@@ -505,14 +506,69 @@ export function ReportsPage() {
           {summary.urgency_breakdown && Object.keys(summary.urgency_breakdown).length > 0 && (
             <Card className="p-6">
               <h3 className="text-lg font-semibold mb-4">Surgery Urgency Breakdown</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {Object.entries(summary.urgency_breakdown).map(([urgency, count]) => (
-                  <div key={urgency} className="text-center">
-                    <p className="text-2xl font-bold text-gray-900">{count}</p>
-                    <p className="text-sm text-gray-500 capitalize">{urgency}</p>
-                  </div>
-                ))}
+              <div className="grid grid-cols-3 gap-4">
+                {['elective', 'urgent', 'emergency'].map((urgency) => {
+                  const count = summary.urgency_breakdown?.[urgency] || 0
+                  const percentage = ((count / summary.total_surgeries) * 100).toFixed(1)
+                  return (
+                    <div key={urgency} className="text-center p-4 bg-gray-50 rounded-lg">
+                      <p className="text-3xl font-bold text-gray-900">{count}</p>
+                      <p className="text-sm text-gray-500 capitalize mt-1">{urgency}</p>
+                      <p className="text-xs text-gray-400 mt-1">{percentage}%</p>
+                    </div>
+                  )
+                })}
               </div>
+            </Card>
+          )}
+
+          {/* ASA Grade Breakdown */}
+          {summary.asa_breakdown && Object.keys(summary.asa_breakdown).length > 0 && (
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold mb-4">ASA Grade Stratification</h3>
+              <div className="grid grid-cols-5 gap-4">
+                {['I', 'II', 'III', 'IV', 'V'].map((grade) => {
+                  const count = summary.asa_breakdown?.[grade] || 0
+                  const percentage = ((count / summary.total_surgeries) * 100).toFixed(1)
+
+                  // Color coding based on ASA grade risk
+                  const getAsaColor = (asaGrade: string) => {
+                    if (asaGrade === 'I') return 'bg-green-50 border-green-200'
+                    if (asaGrade === 'II') return 'bg-blue-50 border-blue-200'
+                    if (asaGrade === 'III') return 'bg-yellow-50 border-yellow-200'
+                    if (asaGrade === 'IV') return 'bg-orange-50 border-orange-200'
+                    return 'bg-red-50 border-red-200'
+                  }
+
+                  const getAsaTextColor = (asaGrade: string) => {
+                    if (asaGrade === 'I') return 'text-green-700'
+                    if (asaGrade === 'II') return 'text-blue-700'
+                    if (asaGrade === 'III') return 'text-yellow-700'
+                    if (asaGrade === 'IV') return 'text-orange-700'
+                    return 'text-red-700'
+                  }
+
+                  const getAsaDescription = (asaGrade: string) => {
+                    if (asaGrade === 'I') return 'Healthy'
+                    if (asaGrade === 'II') return 'Mild disease'
+                    if (asaGrade === 'III') return 'Severe disease'
+                    if (asaGrade === 'IV') return 'Life-threatening'
+                    return 'Moribund'
+                  }
+
+                  return (
+                    <div key={grade} className={`text-center p-4 rounded-lg border-2 ${getAsaColor(grade)}`}>
+                      <p className={`text-lg font-bold ${getAsaTextColor(grade)}`}>ASA {grade}</p>
+                      <p className={`text-3xl font-bold mt-2 ${getAsaTextColor(grade)}`}>{count}</p>
+                      <p className="text-xs text-gray-600 mt-1">{percentage}%</p>
+                      <p className="text-xs text-gray-500 mt-1">{getAsaDescription(grade)}</p>
+                    </div>
+                  )
+                })}
+              </div>
+              <p className="text-xs text-gray-500 mt-4 text-center">
+                ASA Physical Status Classification: Risk stratification for surgical patients
+              </p>
             </Card>
           )}
 

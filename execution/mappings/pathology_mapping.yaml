@@ -1,0 +1,324 @@
+# Pathology Data Mapping: Access DB → IMPACT MongoDB
+#
+# This file defines the field-by-field mapping from the Access database (acpdata_v3_db.mdb)
+# to the IMPACT MongoDB tumours collection (pathology updates), based on the working surgdb structure.
+#
+# Source Table in Access DB:
+#   - tblPathology: Contains histopathology results from surgical specimens
+#
+# Target: MongoDB 'tumours' collection (UPDATE operation)
+#
+# Note: Pathology data UPDATES existing tumour records created from tblTumour.
+#       It does NOT create new records, only adds pathological staging and histology.
+
+# ==============================================================================
+# OPERATION TYPE
+# ==============================================================================
+
+operation: "UPDATE"
+description: "Pathology data updates existing tumour records with histological findings"
+update_method: "$set"
+matching_key: "tumour_id (via tumour_mapping[(patient_id, TumSeqno)])"
+
+# ==============================================================================
+# PATHOLOGICAL TNM STAGING
+# ==============================================================================
+
+pathological_t:
+  description: "Pathological T stage (COSD pCR0910)"
+  source: "tblPathology.TNM_Tumr"
+  algorithm: "Map to simple format via map_tnm_stage()"
+  data_type: "string"
+  function: "map_tnm_stage(row.get('TNM_Tumr'))"
+  notes: "Post-surgery histological T stage (0, 1, 2, 3, 4a, 4b, etc.)"
+
+pathological_n:
+  description: "Pathological N stage (COSD pCR0920)"
+  source: "tblPathology.TNM_Nods"
+  algorithm: "Map to simple format via map_tnm_stage()"
+  data_type: "string"
+  function: "map_tnm_stage(row.get('TNM_Nods'))"
+  notes: "Post-surgery histological N stage (0, 1a, 1b, 2a, 2b, etc.)"
+
+pathological_m:
+  description: "Pathological M stage (COSD pCR0930)"
+  source: "tblPathology.TNM_Mets"
+  algorithm: "Map to simple format via map_tnm_stage()"
+  data_type: "string"
+  function: "map_tnm_stage(row.get('TNM_Mets'))"
+  notes: "Post-surgery histological M stage (0, 1, 1a, 1b, etc.)"
+
+tnm_version:
+  description: "TNM edition used (COSD CR2070)"
+  source: "tblPathology.TNM_edition or default"
+  algorithm: "Use TNM_edition if available, otherwise default to '8'"
+  data_type: "string"
+  default: "8"
+  notes: "TNM 8th edition is standard for this period"
+
+pathological_stage_date:
+  description: "Date of pathological staging"
+  source: "tblPathology.Spec_Dat"
+  algorithm: "Parse to YYYY-MM-DD"
+  data_type: "string (ISO date)"
+  function: "parse_date(row.get('Spec_Dat'))"
+  notes: "Specimen date (surgery date)"
+
+# ==============================================================================
+# TUMOUR CHARACTERISTICS
+# ==============================================================================
+
+grade:
+  description: "Tumour differentiation grade"
+  source: "tblPathology.HistGrad"
+  algorithm: "Map to clean format via map_grade()"
+  data_type: "string (enum: g1/g2/g3/g4)"
+  function: "map_grade(row.get('HistGrad'))"
+  mapping:
+    "Well differentiated": "g1"
+    "Moderately differentiated": "g2"
+    "Poorly differentiated": "g3"
+    "Undifferentiated": "g4"
+  notes: "COSD standardized grading"
+
+histology_type:
+  description: "Histological tumour type"
+  source: "tblPathology.HistType"
+  algorithm: "Map to clean format via map_histology_type()"
+  data_type: "string"
+  function: "map_histology_type(row.get('HistType'))"
+  mapping:
+    "Adenocarcinoma": "adenocarcinoma"
+    "Mucinous adenocarcinoma": "mucinous_adenocarcinoma"
+    "Signet ring": "signet_ring_carcinoma"
+  notes: "Standardized histology classification"
+
+size_mm:
+  description: "Maximum tumour diameter in millimeters"
+  source: "tblPathology.MaxDiam"
+  algorithm: "Convert to float, null if NaN"
+  data_type: "float"
+  notes: "Largest dimension of tumour"
+
+# ==============================================================================
+# LYMPH NODE ASSESSMENT
+# ==============================================================================
+
+lymph_nodes_examined:
+  description: "Total lymph nodes examined (COSD pCR0890)"
+  source: "tblPathology.NoLyNoF"
+  algorithm: "Convert to int, null if NaN"
+  data_type: "integer"
+  notes: "Total number found in specimen"
+
+lymph_nodes_positive:
+  description: "Positive lymph nodes with metastases (COSD pCR0900)"
+  source: "tblPathology.NoLyNoP"
+  algorithm: "Convert to int, null if NaN"
+  data_type: "integer"
+  notes: "Number containing cancer cells"
+
+apical_node_involvement:
+  description: "Apical lymph node involvement"
+  source: "tblPathology.Nod_Apic"
+  algorithm: "Map to yes/no via map_yes_no()"
+  data_type: "string (enum: yes/no)"
+  function: "map_yes_no(row.get('Nod_Apic'))"
+  notes: "Highest lymph node in resection specimen"
+
+extranodal_extension:
+  description: "Extranodal extension of lymph node metastases"
+  source: "tblPathology.Nod_Extr"
+  algorithm: "Map to yes/no via map_yes_no()"
+  data_type: "string (enum: yes/no)"
+  function: "map_yes_no(row.get('Nod_Extr'))"
+  notes: "Cancer extending beyond lymph node capsule"
+
+# ==============================================================================
+# INVASION PATTERNS
+# ==============================================================================
+
+lymphovascular_invasion:
+  description: "Lymphovascular invasion status"
+  source: "tblPathology.VasInv"
+  algorithm: "Map to present/absent/uncertain via map_invasion_status()"
+  data_type: "string (enum: present/absent/uncertain)"
+  function: "map_invasion_status(row.get('VasInv'))"
+  notes: "Cancer cells in lymphatic or blood vessels"
+
+vascular_invasion:
+  description: "Vascular invasion (venous) status"
+  source: "tblPathology.Venous"
+  algorithm: "Map to present/absent/uncertain via map_invasion_status()"
+  data_type: "string (enum: present/absent/uncertain)"
+  function: "map_invasion_status(row.get('Venous'))"
+  notes: "Cancer cells in veins"
+
+perineural_invasion:
+  description: "Perineural invasion status"
+  source: "tblPathology.Perineural"
+  algorithm: "Map to present/absent/uncertain via map_invasion_status()"
+  data_type: "string (enum: present/absent/uncertain)"
+  function: "map_invasion_status(row.get('Perineural'))"
+  notes: "Cancer cells tracking along nerves"
+
+mesorectal_involvement:
+  description: "Mesorectal fascia involvement (rectal cancer)"
+  source: "NOT IN ACCESS DB"
+  algorithm: "Default to false"
+  data_type: "boolean"
+  default: false
+  notes: "Not captured in current Access DB"
+
+# ==============================================================================
+# RESECTION MARGINS
+# ==============================================================================
+
+crm_status:
+  description: "Circumferential resection margin status (COSD pCR1150)"
+  source: "tblPathology.Mar_Cir"
+  algorithm: "Map to yes/no/uncertain via map_crm_status()"
+  data_type: "string (enum: yes/no/uncertain)"
+  function: "map_crm_status(row.get('Mar_Cir'))"
+  notes: "CRM involved = tumour within 1mm of margin"
+
+crm_distance_mm:
+  description: "Distance to circumferential resection margin in mm"
+  source: "tblPathology.Dist_Cir"
+  algorithm: "Convert to float, null if NaN"
+  data_type: "float"
+  notes: "Distance in millimeters, <1mm = involved"
+
+proximal_margin_mm:
+  description: "Proximal resection margin distance in mm"
+  source: "tblPathology.Dist_Cut"
+  algorithm: "Convert to float, null if NaN"
+  data_type: "float"
+  notes: "Distance from tumour to proximal cut edge"
+
+distal_margin_mm:
+  description: "Distal resection margin distance in mm"
+  source: "NOT IN ACCESS DB"
+  algorithm: "null"
+  data_type: "float"
+  default: "null"
+  notes: "Not separately recorded in Access DB"
+
+resection_grade:
+  description: "Resection completeness grade"
+  source: "tblPathology.resect_grade"
+  algorithm: "Map to r0/r1/r2 via map_resection_grade()"
+  data_type: "string (enum: r0/r1/r2)"
+  function: "map_resection_grade(row.get('resect_grade'))"
+  mapping:
+    "R0": "r0"  # Complete resection, no residual tumour
+    "R1": "r1"  # Microscopic residual tumour
+    "R2": "r2"  # Macroscopic residual tumour
+  notes: "UICC resection classification"
+
+# ==============================================================================
+# SYSTEM METADATA
+# ==============================================================================
+
+updated_at:
+  source: "System generated"
+  algorithm: "datetime.utcnow()"
+  data_type: "datetime"
+  required: true
+  notes: "Timestamp when pathology data was added to tumour record"
+
+# ==============================================================================
+# FIELDS IN ACCESS DB NOT CURRENTLY MAPPED
+# ==============================================================================
+
+# SPECIMEN DETAILS:
+# - Spec_Dat: Specimen date (mapped to pathological_stage_date)
+# - Hist_Dat: Histology report date
+# - AuthPath: Authorizing pathologist
+# - HistNum: Histology number (lab reference)
+#
+# SYNCHRONOUS TUMOURS:
+# - Sync: Synchronous tumours flag (in tumour record already)
+#
+# MARGIN DETAILS:
+# - Mar_Cut: Proximal/distal margin status text
+# - Mar_Dou: Margin doubt
+# - Mar_Mar: Margin details
+# - Dist_Mar: Distance to margin
+# - Dist_Tum: Distance tumour
+# - Dist_Den: Distance dentate line
+# - Dist_Pec: Distance pectinate line
+#
+# POLYP SPECIFIC (not relevant for most):
+# - ca_in_polyp: Cancer in polyp
+# - Haggit_level: Haggit level for polyp cancer
+# - SM_polyp: Submucosal invasion in polyp
+#
+# BACKGROUND PATHOLOGY:
+# - Bk_Adeno: Background adenoma
+# - Bk_Ulcer: Background ulcerative colitis
+# - Bk_Crohn: Background Crohn's disease
+# - Bk_Famil: Background familial syndrome
+# - Bk_Other: Other background pathology
+#
+# ADDITIONAL FINDINGS:
+# - Serosal: Serosal involvement
+# - Perforat: Perforation
+# - Tum_Rel: Tumour relation to peritoneal reflection
+# - Tum_cir: Tumour circumference of bowel
+# - LocalInv: Local invasion
+# - LiverCon: Liver involvement (concurrent)
+#
+# RESECTION DETAILS:
+# - Resect: Resection performed
+#
+# NODAL DETAILS:
+# - Nod_tru: True lymph nodes (vs reactive)
+#
+# ADENOMA SPECIFIC:
+# - Hist_Ado: Histology adenoma
+# - Ado_Spec: Adenoma specification
+#
+# VASCULAR INVASION DETAILS:
+# - Lymphatic: Lymphatic invasion (separate from VasInv)
+# - BeyondMP: Beyond muscularis propria
+#
+# DUKES CLASSIFICATION:
+# - Dukes: Dukes stage (legacy, superseded by TNM)
+#
+# ADMINISTRATIVE:
+# - PthSeqNo: Pathology sequence number
+# - Unit_ID: Unit identifier
+# - Hosp_No, TumSeqNo: Linking fields (used for matching only)
+# - DEntered, DUpdated: Entry/update dates
+# - Created, Updated: User who created/updated
+
+# ==============================================================================
+# NOTES
+# ==============================================================================
+
+# 1. Pathology import is an UPDATE operation, not INSERT
+#    It finds existing tumour records and adds pathological staging
+#
+# 2. Matching is done via tumour_mapping[(patient_id, TumSeqNo)]
+#    This links pathology record to correct tumour
+#
+# 3. Clinical staging (from tblTumour) vs Pathological staging (from tblPathology):
+#    - Clinical: pre-treatment imaging/examination (clinical_t/n/m)
+#    - Pathological: post-surgery microscopic examination (pathological_t/n/m)
+#
+# 4. All invasion fields use standardized enum: present/absent/uncertain
+#    This handles cases where pathologist couldn't definitively assess
+#
+# 5. CRM (circumferential resection margin) is critical for rectal cancer:
+#    - Involved CRM (≤1mm) = higher risk of local recurrence
+#    - Most important prognostic factor in rectal cancer surgery
+#
+# 6. Lymph node harvest adequacy:
+#    - Minimum 12 lymph nodes should be examined for adequate staging
+#    - lymph_nodes_examined field tracks this quality metric
+#
+# 7. Resection grades (R0/R1/R2) indicate completeness of surgery:
+#    - R0: Complete excision, clear margins
+#    - R1: Microscopic residual disease
+#    - R2: Macroscopic residual disease

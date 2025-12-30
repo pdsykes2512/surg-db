@@ -102,7 +102,7 @@ Errors are learning opportunities. When something breaks:
 **Deliverables vs Intermediates:** - **Deliverables**: Google Sheets, Google Slides, or other cloud-based outputs that the user can access  
 - **Intermediates**: Temporary files needed during processing
 
-**Directory structure:** - `.tmp/` (or `~/.tmp/`) - All intermediate files (dossiers, scraped data, temp exports, **log files**). Never commit, always regenerated.  
+**Directory structure:** - `.tmp/` - All intermediate files (dossiers, scraped data, temp exports, **log files**). Never commit, always regenerated.  
 - `execution/` - Python scripts (the deterministic tools) and startup scripts  
 - `directives/` - SOPs in Markdown (the instruction set)
 - `RECENT_CHANGES.md` - **READ THIS FIRST** - Log of recent changes across AI sessions (prevents duplicate work and breaking fixes)

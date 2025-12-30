@@ -1,0 +1,289 @@
+# Patient Data Mapping: Access DB → IMPACT MongoDB
+#
+# This file defines the field-by-field mapping from the Access database (acpdata_v3_db.mdb)
+# to the IMPACT MongoDB patients collection, based on the working surgdb structure.
+#
+# Source Tables in Access DB:
+#   - tblPatient: PRIMARY source (7,973 patients, updated through Dec 2025)
+#   - Table1: FALLBACK source (7,250 patients, last updated 2022 - OUTDATED)
+#
+# Import Strategy:
+#   1. Import all patients from tblPatient (primary, most current)
+#   2. For patients in tblPatient with missing data, check Table1 as fallback
+#   3. Table1 contains 723 FEWER patients than tblPatient (missing 2023-2025 additions)
+#
+# Target: MongoDB 'patients' collection
+#
+# Format:
+#   target_field: Description
+#     source: Access DB field(s)
+#     algorithm: Transformation logic (if any)
+#     data_type: Expected data type
+#     required: Whether field is mandatory
+#     notes: Additional context
+
+# ==============================================================================
+# TOP-LEVEL IDENTIFIERS
+# ==============================================================================
+
+patient_id:
+  description: "Unique randomly-generated patient identifier"
+  source: "SYSTEM GENERATED (not from Access DB)"
+  algorithm: "Random 6-character alphanumeric ID, uppercase"
+  data_type: "string"
+  required: true
+  function: "generate_random_patient_id()"
+  notes: |
+    Primary key for patient. Randomly generated to avoid any link to identifiable data.
+    NOT derived from hospital number, NHS number, or any patient data.
+    Example: "A3K7M2", "P9X4Q1", etc.
+
+nhs_number:
+  description: "NHS Number (10-digit national identifier)"
+  source: "tblPatient.NHS_No (fallback: Table1.NHS_No)"
+  algorithm: "Convert to int to remove decimal, then to string. Null if empty."
+  data_type: "string"
+  required: false
+  function: "str(int(float(nhs_number))) if pd.notna(nhs_number) else None"
+  notes: |
+    Access stores as Double which adds .0 - must strip decimal.
+    PRIMARY LINKING FIELD to other Access DB tables (when present).
+    Used to match patients across episodes, treatments, etc.
+
+mrn:
+  description: "Medical Record Number (PAS identifier)"
+  source: "tblPatient.PAS_No (fallback: Table1.PAS_No)"
+  algorithm: "Direct copy, strip whitespace, null if empty/nan"
+  data_type: "string"
+  required: false
+  notes: |
+    FALLBACK LINKING FIELD when NHS number is absent.
+    Used to match patients to Access DB records when NHS_No is null.
+
+hospital_number:
+  description: "Local hospital number (original identifier)"
+  source: "tblPatient.Hosp_No (fallback: Table1.Hosp_No)"
+  algorithm: "Direct copy, strip whitespace"
+  data_type: "string"
+  required: false
+  notes: |
+    Historical hospital number from Access DB.
+    Stored for reference but NOT used for linking/matching.
+    NHS number or PAS number used for linking instead.
+
+# ==============================================================================
+# DEMOGRAPHICS OBJECT
+# ==============================================================================
+
+demographics:
+  description: "Patient demographic information"
+
+  first_name:
+    source: "tblPatient.Forename (fallback: Table1.Forename)"
+    algorithm: "Strip whitespace, null if empty"
+    data_type: "string"
+    required: false
+
+  last_name:
+    source: "tblPatient.Surname (fallback: Table1.Surname)"
+    algorithm: "Strip whitespace, null if empty"
+    data_type: "string"
+    required: false
+
+  date_of_birth:
+    source: "tblPatient.P_DOB (fallback: Table1.P_DOB)"
+    algorithm: "Parse to YYYY-MM-DD format"
+    data_type: "string (ISO date)"
+    required: true
+    function: "parse_dob(row.get('P_DOB'))"
+    notes: "May be in various DateTime formats. Parse to ISO string."
+
+  age:
+    source: "Calculated from P_DOB"
+    algorithm: "Calculate age in years from DOB to current date"
+    data_type: "integer"
+    required: false
+    function: "calculate_age(dob)"
+    notes: "Dynamic calculation, not stored in Access DB"
+
+  gender:
+    source: "tblPatient.Sex (fallback: Table1.Sex)"
+    algorithm: "Map M→male, F→female, normalize case"
+    data_type: "string (enum: male/female/other/unknown)"
+    required: true
+    function: "parse_gender(row.get('Sex'))"
+    notes: "COSD requires standardized values"
+
+  ethnicity:
+    source: "NOT IN ACCESS DB"
+    algorithm: "Default to 'Z' (Not stated)"
+    data_type: "string (COSD ethnicity code)"
+    required: true
+    default: "Z"
+    notes: "Not captured in Access DB. Use 'Z' per user decision."
+
+  deceased_date:
+    source: "tblPatient.DeathDat (fallback: Table1.DeathDat)"
+    algorithm: "Parse to YYYY-MM-DD format, null if empty"
+    data_type: "string (ISO date)"
+    required: false
+    function: "parse_date(row.get('DeathDat'))"
+    notes: "Used for mortality flag calculation"
+
+  bmi:
+    source: "tblPatient.BMI (fallback: Table1.BMI)"
+    algorithm: "Convert to float, null if NaN"
+    data_type: "float"
+    required: false
+    notes: "Pre-calculated in Access DB"
+
+  weight_kg:
+    source: "tblPatient.Weight (fallback: Table1.Weight)"
+    algorithm: "Convert to float, null if NaN"
+    data_type: "float"
+    required: false
+
+  height_cm:
+    source: "tblPatient.Height (fallback: Table1.Height)"
+    algorithm: "Convert to float, null if NaN"
+    data_type: "float"
+    required: false
+
+# ==============================================================================
+# CONTACT OBJECT
+# ==============================================================================
+
+contact:
+  description: "Patient contact information"
+
+  postcode:
+    source: "tblPatient.Postcode (fallback: Table1.Postcode)"
+    algorithm: "Strip whitespace, null if empty"
+    data_type: "string"
+    required: false
+    notes: "UK postcode format"
+
+# ==============================================================================
+# MEDICAL HISTORY OBJECT
+# ==============================================================================
+
+medical_history:
+  description: "Relevant medical history"
+
+  family_history:
+    source: "tblPatient.Fam_Hist (fallback: Table1.Fam_Hist)"
+    algorithm: "Convert to boolean (1→true, 0→false)"
+    data_type: "boolean"
+    required: false
+    function: "bool(row.get('Fam_Hist'))"
+    notes: "Flag for family history of colorectal cancer"
+
+  family_history_positive:
+    source: "tblPatient.Fam_Hist_positive (fallback: Table1.Fam_Hist_positive)"
+    algorithm: "Convert to string if present, null if empty"
+    data_type: "string"
+    required: false
+    notes: "Details about positive family history"
+
+# ==============================================================================
+# SYSTEM METADATA
+# ==============================================================================
+
+created_at:
+  source: "System generated"
+  algorithm: "datetime.utcnow()"
+  data_type: "datetime"
+  required: true
+  notes: "Timestamp of record creation in MongoDB"
+
+updated_at:
+  source: "System generated"
+  algorithm: "datetime.utcnow()"
+  data_type: "datetime"
+  required: true
+  notes: "Timestamp of last update in MongoDB"
+
+# ==============================================================================
+# FIELDS IN ACCESS DB NOT CURRENTLY MAPPED
+# ==============================================================================
+
+# These fields exist in Table1 but are not currently imported:
+#
+# - Unit_ID: Unit identifier (always same value in single-site database)
+# - P_id: Patient ID (legacy, superseded by Hosp_No)
+# - private_pt: Private patient flag (not relevant for NHS audit)
+# - SurgFirm: Surgical firm (redundant - captured in episode/treatment level)
+# - F_Ceased: Flag ceased (unclear meaning, not used)
+# - Death: Death text field (redundant with DeathDat and deceased_date)
+# - CauseDth: Cause of death (not currently captured - potential future field)
+# - P_Mortem: Post-mortem flag (not currently captured)
+# - Wait_Times: Waiting times flag (handled at episode level)
+# - DEntered/DUpdated: Original entry dates in Access (replaced by created_at/updated_at)
+# - Created/Updated: User who created/updated in Access (not relevant in IMPACT)
+# - Death_check: Death check date (administrative field, not needed)
+# - Sanity_Check: Data quality flag (not needed - validation done in IMPACT)
+
+# ==============================================================================
+# LINKING STRATEGY
+# ==============================================================================
+
+# Primary Linking Field: NHS_No (NHS Number)
+#   - Use NHS number as primary key to match patients across Access DB tables
+#   - Clean format: strip decimal (stored as Double in Access)
+#   - Most patients have NHS number populated
+#
+# Fallback Linking Field: PAS_No (MRN)
+#   - Use PAS number when NHS number is absent
+#   - Secondary matching key for patients without NHS number
+#
+# Mapping Construction:
+#   For each patient in Table1:
+#     - Generate random patient_id (6 chars, alphanumeric)
+#     - If NHS_No present: mapping[nhs_number] = patient_id
+#     - Else if PAS_No present: mapping[pas_no] = patient_id
+#     - Else: Skip patient (cannot link to other tables)
+#
+# Usage in Subsequent Imports:
+#   When importing episodes, treatments, etc.:
+#     1. Check for NHS_No in Access DB record
+#     2. If present: patient_id = mapping.get(nhs_number)
+#     3. If absent: patient_id = mapping.get(pas_no)
+#     4. If neither: Skip record (orphaned data)
+
+# ==============================================================================
+# NOTES
+# ==============================================================================
+
+# 1. tblPatient vs Table1:
+#    Both tables have identical structure, but tblPatient is PRIMARY source:
+#    - tblPatient: 7,973 patients (updated through December 2025)
+#    - Table1: 7,250 patients (last updated 2022 - OUTDATED)
+#    - Table1 missing 723 patients added 2023-2025
+#    Use tblPatient as primary, Table1 as fallback for missing fields only.
+#
+# 2. Patient ID Generation:
+#    - patient_id is RANDOMLY GENERATED (not derived from any patient data)
+#    - This ensures no linkage to identifiable information
+#    - Format: 6-character alphanumeric uppercase (e.g., "A3K7M2")
+#
+# 3. Linking Strategy:
+#    - PRIMARY: NHS_No (NHS number) - most reliable national identifier
+#    - FALLBACK: PAS_No (MRN) - local hospital identifier
+#    - NOT USED: Hosp_No (hospital number) - legacy field, inconsistent
+#
+# 4. Data quality:
+#    - NHS_No stored as Double in Access, requires decimal removal
+#    - Dates in various formats, need parsing
+#    - Many text fields have inconsistent capitalization
+#    - Some patients may have neither NHS_No nor PAS_No (cannot be imported)
+#
+# 5. Missing COSD fields:
+#    - Ethnicity: Not in Access DB, default to "Z" (Not stated)
+#    - This is acceptable as historical data may not have captured ethnicity
+#
+# 6. Mapping File Structure:
+#    The import process creates TWO mappings:
+#    - nhs_to_patient_id: {nhs_number → patient_id}
+#    - pas_to_patient_id: {pas_no → patient_id} (fallback)
+#
+#    These mappings are used by all subsequent imports to link records.

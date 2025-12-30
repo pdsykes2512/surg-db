@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { Button } from '../common/Button'
+import { ProviderDisplay } from '../common/ProviderDisplay'
 import { AddTreatmentModal } from './AddTreatmentModal'
 import { TumourModal } from './TumourModal'
 import { TumourSummaryModal } from './TumourSummaryModal'
@@ -78,7 +79,6 @@ export function CancerEpisodeDetailModal({
   const [activeTab, setActiveTab] = useState<'overview' | 'tumours' | 'treatments' | 'investigations' | 'followups'>(initialTab)
   const [viewingTumour, setViewingTumour] = useState<any>(null)
   const [viewingTreatment, setViewingTreatment] = useState<Treatment | null>(null)
-  const [providerName, setProviderName] = useState<string>('')
 
   // Delete confirmation states
   const [deleteTumourConfirmation, setDeleteTumourConfirmation] = useState<{ show: boolean; tumour: any | null }>({ show: false, tumour: null })
@@ -98,34 +98,6 @@ export function CancerEpisodeDetailModal({
     }
   }, [])
 
-  // Fetch provider name when episode changes
-  useEffect(() => {
-    const fetchProviderName = async () => {
-      if (episode?.provider_first_seen) {
-        try {
-          // Use /api for relative URLs (uses Vite proxy)
-          const API_URL = import.meta.env.VITE_API_URL || '/api'
-          const response = await fetch(`${API_URL}/nhs-providers/${episode.provider_first_seen}`)
-          if (response.ok) {
-            const provider = await response.json()
-            // Format the name with Title Case and NHS capitalized
-            const formatted = provider.name.split(' ').map((word: string) => {
-              if (word.toLowerCase() === 'nhs') return 'NHS'
-              return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-            }).join(' ')
-            setProviderName(formatted)
-          } else {
-            setProviderName(episode.provider_first_seen)
-          }
-        } catch (err) {
-          setProviderName(episode.provider_first_seen)
-        }
-      } else {
-        setProviderName('')
-      }
-    }
-    fetchProviderName()
-  }, [episode])
 
   useEffect(() => {
     if (episode) {
@@ -658,7 +630,7 @@ export function CancerEpisodeDetailModal({
                     <div>
                       <label className="text-sm font-medium text-gray-500">Provider First Seen</label>
                       <p className="text-sm text-gray-900 mt-1">
-                        {providerName ? `${providerName} (${episode.provider_first_seen})` : episode.provider_first_seen}
+                        <ProviderDisplay code={episode.provider_first_seen} />
                       </p>
                     </div>
                   )}

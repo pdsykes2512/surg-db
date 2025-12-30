@@ -66,9 +66,10 @@ def create_patient_xml(patient: dict, episode: dict) -> ET.Element:
         ethnicity.text = demographics["ethnicity"]
     
     # Postcode (CR0080) - MANDATORY
-    if demographics.get("postcode"):
+    contact = patient.get("contact", {})
+    if contact.get("postcode"):
         postcode = ET.SubElement(patient_elem, "PostcodeOfUsualAddress")
-        postcode.text = demographics["postcode"]
+        postcode.text = contact["postcode"]
     
     return patient_elem
 
@@ -300,7 +301,8 @@ def create_episode_xml(episode: dict, patient: dict, treatments: list, tumours: 
                     asa.text = str(treatment["asa_score"])
                 
                 # Surgical approach (CR6310)
-                if treatment.get("approach"):
+                classification = treatment.get("classification", {})
+                if classification.get("approach"):
                     approach = ET.SubElement(surgery_elem, "SurgicalAccessType")
                     approach_map = {
                         "open": "01",
@@ -308,17 +310,17 @@ def create_episode_xml(episode: dict, patient: dict, treatments: list, tumours: 
                         "laparoscopic_converted": "03",
                         "robotic": "04"
                     }
-                    approach.text = approach_map.get(treatment["approach"], "99")
-                
+                    approach.text = approach_map.get(classification["approach"], "99")
+
                 # Urgency (CO6000)
-                if treatment.get("urgency"):
+                if classification.get("urgency"):
                     urgency = ET.SubElement(surgery_elem, "SurgicalUrgencyType")
                     urgency_map = {
                         "elective": "01",
                         "urgent": "02",
                         "emergency": "03"
                     }
-                    urgency.text = urgency_map.get(treatment["urgency"], "99")
+                    urgency.text = urgency_map.get(classification["urgency"], "99")
                 
                 # CRM status (pCR1150) - for resections
                 if treatment.get("circumferential_resection_margin") is not None:
@@ -534,7 +536,9 @@ async def check_data_completeness(
             completeness["patient_demographics"]["gender"] += 1
         if demographics.get("ethnicity"):
             completeness["patient_demographics"]["ethnicity"] += 1
-        if demographics.get("postcode"):
+
+        contact = patient.get("contact", {})
+        if contact.get("postcode"):
             completeness["patient_demographics"]["postcode"] += 1
         
         # Check diagnosis
@@ -684,8 +688,8 @@ async def validate_nboca_submission(
                 episode_validation["warnings"].append("Ethnicity missing (recommended)")
             
             # Postcode
-            contact = patient.get("contact_details", {})
-            if not contact.get("address", {}).get("postcode"):
+            contact = patient.get("contact", {})
+            if not contact.get("postcode"):
                 episode_validation["errors"].append("Postcode missing")
         
         # === EPISODE VALIDATION ===
@@ -796,11 +800,12 @@ async def validate_nboca_submission(
                     episode_validation["errors"].append(f"{treatment_num}: Invalid ASA score {treatment['asa_score']} (must be 1-5)")
                 
                 # Surgical approach
-                if not treatment.get("approach"):
+                classification = treatment.get("classification", {})
+                if not classification.get("approach"):
                     episode_validation["warnings"].append(f"{treatment_num}: Surgical approach missing")
-                
+
                 # Urgency
-                if not treatment.get("urgency"):
+                if not classification.get("urgency"):
                     episode_validation["warnings"].append(f"{treatment_num}: Urgency missing")
                 
                 # Date logic validation

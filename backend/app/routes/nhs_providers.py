@@ -11,7 +11,7 @@ from pathlib import Path
 router = APIRouter(prefix="/api", tags=["nhs-providers"])
 
 # Path to the fetch script
-SCRIPT_PATH = Path(__file__).parent.parent.parent.parent / "execution" / "fetch_nhs_provider_codes.py"
+SCRIPT_PATH = Path(__file__).parent.parent.parent.parent / "execution" / "active" / "fetch_nhs_provider_codes.py"
 
 
 @router.get("/nhs-providers/search")
