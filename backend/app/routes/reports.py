@@ -34,20 +34,29 @@ async def get_summary_report() -> Dict[str, Any]:
                 "escalation_rate": 0,
                 "median_length_of_stay_days": 0
             }
-        
+
         total = len(treatments)
-        surgeries_with_complications = sum(1 for t in treatments if t.get('complications'))
-        readmissions = sum(1 for t in treatments if t.get('readmission_30d'))
-        
+
+        # Access nested fields correctly
+        # Note: 'complications' is a boolean, 'occurred' fields are strings "yes"/"no"
+        surgeries_with_complications = sum(1 for t in treatments
+                                          if t.get('postoperative_events', {}).get('complications'))
+        readmissions = sum(1 for t in treatments
+                          if t.get('outcomes', {}).get('readmission_30day') == 'yes')
+
         # Use boolean mortality fields (auto-populated from deceased_date)
-        mortality_30d_count = sum(1 for t in treatments if t.get('mortality_30day'))
-        mortality_90d_count = sum(1 for t in treatments if t.get('mortality_90day'))
-        
-        return_to_theatre = sum(1 for t in treatments if t.get('return_to_theatre'))
-        escalation_of_care = sum(1 for t in treatments if t.get('icu_admission'))
-        
-        # Calculate median length of stay
-        los_values = [t.get('length_of_stay') for t in treatments if t.get('length_of_stay') is not None]
+        mortality_30d_count = sum(1 for t in treatments if t.get('mortality_30day') == True)
+        mortality_90d_count = sum(1 for t in treatments if t.get('mortality_90day') == True)
+
+        return_to_theatre = sum(1 for t in treatments
+                               if t.get('postoperative_events', {}).get('return_to_theatre', {}).get('occurred') == 'yes')
+        escalation_of_care = sum(1 for t in treatments
+                                if t.get('postoperative_events', {}).get('icu_admission'))
+
+        # Calculate median length of stay from nested field
+        los_values = [t.get('perioperative_timeline', {}).get('length_of_stay_days')
+                     for t in treatments
+                     if t.get('perioperative_timeline', {}).get('length_of_stay_days') is not None]
         if los_values:
             sorted_los = sorted(los_values)
             n = len(sorted_los)
@@ -98,15 +107,28 @@ async def get_summary_report() -> Dict[str, Any]:
     metrics_2024 = calculate_metrics(treatments_2024)
     metrics_2025 = calculate_metrics(treatments_2025)
     
-    # Urgency breakdown - using flat field
+    # Urgency breakdown - using nested field
     urgency_breakdown = {}
     for treatment in all_treatments:
-        urgency = treatment.get('urgency', 'unknown')
+        urgency = treatment.get('classification', {}).get('urgency', 'unknown')
         urgency_breakdown[urgency] = urgency_breakdown.get(urgency, 0) + 1
-    
+
+    # ASA score breakdown - using top-level field
+    # Convert numbers to Roman numerals for frontend display
+    asa_to_roman = {1: 'I', 2: 'II', 3: 'III', 4: 'IV', 5: 'V'}
+    asa_breakdown = {}
+    for treatment in all_treatments:
+        asa = treatment.get('asa_score')
+        if asa is None:
+            asa_key = 'unknown'
+        else:
+            asa_key = asa_to_roman.get(asa, str(asa))
+        asa_breakdown[asa_key] = asa_breakdown.get(asa_key, 0) + 1
+
     return {
         **overall_metrics,
         "urgency_breakdown": urgency_breakdown,
+        "asa_breakdown": asa_breakdown,
         "yearly_breakdown": {
             "2023": metrics_2023,
             "2024": metrics_2024,
@@ -120,9 +142,10 @@ async def get_summary_report() -> Dict[str, Any]:
 async def get_surgeon_performance() -> Dict[str, Any]:
     """Get surgeon-specific performance metrics stratified by episode lead clinician"""
     db = Database.get_database()
+    db_system = Database.get_system_database()
     treatments_collection = db.treatments
     episodes_collection = db.episodes
-    clinicians_collection = db.clinicians
+    clinicians_collection = db_system.clinicians
     
     # Get all current clinicians (active surgeons)
     clinicians = await clinicians_collection.find({"clinical_role": "surgeon"}).to_list(length=None)
@@ -194,29 +217,30 @@ async def get_surgeon_performance() -> Dict[str, Any]:
         
         stats = surgeon_stats[surgeon_name]
         stats['total_surgeries'] += 1
-        
-        # Using flat fields from AddTreatmentModal
-        if treatment.get('complications'):
+
+        # Using nested fields from database structure
+        # Note: 'complications' is a boolean, 'occurred' fields are strings "yes"/"no"
+        if treatment.get('postoperative_events', {}).get('complications'):
             stats['surgeries_with_complications'] += 1
-        if treatment.get('readmission_30d'):
+        if treatment.get('outcomes', {}).get('readmission_30day') == 'yes':
             stats['readmissions'] += 1
-        
+
         # Use boolean mortality fields (auto-populated from deceased_date)
-        if treatment.get('mortality_30day'):
+        if treatment.get('mortality_30day') == True:
             stats['mortality_30day'] += 1
-        if treatment.get('mortality_90day'):
+        if treatment.get('mortality_90day') == True:
             stats['mortality_90day'] += 1
-        
-        if treatment.get('return_to_theatre'):
+
+        if treatment.get('postoperative_events', {}).get('return_to_theatre', {}).get('occurred') == 'yes':
             stats['return_to_theatre_count'] += 1
-        if treatment.get('icu_admission'):
+        if treatment.get('postoperative_events', {}).get('icu_admission'):
             stats['icu_admissions'] += 1
-        
-        duration = treatment.get('operation_duration_minutes')
+
+        duration = treatment.get('perioperative_timeline', {}).get('operation_duration_minutes')
         if duration:
             stats['duration_values'].append(duration)
-        
-        los = treatment.get('length_of_stay')
+
+        los = treatment.get('perioperative_timeline', {}).get('length_of_stay_days')
         if los is not None:
             stats['los_values'].append(los)
     
@@ -325,25 +349,43 @@ async def get_data_quality_report() -> Dict[str, Any]:
     all_treatments = await treatments_collection.find({}).to_list(length=None)
     total_treatment_count = len(all_treatments)
     
-    treatment_field_defs = {
-        "Core": ["treatment_id", "treatment_type", "treatment_date", "provider_organisation"],
-        "Surgery": ["procedure_name", "surgeon", "approach", "urgency", "complexity"],
-        "Timeline": ["admission_date", "discharge_date", "operation_duration_minutes", "length_of_stay"],
-        "Outcomes": ["complications", "readmission_30d", "return_to_theatre", "clavien_dindo_grade"]
-    }
-    
+    # Define treatment fields with their actual nested paths
+    treatment_field_checks = [
+        # Core
+        ("treatment_id", "Core", lambda t: t.get("treatment_id")),
+        ("treatment_type", "Core", lambda t: t.get("treatment_type")),
+        ("treatment_date", "Core", lambda t: t.get("treatment_date")),
+        ("provider_organisation", "Core", lambda t: t.get("provider_organisation")),
+        # Surgery
+        ("procedure_name", "Surgery", lambda t: t.get("procedure", {}).get("primary_procedure")),
+        ("surgeon", "Surgery", lambda t: t.get("team", {}).get("primary_surgeon_text")),
+        ("approach", "Surgery", lambda t: t.get("classification", {}).get("approach")),
+        ("urgency", "Surgery", lambda t: t.get("classification", {}).get("urgency")),
+        ("complexity", "Surgery", lambda t: t.get("classification", {}).get("complexity")),
+        # Timeline
+        ("admission_date", "Timeline", lambda t: t.get("perioperative_timeline", {}).get("admission_date")),
+        ("discharge_date", "Timeline", lambda t: t.get("perioperative_timeline", {}).get("discharge_date")),
+        ("operation_duration_minutes", "Timeline", lambda t: t.get("perioperative_timeline", {}).get("operation_duration_minutes")),
+        ("length_of_stay", "Timeline", lambda t: t.get("perioperative_timeline", {}).get("length_of_stay_days")),
+        # Outcomes (check for actual data, not just presence)
+        ("complications", "Outcomes", lambda t: t.get("postoperative_events", {}).get("complications")),
+        ("readmission_30d", "Outcomes", lambda t: t.get("outcomes", {}).get("readmission_30day") == 'yes'),
+        ("return_to_theatre", "Outcomes", lambda t: t.get("postoperative_events", {}).get("return_to_theatre", {}).get("occurred") == 'yes'),
+        ("clavien_dindo_grade", "Outcomes", lambda t: t.get("postoperative_events", {}).get("clavien_dindo_grade")),
+        ("asa_score", "Assessment", lambda t: t.get("asa_score")),
+    ]
+
     treatment_fields_flat = []
-    for category_name, fields in treatment_field_defs.items():
-        for field in fields:
-            complete_count = sum(1 for t in all_treatments if t.get(field))
-            treatment_fields_flat.append({
-                "field": field,
-                "category": category_name,
-                "complete_count": complete_count,
-                "total_count": total_treatment_count,
-                "completeness": round((complete_count / total_treatment_count * 100) if total_treatment_count > 0 else 0, 2),
-                "missing_count": total_treatment_count - complete_count
-            })
+    for field_name, category_name, field_getter in treatment_field_checks:
+        complete_count = sum(1 for t in all_treatments if field_getter(t))
+        treatment_fields_flat.append({
+            "field": field_name,
+            "category": category_name,
+            "complete_count": complete_count,
+            "total_count": total_treatment_count,
+            "completeness": round((complete_count / total_treatment_count * 100) if total_treatment_count > 0 else 0, 2),
+            "missing_count": total_treatment_count - complete_count
+        })
     
     overall_completeness = sum(c["avg_completeness"] for c in categories) / len(categories) if categories else 0
     
