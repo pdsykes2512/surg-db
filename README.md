@@ -81,8 +81,9 @@ This system provides comprehensive surgical outcomes tracking with full National
 
 ### Database
 - **MongoDB**: Document-oriented NoSQL database
-- **Collections**: patients, episodes, treatments, tumours, clinicians, users
-- **Indexes**: Optimized for NHS number, record number, and date queries
+- **Collections**: 9 collections (patients, episodes, treatments, tumours, investigations, clinicians, surgeons, users, nhs_providers)
+- **Indexes**: Optimized for patient_id, episode_id, NHS number, and date queries
+- **Schema**: Full documentation in [DATABASE_SCHEMA.md](DATABASE_SCHEMA.md)
 
 ## 📋 Prerequisites
 
@@ -153,11 +154,26 @@ npm run dev
 
 ## 📚 Documentation
 
-- [Deployment Guide](DEPLOYMENT.md) - Production deployment instructions
-- [API Documentation](API_DOCUMENTATION.md) - Complete API reference
-- [User Guide](USER_GUIDE.md) - End-user instructions
-- [Development Guide](DEVELOPMENT.md) - Developer setup and workflow
-- [NBOCA Compliance](NBOCA_FIELDS_STATUS.md) - Field mapping and status
+### Core Documentation
+- [DATABASE_SCHEMA.md](DATABASE_SCHEMA.md) - **Complete database schema reference** (9 collections, field specs, NBOCA/COSD mappings)
+- [RECENT_CHANGES.md](RECENT_CHANGES.md) - Recent changes and update history
+- [STYLE_GUIDE.md](STYLE_GUIDE.md) - UI/UX design patterns and component standards
+
+### Setup & Deployment
+- [Quick Start](docs/setup/QUICK_START.md) - Get started in 5 minutes
+- [Deployment Guide](docs/setup/DEPLOYMENT.md) - Production deployment instructions
+- [Development Guide](docs/setup/DEVELOPMENT.md) - Developer setup and workflow
+- [Service Management](docs/setup/SERVICE_MANAGEMENT.md) - Systemd service configuration
+
+### User & API Documentation
+- [User Guide](docs/guides/USER_GUIDE.md) - End-user instructions
+- [API Documentation](docs/api/API_DOCUMENTATION.md) - Complete API reference
+- [NBOCA Compliance](docs/implementation/NBOCA_FIELDS_STATUS.md) - Field mapping and status
+
+### Data Management
+- [Import Quick Start](execution/migrations/QUICKSTART.md) - Database import workflow
+- [Data Migration Guide](execution/DATA_MIGRATION_GUIDE.md) - Migration procedures
+- [Backup Guide](docs/guides/BACKUP_QUICK_REFERENCE.md) - Backup and restore
 
 ## 🔐 Security Considerations
 
@@ -286,10 +302,11 @@ For issues, questions, or contributions:
 
 - **Lines of Code**: ~15,000
 - **API Endpoints**: 50+
-- **Database Collections**: 6
+- **Database Collections**: 9 (patients, episodes, treatments, tumours, investigations, clinicians, surgeons, users, nhs_providers)
 - **ICD-10 Codes**: 63
 - **OPCS-4 Codes**: 126
 - **NBOCA Fields**: 59/59 ✅
+- **Data Quality**: 100% clean (no leading numbers, standardized formats)
 
 ---
 

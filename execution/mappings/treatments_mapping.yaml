@@ -78,10 +78,13 @@ treatment_intent:
 opcs4_code:
   description: "OPCS-4 procedure code (COSD CR0720)"
   source: "tblSurgery.OPCS4"
-  algorithm: "Strip whitespace, null if empty"
+  algorithm: |
+    1. Strip whitespace
+    2. Remove decimal point and sub-type (e.g., H33.4 → H33, H07.9 → H07)
+    3. Return base procedure code only
   data_type: "string"
   required: false
-  notes: "Office of Population Censuses and Surveys Classification of Interventions and Procedures"
+  notes: "Office of Population Censuses and Surveys Classification of Interventions and Procedures. Sub-types removed for simplified coding."
 
 asa_score:
   description: "ASA physical status score (COSD CR6010)"

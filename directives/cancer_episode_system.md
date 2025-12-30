@@ -1,5 +1,7 @@
 # Cancer Episode Management Directive
 
+> ⚠️ **IMPORTANT**: This directive provides workflow guidance. For the definitive database schema reference including field specifications, data types, validation rules, and NBOCA/COSD compliance mappings, see [DATABASE_SCHEMA.md](../DATABASE_SCHEMA.md)
+
 ## Overview
 This directive covers the new episode-based system for cancer care management. The system supports different condition types (cancer, IBD, benign) with cancer as the first full implementation.
 

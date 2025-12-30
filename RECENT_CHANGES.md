@@ -15,6 +15,293 @@ This file tracks significant changes made to the IMPACT application (formerly su
 
 ---
 
+## 2025-12-30 - Removed OPCS-4 Sub-types from All Procedure Codes
+
+**Changed by:** AI Session (Claude Code) - OPCS Code Simplification
+
+**Purpose:**
+User requested removal of decimal sub-types from OPCS-4 codes to simplify procedure coding. Changed codes from format "H33.4" to "H33", "H07.9" to "H07", etc.
+
+**Changes:**
+
+### 1. Created OPCS Sub-type Removal Script ([execution/data-fixes/remove_opcs4_subtypes.py](execution/data-fixes/remove_opcs4_subtypes.py))
+   - **NEW** standalone script to remove decimal points and sub-types from OPCS codes
+   - Supports dry-run and live modes
+   - Shows before/after statistics
+
+### 2. Updated All Treatment OPCS Codes
+   - Changed 6,073 treatments from "H33.4" format to "H33" format
+   - 70 treatments already had correct format (no decimal)
+   - Coverage: 100% (6,143/6,143 treatments now have base codes only)
+
+### 3. Updated Import Script ([execution/migrations/import_comprehensive.py](execution/migrations/import_comprehensive.py))
+   - Lines 313-327: Added `remove_opcs4_subtype()` helper function
+   - Lines 329-393: Updated procedure mapping to use base codes only (H06, H07, H33, etc.)
+   - Lines 338, 390, 393: Apply sub-type removal to all OPCS codes from source data
+   - Ensures future imports automatically strip sub-types
+
+### 4. Updated Treatments Mapping Documentation ([execution/mappings/treatments_mapping.yaml](execution/mappings/treatments_mapping.yaml))
+   - Lines 78-87: Updated opcs4_code documentation
+   - Added multi-step algorithm showing decimal removal process
+   - Added note about sub-type removal for simplified coding
+
+**Results:**
+- ✅ All 6,143 treatments now have base OPCS codes without decimal sub-types
+- ✅ Import script will strip sub-types from all future imports
+- ✅ Documentation reflects simplified coding approach
+
+**Examples:**
+```
+H33.4 → H33 (Anterior resection)
+H07.9 → H07 (Right hemicolectomy)
+H33.5 → H33 (Hartmann procedure)
+H06.9 → H06 (Extended right hemicolectomy)
+```
+
+**Verification:**
+```bash
+# Check OPCS codes no longer have decimals
+python3 -c "
+from pymongo import MongoClient
+import os
+from dotenv import load_dotenv
+load_dotenv('/etc/impact/secrets.env')
+client = MongoClient(os.getenv('MONGODB_URI'))
+db = client['impact']
+with_decimal = db.treatments.count_documents({'opcs4_code': {'\$regex': r'\.'}})
+print(f'Codes with decimal: {with_decimal}')  # Should be 0
+"
+```
+
+**Files Created:**
+- `execution/data-fixes/remove_opcs4_subtypes.py` - OPCS sub-type removal script
+
+**Files Modified:**
+- Database: `impact.treatments` collection (6,073 documents updated)
+- `execution/migrations/import_comprehensive.py` (lines 313-393)
+- `execution/mappings/treatments_mapping.yaml` (lines 78-87)
+
+**Technical Notes:**
+- OPCS-4 codes use format: Letter + 2 digits + optional decimal + digit (e.g., H33.4)
+- We now store only the base code (letter + 2 digits) for simplicity
+- Sub-type variants (e.g., .1, .4, .9) are no longer tracked
+- This matches common clinical usage where base codes are sufficient
+
+---
+
+## 2025-12-30 (Late Evening) - Documentation Update for Database Schema References
+
+**Changed by:** AI Session (documentation alignment)
+
+**Issue:**
+- New DATABASE_SCHEMA.md created but other documentation not yet updated to reference it
+- User requested all documentation be updated to reflect current workflows
+- Documentation files scattered across multiple directories needed cross-referencing
+- Directives needed to enforce schema protection requirements
+
+**Changes:**
+
+1. **Updated [README.md](README.md)**:
+   - Updated database section: 6 collections → 9 collections with full list
+   - Added DATABASE_SCHEMA.md link to database section
+   - Restructured Documentation section into 4 categories:
+     - Core Documentation (DATABASE_SCHEMA.md, RECENT_CHANGES.md, STYLE_GUIDE.md)
+     - Setup & Deployment
+     - User & API Documentation
+     - Data Management
+   - Updated Statistics section: Added data quality metric (100% clean)
+   - Added explicit collection names to statistics
+
+2. **Updated [execution/migrations/QUICKSTART.md](execution/migrations/QUICKSTART.md)**:
+   - Added prominent reference to DATABASE_SCHEMA.md at top of guide
+   - Added DATABASE_SCHEMA.md to Support section (item #2)
+   - Helps users understand data structure before/during import
+
+3. **Updated [docs/api/API_DOCUMENTATION.md](docs/api/API_DOCUMENTATION.md)**:
+   - Added reference box at top pointing to DATABASE_SCHEMA.md
+   - Notes that DATABASE_SCHEMA.md contains complete field specifications, data types, validation rules
+
+4. **Updated [directives/cancer_episode_system.md](directives/cancer_episode_system.md)**:
+   - Added warning box at top noting this is workflow guidance
+   - Points to DATABASE_SCHEMA.md as definitive schema reference
+   - Separates workflow (directive) from schema (DATABASE_SCHEMA.md)
+
+5. **Updated [directives/data_structure_refactoring.md](directives/data_structure_refactoring.md)**:
+   - Added CRITICAL warning box at top with 4-step schema change requirements
+   - References Operating Principle 0.6 from CLAUDE.md
+   - Updated Phase 1 (Planning) to require:
+     - Read DATABASE_SCHEMA.md first
+     - Get user approval second
+     - Update DATABASE_SCHEMA.md third (before implementation)
+   - Updated Phase 4 (Documentation) to require:
+     - DATABASE_SCHEMA.md update (REQUIRED)
+     - RECENT_CHANGES.md update (REQUIRED)
+     - Version number update in DATABASE_SCHEMA.md
+   - Added NBOCA/COSD compliance impact consideration
+
+**Files Affected:**
+- [README.md](README.md) - Main project documentation
+- [execution/migrations/QUICKSTART.md](execution/migrations/QUICKSTART.md) - Import workflow
+- [docs/api/API_DOCUMENTATION.md](docs/api/API_DOCUMENTATION.md) - API reference
+- [directives/cancer_episode_system.md](directives/cancer_episode_system.md) - Episode workflow directive
+- [directives/data_structure_refactoring.md](directives/data_structure_refactoring.md) - Schema change directive
+- [RECENT_CHANGES.md](RECENT_CHANGES.md) - This entry
+
+**Testing:**
+Not applicable - documentation only, no code changes.
+
+**Documentation Workflow Established:**
+
+Now all documentation follows a clear hierarchy:
+
+1. **DATABASE_SCHEMA.md** = Single source of truth for schema
+2. **CLAUDE.md/AGENTS.md** = Operating principles requiring schema protection
+3. **Directives** = Workflow guidance (reference DATABASE_SCHEMA.md for schema details)
+4. **README.md** = Project overview (links to all documentation)
+5. **API_DOCUMENTATION.md** = API endpoints (references DATABASE_SCHEMA.md for field specs)
+6. **QUICKSTART.md** = Import guide (references DATABASE_SCHEMA.md for data understanding)
+
+**Cross-Reference Coverage:**
+- ✅ All major documentation files now reference DATABASE_SCHEMA.md
+- ✅ All schema change workflows require DATABASE_SCHEMA.md update
+- ✅ All directives link back to schema protection requirements
+- ✅ README provides clear documentation hierarchy
+
+**Benefits:**
+1. **Single Source of Truth**: DATABASE_SCHEMA.md is clearly established as definitive reference
+2. **Workflow Clarity**: Users know where to find schema vs. workflow information
+3. **Change Control**: All schema change paths now enforce DATABASE_SCHEMA.md update
+4. **Discoverability**: README provides clear navigation to all documentation
+5. **Consistency**: All docs use same reference pattern and warning boxes
+
+**Notes:**
+- AGENTS.md already mirrored CLAUDE.md (includes Operating Principle 0.6)
+- Documentation now supports both human developers and AI agents with clear references
+- Schema protection enforced at multiple levels (CLAUDE.md, directives, workflow guides)
+
+---
+
+## 2025-12-30 (Evening) - Database Schema Documentation and Protection Directive
+
+**Changed by:** AI Session (documentation)
+
+**Issue:**
+- User requested comprehensive documentation of the current database structure
+- Need to prevent unauthorized schema changes that could break NBOCA/COSD compliance
+- Previous sessions had made extensive data quality improvements, but schema was not formally documented
+- Risk of future AI sessions inadvertently modifying data structure without understanding full implications
+
+**Changes:**
+
+1. **Created DATABASE_SCHEMA.md** - Comprehensive database schema reference document:
+   - Documents all 9 collections: patients, episodes, treatments, tumours, investigations, clinicians, surgeons, users, audit_logs, nhs_providers
+   - Full field specifications with types, descriptions, and validation rules
+   - Relationship diagrams showing Patient → Episode → Treatment/Tumour/Investigation hierarchy
+   - Data quality standards (no leading numbers, snake_case, yes/no format, TNM storage format)
+   - NBOCA/COSD compliance field mappings with official CR/pCR codes
+   - Surgical approach priority logic documentation
+   - Defunctioning stoma identification logic
+   - 60+ pages of comprehensive schema documentation
+
+2. **Updated CLAUDE.md** with new Operating Principle 0.6 - "Protect the database schema":
+   - Added DATABASE_SCHEMA.md to required reading before any database work
+   - Explicitly prohibits schema changes without user approval:
+     - Field name/type/structure modifications
+     - New collections or relationship changes
+     - Data normalization/cleaning logic changes
+     - NBOCA/COSD field mapping alterations
+   - Added 6-step process for proposing schema changes:
+     1. Read DATABASE_SCHEMA.md to understand current structure
+     2. Propose changes to user and get explicit approval
+     3. Update DATABASE_SCHEMA.md BEFORE implementing
+     4. Update Pydantic models
+     5. Test in impact_test database
+     6. Document in RECENT_CHANGES.md
+   - Listed DATABASE_SCHEMA.md in directory structure section
+
+**Files Affected:**
+- [DATABASE_SCHEMA.md](DATABASE_SCHEMA.md) - NEW: Comprehensive schema documentation
+- [CLAUDE.md](CLAUDE.md) - Added Operating Principle 0.6 and directory structure entry
+- [RECENT_CHANGES.md](RECENT_CHANGES.md) - This entry
+
+**Schema Documentation Coverage:**
+
+**Patients Collection:**
+- Demographics (DOB, age, gender, ethnicity, postcode, BMI)
+- Medical history (conditions, surgeries, medications, allergies, smoking, alcohol)
+- Data standards: NHS number as string (no decimals), postcode populated
+
+**Episodes Collection:**
+- Base fields (episode_id, patient_id, condition_type, dates)
+- NBOCA COSD fields (CR1600 referral_source, CR1410 provider_first_seen, CR2050 cns_involved, CR3190 mdt_meeting_type, CR0510 performance_status, CR0490 no_treatment_reason)
+- Clinical team (lead_clinician as string name, NOT ObjectId)
+- Cancer-specific data structures for 6 cancer types (bowel, kidney, breast, oesophageal, ovarian, prostate)
+- Related data (treatments, tumours)
+
+**Treatments Collection:**
+- Common treatment fields (type, date, intent, clinician)
+- Surgery-specific: Classification, Procedure, Timeline, Team, Intraoperative, Pathology, Postoperative, Outcomes, Follow-up
+- Surgical approach priority logic: robotic > converted > standard
+- Stoma tracking: type, creation, closure, defunctioning logic
+- Anastomosis details: type, configuration, height, location, anterior resection type
+- Complications tracking with Clavien-Dindo grading
+- Anastomotic leak detailed tracking for NBOCA
+- Chemotherapy, radiotherapy, immunotherapy, hormone therapy, targeted therapy, palliative, surveillance treatments
+
+**Tumours Collection:**
+- Tumour identification (ID, type, site, diagnosis date)
+- ICD-10 and SNOMED coding (CR0370, CR6400)
+- TNM staging - clinical (CR0520, CR0540, CR0560) and pathological (pCR0910, pCR0920, pCR0930)
+- TNM version tracking (CR2070/pCR6820)
+- Pathology (nodes examined pCR0890, nodes positive pCR0900, invasion status)
+- Resection margins (CRM status pCR1150, distances)
+- Rectal-specific: distance from anal verge (CO5160), mesorectal involvement
+- Molecular markers (MMR, KRAS, BRAF)
+- 11 colorectal anatomical sites (C18.0-C20) plus metastatic sites
+
+**Investigations Collection:**
+- Investigation types: imaging, endoscopy, laboratory
+- Subtypes: ct_abdomen, ct_colonography, colonoscopy, mri_primary
+- Results with leading numbers cleaned
+- Investigation-specific findings (MRI: T/N staging, CRM, EMVI, distance from anal verge)
+- ID format: INV-{patient_id}-{type}-{seq}
+
+**Data Standards Documented:**
+- String format: lowercase snake_case, no leading numbers
+- Boolean fields: yes/no format (not 1/0 or coded values)
+- TNM staging: Simple numbers (e.g., "3", "1a") - frontend adds prefixes
+- CRM status: yes/no/uncertain (user requirement)
+- Date handling: ISO 8601 strings or datetime objects
+- Lead clinician: String name, never ObjectId
+
+**NBOCA/COSD Compliance:**
+- 20+ official field codes documented (CR/pCR codes)
+- Referral pathway fields (CR1600, CR1410, CR2050, CR3190, CR0510, CR0490)
+- Diagnosis fields (CR2030, CR0370, CR6400)
+- Staging fields (CR2070, CR0520, CR0540, CR0560, pCR0910, pCR0920, pCR0930)
+- Pathology fields (pCR0890, pCR0900, pCR1150)
+- Treatment fields (CR1450, CO5160)
+
+**Testing:**
+Not applicable - documentation only, no code changes.
+
+**Benefits:**
+1. **Prevents Breaking Changes**: AI agents must now read schema before any database work
+2. **NBOCA/COSD Protection**: Field mappings clearly documented and protected
+3. **Onboarding**: New developers/AI sessions have comprehensive reference
+4. **Change Management**: Formal process for proposing and approving schema changes
+5. **Continuity**: Database structure documented for long-term maintenance
+6. **Compliance Auditing**: Easy to verify NBOCA/COSD field coverage
+
+**Notes:**
+- Schema documentation reflects current state after comprehensive data quality cleanup (2025-12-29)
+- All data normalization standards documented (no leading numbers, snake_case, yes/no format)
+- Surgical logic documented (approach priority, defunctioning stoma identification)
+- This is Version 1.0 of DATABASE_SCHEMA.md - update version when schema changes
+- Future schema changes MUST follow the 6-step process in Operating Principle 0.6
+
+---
+
 ## 2025-12-30 - Additional Data Quality Fixes and Investigations Table Implementation
 
 **Changed by:** AI Session (data quality improvements)

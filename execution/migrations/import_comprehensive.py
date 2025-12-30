@@ -310,6 +310,23 @@ def map_asa(asa_val) -> Optional[int]:
     return asa_map.get(asa_str)
 
 
+def remove_opcs4_subtype(opcs_code: Optional[str]) -> Optional[str]:
+    """
+    Remove decimal point and sub-type from OPCS-4 code.
+    Examples: H33.4 → H33, H07.9 → H07
+    """
+    if not opcs_code or opcs_code == 'nan' or opcs_code == '':
+        return opcs_code
+
+    code_str = str(opcs_code).strip()
+
+    # Remove everything after and including the decimal point
+    if '.' in code_str:
+        return code_str.split('.')[0]
+
+    return code_str
+
+
 def map_procedure_name_and_opcs4(proc_name: str, existing_opcs4: Optional[str] = None) -> tuple[Optional[str], Optional[str]]:
     """
     Map procedure name to canonical name and OPCS4 code
@@ -318,48 +335,49 @@ def map_procedure_name_and_opcs4(proc_name: str, existing_opcs4: Optional[str] =
         Tuple of (canonical_procedure_name, opcs4_code)
     """
     if not proc_name or pd.isna(proc_name) or proc_name == 'nan':
-        return None, existing_opcs4
+        return None, remove_opcs4_subtype(existing_opcs4)
 
     proc_clean = proc_name.strip().lower()
 
     # Comprehensive mapping from source data variations to canonical names and OPCS4 codes
     # Format: source_name_pattern → (canonical_name, default_opcs4_code)
     # IMPORTANT: Order matters - check more specific patterns first
+    # NOTE: OPCS codes are base codes only (no decimal sub-types)
     procedure_mapping = {
         # Colorectal procedures (most specific first)
-        'extended right hemicolectomy': ('Extended right hemicolectomy', 'H06.9'),
-        'anterior resection': ('Anterior resection of rectum', 'H33.4'),
-        'right hemicolectomy': ('Right hemicolectomy', 'H07.9'),
-        'left hemicolectomy': ('Left hemicolectomy', 'H09.9'),
-        'sigmoid colectomy': ('Sigmoid colectomy', 'H10.9'),
-        'transverse colectomy': ('Transverse colectomy', 'H07.9'),
-        'hartmann': ('Hartmann procedure', 'H33.5'),
-        'aper': ('Abdominoperineal excision of rectum', 'H33.1'),
-        'abdominoperineal': ('Abdominoperineal excision of rectum', 'H33.1'),
-        'subtotal colectomy': ('Subtotal colectomy', 'H08.9'),
-        'total colectomy': ('Total colectomy', 'H09.9'),
-        'proctocolectomy': ('Proctocolectomy', 'H10.9'),
-        'panproctocolectomy': ('Panproctocolectomy', 'H11.9'),
+        'extended right hemicolectomy': ('Extended right hemicolectomy', 'H06'),
+        'anterior resection': ('Anterior resection of rectum', 'H33'),
+        'right hemicolectomy': ('Right hemicolectomy', 'H07'),
+        'left hemicolectomy': ('Left hemicolectomy', 'H09'),
+        'sigmoid colectomy': ('Sigmoid colectomy', 'H10'),
+        'transverse colectomy': ('Transverse colectomy', 'H07'),
+        'hartmann': ('Hartmann procedure', 'H33'),
+        'aper': ('Abdominoperineal excision of rectum', 'H33'),
+        'abdominoperineal': ('Abdominoperineal excision of rectum', 'H33'),
+        'subtotal colectomy': ('Subtotal colectomy', 'H08'),
+        'total colectomy': ('Total colectomy', 'H09'),
+        'proctocolectomy': ('Proctocolectomy', 'H10'),
+        'panproctocolectomy': ('Panproctocolectomy', 'H11'),
 
         # Stoma procedures
-        'stoma only': ('Stoma formation', 'H15.9'),
-        'stoma': ('Stoma formation', 'H15.9'),
-        'ileostomy': ('Ileostomy', 'H46.9'),
-        'colostomy': ('Colostomy', 'H47.9'),
-        'closure of stoma': ('Closure of stoma', 'H48.9'),
+        'stoma only': ('Stoma formation', 'H15'),
+        'stoma': ('Stoma formation', 'H15'),
+        'ileostomy': ('Ileostomy', 'H46'),
+        'colostomy': ('Colostomy', 'H47'),
+        'closure of stoma': ('Closure of stoma', 'H48'),
 
         # Endoscopic/minimal access
-        'polypectomy': ('Polypectomy', 'H23.9'),
-        'tems': ('Transanal endoscopic microsurgery', 'H41.2'),
-        'trans anal resection': ('Transanal excision of lesion', 'H41.1'),
-        'transanal resection': ('Transanal excision of lesion', 'H41.1'),
+        'polypectomy': ('Polypectomy', 'H23'),
+        'tems': ('Transanal endoscopic microsurgery', 'H41'),
+        'trans anal resection': ('Transanal excision of lesion', 'H41'),
+        'transanal resection': ('Transanal excision of lesion', 'H41'),
 
         # Other/palliative
-        'stent': ('Colorectal stent insertion', 'H24.3'),
-        'bypass': ('Intestinal bypass', 'H05.1'),
-        'laparotomy only': ('Laparotomy and exploration', 'T30.1'),
-        'laparoscopy only': ('Diagnostic laparoscopy', 'T42.1'),
-        'other': ('Other colorectal procedure', 'H99.9'),
+        'stent': ('Colorectal stent insertion', 'H24'),
+        'bypass': ('Intestinal bypass', 'H05'),
+        'laparotomy only': ('Laparotomy and exploration', 'T30'),
+        'laparoscopy only': ('Diagnostic laparoscopy', 'T42'),
+        'other': ('Other colorectal procedure', 'H99'),
     }
 
     # Try to find a match - sort by pattern length (longest first) to check specific patterns before generic ones
@@ -368,10 +386,11 @@ def map_procedure_name_and_opcs4(proc_name: str, existing_opcs4: Optional[str] =
             canonical_name, default_opcs4 = procedure_mapping[pattern]
             # Use existing OPCS4 if available and valid, otherwise use default
             opcs4 = existing_opcs4 if (existing_opcs4 and existing_opcs4 != 'nan' and existing_opcs4 != '') else default_opcs4
-            return canonical_name, opcs4
+            # Remove sub-type from final OPCS code
+            return canonical_name, remove_opcs4_subtype(opcs4)
 
     # If no match found, return cleaned version of original name
-    return proc_name.strip(), existing_opcs4
+    return proc_name.strip(), remove_opcs4_subtype(existing_opcs4)
 
 
 def map_approach(lap_proc) -> Optional[str]:

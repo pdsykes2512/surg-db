@@ -2,6 +2,8 @@
 
 Complete API reference for the IMPACT REST API.
 
+> 📖 **Database Schema Reference**: For complete field specifications, data types, validation rules, and NBOCA/COSD compliance mappings, see [DATABASE_SCHEMA.md](../../DATABASE_SCHEMA.md)
+
 ## Base URL
 
 - **Development**: `http://localhost:8000` (API) / `http://localhost:3000` (Frontend)

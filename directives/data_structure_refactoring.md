@@ -1,5 +1,11 @@
 # Data Structure Refactoring Directive
 
+> ⚠️ **CRITICAL**: Before ANY database schema changes, you MUST:
+> 1. Read [DATABASE_SCHEMA.md](../DATABASE_SCHEMA.md) to understand current structure
+> 2. Get explicit user approval for proposed changes
+> 3. Update DATABASE_SCHEMA.md FIRST before implementing changes
+> 4. Follow the 6-step process in [CLAUDE.md](../CLAUDE.md) Operating Principle 0.6
+
 ## Purpose
 When making substantial changes to data structures, models, or database schemas, follow this directive to ensure a clean, revertible transition with no orphaned legacy code.
 
@@ -16,11 +22,15 @@ Apply this workflow when:
 ### Phase 1: Planning & Branch Creation
 
 1. **Document the Change**
+   - **FIRST**: Read [DATABASE_SCHEMA.md](../DATABASE_SCHEMA.md) to understand current structure
+   - **SECOND**: Get explicit user approval for schema changes (required by Operating Principle 0.6)
+   - **THIRD**: Update DATABASE_SCHEMA.md with proposed changes BEFORE implementing
    - Create a brief specification document describing:
      - What is changing (old → new structure)
      - Why the change is needed
      - What data/code will be affected
      - Migration requirements
+     - NBOCA/COSD compliance impact (if applicable)
    - Store in: `/root/.tmp/refactor_spec_YYYYMMDD.md`
 
 2. **Create Feature Branch**
@@ -122,9 +132,12 @@ Apply this workflow when:
    - Load test with realistic data volume
 
 10. **Document Changes**
+    - **REQUIRED**: Update [DATABASE_SCHEMA.md](../DATABASE_SCHEMA.md) with final schema
+    - **REQUIRED**: Update [RECENT_CHANGES.md](../RECENT_CHANGES.md) with detailed change log
     - Update CHANGELOG.md
     - Document breaking changes
     - Update deployment instructions if needed
+    - Update version number in DATABASE_SCHEMA.md
 
 ### Phase 5: Merge & Cleanup
 

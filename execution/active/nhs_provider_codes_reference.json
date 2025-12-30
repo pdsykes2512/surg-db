@@ -2015,8 +2015,134 @@
       "type": "local authority",
       "verified": true,
       "last_verified": "2025-12-30"
+    },
+    "RYR": {
+      "name": "university hospitals sussex nhs foundation trust",
+      "type": "nhs trust",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "EE116258": {
+      "name": "portsdown primary school",
+      "type": "school",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "EE137063": {
+      "name": "portslade aldridge community academy",
+      "type": "school",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "EE138626": {
+      "name": "portswood primary school",
+      "type": "school",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "G7J1X": {
+      "name": "portsdown group practice - cosham park house surgery",
+      "type": "branch surgery",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "G81046": {
+      "name": "portslade health centre",
+      "type": "prescribing cost centre",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "J82155": {
+      "name": "portsdown group practice",
+      "type": "prescribing cost centre",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "J82155001": {
+      "name": "portsdown group practice",
+      "type": "branch surgery",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "NGL10": {
+      "name": "portscatho surgery",
+      "type": "independent sector h/c provider site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "R1CDJ": {
+      "name": "portsea childrens centre",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "R1CEW": {
+      "name": "portswood solent surgery",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "R1C66": {
+      "name": "portsea health clinic",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "RDRPH": {
+      "name": "portslade health centre",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "RDRPO": {
+      "name": "portslade town hall",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "REFJ9": {
+      "name": "portscatho surgery",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "RJR79": {
+      "name": "portside childrens centre",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "RXA0F": {
+      "name": "portside childrens centre",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "RXA0R": {
+      "name": "portside hub",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "RXH57": {
+      "name": "portslade health centre",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "TP8Q7": {
+      "name": "portslade specsavers ltd",
+      "type": "optical site",
+      "verified": true,
+      "last_verified": "2025-12-30"
+    },
+    "T3I9S": {
+      "name": "portsmed ltd",
+      "type": "independent sector healthcare provider",
+      "verified": true,
+      "last_verified": "2025-12-30"
     }
   },
   "reference_note": "NHS Provider (Trust) Codes verified from ODS API - https://directory.spineservices.nhs.uk/STU3/",
-  "last_updated": "2025-12-30 05:03:10"
+  "last_updated": "2025-12-30 12:17:02"
 }

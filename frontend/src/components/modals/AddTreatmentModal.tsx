@@ -186,7 +186,7 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
     treatment_id: '', // Will be generated when NHS number is available
     treatment_type: 'surgery',
     treatment_date: new Date().toISOString().split('T')[0],
-    provider_organisation: 'RYR',
+    provider_organisation: 'RHU',
     
     // Surgery fields - comprehensive
     procedure_name: '',

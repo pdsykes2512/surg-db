@@ -67,6 +67,20 @@ You operate within a 3-layer architecture that separates concerns to maximize re
 - Breaking established UX patterns
 - Creating components that don't match the existing design system
 
+**0.6. Protect the database schema** **CRITICAL: Read `DATABASE_SCHEMA.md` before ANY database-related work.** This document is the definitive reference for the database structure. You MUST NOT:
+- Modify field names, types, or structures without explicit user approval
+- Add new collections or change relationships without explicit user approval
+- Change data normalization/cleaning logic without explicit user approval
+- Alter NBOCA/COSD compliance field mappings without explicit user approval
+
+If a task requires schema changes:
+1. Read `DATABASE_SCHEMA.md` to understand current structure
+2. Propose changes to the user and get explicit approval
+3. Update `DATABASE_SCHEMA.md` BEFORE implementing changes
+4. Update Pydantic models in `backend/app/models/`
+5. Test in `impact_test` database before production
+6. Document all changes in `RECENT_CHANGES.md`
+
 **1. Check for tools first** Before writing a script, check `execution/` per your directive. Only create new scripts if none exist.
 
 **2. Self-anneal when things break** - Read error message and stack trace  
@@ -102,12 +116,13 @@ Errors are learning opportunities. When something breaks:
 **Deliverables vs Intermediates:** - **Deliverables**: Google Sheets, Google Slides, or other cloud-based outputs that the user can access  
 - **Intermediates**: Temporary files needed during processing
 
-**Directory structure:** - `.tmp/` - All intermediate files (dossiers, scraped data, temp exports, **log files**). Never commit, always regenerated.  
-- `execution/` - Python scripts (the deterministic tools) and startup scripts  
+**Directory structure:** - `.tmp/` - All intermediate files (dossiers, scraped data, temp exports, **log files**). Never commit, always regenerated.
+- `execution/` - Python scripts (the deterministic tools) and startup scripts
 - `directives/` - SOPs in Markdown (the instruction set)
 - `RECENT_CHANGES.md` - **READ THIS FIRST** - Log of recent changes across AI sessions (prevents duplicate work and breaking fixes)
 - `STYLE_GUIDE.md` - **UI/UX design patterns** - Modal layouts, button placement, color schemes, component standards
-- `.env` - Environment variables and API keys  
+- `DATABASE_SCHEMA.md` - **DATABASE STRUCTURE REFERENCE** - Definitive schema documentation. MUST NOT modify structure without explicit user approval.
+- `.env` - Environment variables and API keys
 - `credentials.json`, `token.json` - Google OAuth credentials (required files, in `.gitignore`)
 
 **IMPORTANT - Log Files:** 

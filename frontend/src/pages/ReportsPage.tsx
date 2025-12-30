@@ -526,7 +526,7 @@ export function ReportsPage() {
           {summary.asa_breakdown && Object.keys(summary.asa_breakdown).length > 0 && (
             <Card className="p-6">
               <h3 className="text-lg font-semibold mb-4">ASA Grade Stratification</h3>
-              <div className="grid grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4">
                 {['I', 'II', 'III', 'IV', 'V'].map((grade) => {
                   const count = summary.asa_breakdown?.[grade] || 0
                   const percentage = ((count / summary.total_surgeries) * 100).toFixed(1)

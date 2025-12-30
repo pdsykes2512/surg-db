@@ -74,7 +74,7 @@ export function CancerEpisodeForm({ onSubmit, onCancel, initialData, mode = 'cre
       referral_date: new Date().toISOString().split('T')[0],
       referral_type: '',
       referral_source: '',
-      provider_first_seen: '',
+      provider_first_seen: 'RHU',
       cns_involved: '',
       first_seen_date: '',
       mdt_discussion_date: '',
