@@ -79,20 +79,20 @@ async def get_summary_report() -> Dict[str, Any]:
         }
     
     # Split treatments by year
-    from dateutil import parser as date_parser
     treatments_2023 = []
     treatments_2024 = []
     treatments_2025 = []
-    
+
     for t in all_treatments:
         treatment_date = t.get('treatment_date')
         if treatment_date:
             try:
                 if isinstance(treatment_date, str):
-                    dt = date_parser.parse(treatment_date)
+                    # Parse ISO format date string (e.g., "2024-01-15" or "2024-01-15T10:30:00")
+                    dt = datetime.fromisoformat(treatment_date.replace('Z', '+00:00'))
                 else:
                     dt = treatment_date
-                
+
                 if dt.year == 2023:
                     treatments_2023.append(t)
                 elif dt.year == 2024:
