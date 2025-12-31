@@ -18,6 +18,7 @@ async def lifespan(app: FastAPI):
     """Application lifespan events"""
     # Startup
     await Database.connect_db()
+    await Database.initialize_indexes()
     yield
     # Shutdown
     await Database.close_db()
