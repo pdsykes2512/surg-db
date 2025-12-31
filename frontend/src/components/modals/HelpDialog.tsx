@@ -46,8 +46,17 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
     { category: 'Table Navigation', key: '[', description: 'Previous page' },
     { category: 'Table Navigation', key: ']', description: 'Next page' },
     { category: 'Table Navigation', key: '↑ / ↓', description: 'Select row' },
+    { category: 'Table Navigation', key: 'Enter', description: 'View selected row (open summary)' },
     { category: 'Table Navigation', key: 'E', description: 'Edit selected row' },
     { category: 'Table Navigation', key: `${shiftKey} + D`, description: 'Delete selected row' },
+
+    // Summary Modals
+    { category: 'Summary Modals', key: 'E', description: 'Edit from summary modal', context: 'Treatment/Tumour summary' },
+
+    // Episode Detail Modal
+    { category: 'Episode Detail Modal', key: 'I', description: 'Add Investigation', context: 'Episode detail' },
+    { category: 'Episode Detail Modal', key: 'P', description: 'Add Pathology (Tumour)', context: 'Episode detail' },
+    { category: 'Episode Detail Modal', key: 'R', description: 'Add Treatment', context: 'Episode detail' },
 
     // Help
     { category: 'Help', key: '?', description: 'Show this help dialog' },

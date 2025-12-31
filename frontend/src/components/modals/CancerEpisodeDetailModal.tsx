@@ -81,12 +81,6 @@ export function CancerEpisodeDetailModal({
   const [viewingTumour, setViewingTumour] = useState<any>(null)
   const [viewingTreatment, setViewingTreatment] = useState<Treatment | null>(null)
 
-  // Keyboard shortcuts: Escape to close (view modal with edit capability)
-  useModalShortcuts({
-    onClose,
-    isOpen: true
-  })
-
   // Delete confirmation states
   const [deleteTumourConfirmation, setDeleteTumourConfirmation] = useState<{ show: boolean; tumour: any | null }>({ show: false, tumour: null })
   const [deleteTumourConfirmText, setDeleteTumourConfirmText] = useState('')
@@ -94,6 +88,57 @@ export function CancerEpisodeDetailModal({
   const [deleteTreatmentConfirmText, setDeleteTreatmentConfirmText] = useState('')
   const [deleteInvestigationConfirmation, setDeleteInvestigationConfirmation] = useState<{ show: boolean; investigation: any | null }>({ show: false, investigation: null })
   const [deleteInvestigationConfirmText, setDeleteInvestigationConfirmText] = useState('')
+
+  // Check if any nested modal is open
+  const hasNestedModalOpen = showAddTreatment || showTumourModal || showInvestigationModal || showFollowUpModal ||
+    editingTreatment || editingTumour || editingInvestigation || editingFollowUp ||
+    viewingTumour || viewingTreatment ||
+    deleteTumourConfirmation.show || deleteTreatmentConfirmation.show || deleteInvestigationConfirmation.show
+
+  // Keyboard shortcuts: Escape to close (only when no nested modals are open)
+  useModalShortcuts({
+    onClose,
+    isOpen: !hasNestedModalOpen
+  })
+
+  // Quick add keyboard shortcuts: I (investigation), P (tumour/primary), R (treatment)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if typing in an input field or if any modal is already open
+      const target = e.target as HTMLElement
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+        return
+      }
+
+      // Don't trigger if any add/edit modal is already open
+      if (hasNestedModalOpen) {
+        return
+      }
+
+      // Check for modifier keys
+      if (e.metaKey || e.ctrlKey || e.altKey) {
+        return
+      }
+
+      switch (e.key.toLowerCase()) {
+        case 'i':
+          e.preventDefault()
+          setShowInvestigationModal(true)
+          break
+        case 'p':
+          e.preventDefault()
+          setShowTumourModal(true)
+          break
+        case 'r':
+          e.preventDefault()
+          setShowAddTreatment(true)
+          break
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [hasNestedModalOpen])
 
   // Lock body scroll when modal is open
   useEffect(() => {
@@ -592,7 +637,7 @@ export function CancerEpisodeDetailModal({
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
-              Tumours ({tumours.length})
+              Pathology ({tumours.length})
             </button>
             <button
               onClick={() => setActiveTab('treatments')}
@@ -757,12 +802,12 @@ export function CancerEpisodeDetailModal({
                 </div>
               </div>
 
-              {/* Tumour and Treatment Summaries Side by Side */}
+              {/* Pathology and Treatment Summaries Side by Side */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Tumour Summary */}
+                {/* Pathology Summary */}
                 <div className="bg-gray-50 rounded-lg p-4">
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-lg font-semibold text-gray-900">Tumour Summary</h3>
+                    <h3 className="text-lg font-semibold text-gray-900">Pathology Summary</h3>
                     <button
                       onClick={() => setActiveTab('tumours')}
                       className="text-sm text-blue-600 hover:text-blue-800 font-medium"
@@ -771,7 +816,7 @@ export function CancerEpisodeDetailModal({
                     </button>
                   </div>
                   {tumours.length === 0 ? (
-                    <p className="text-sm text-gray-500 italic">No tumours recorded</p>
+                    <p className="text-sm text-gray-500 italic">No pathology recorded</p>
                   ) : (
                     <div className="space-y-3">
                       {tumours.map((tumour: any) => (
@@ -1004,12 +1049,12 @@ export function CancerEpisodeDetailModal({
             </div>
           )}
 
-          {/* Tumours Tab */}
+          {/* Pathology Tab */}
           {activeTab === 'tumours' && (
             <div className="bg-white rounded-lg border">
               <div className="px-4 sm:px-6 py-3 sm:py-4 border-b flex flex-col sm:flex-row gap-2 sm:gap-0 items-start sm:items-center justify-between">
                 <h3 className="text-lg font-semibold text-gray-900">
-                  Tumour Sites ({tumours.length})
+                  Pathology ({tumours.length})
                 </h3>
                 <button
                   onClick={() => {
@@ -1018,16 +1063,16 @@ export function CancerEpisodeDetailModal({
                   }}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
                 >
-                  + Add Tumour
+                  + Add Tumour <span className="text-xs opacity-70 ml-1">(P)</span>
                 </button>
               </div>
 
               {loading ? (
-                <div className="p-8 text-center text-gray-500">Loading tumours...</div>
+                <div className="p-8 text-center text-gray-500">Loading pathology...</div>
               ) : tumours.length === 0 ? (
                 <div className="p-8 text-center text-gray-500">
-                  <p className="mb-2">No tumours recorded yet</p>
-                  <p className="text-sm">Add individual tumour sites to track primaries, metastases, or recurrences</p>
+                  <p className="mb-2">No pathology recorded yet</p>
+                  <p className="text-sm">Add tumours to track primaries, metastases, or recurrences</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto shadow-sm">
@@ -1141,7 +1186,7 @@ export function CancerEpisodeDetailModal({
                   onClick={() => setShowAddTreatment(true)}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
                 >
-                  + Add Treatment
+                  + Add Treatment <span className="text-xs opacity-70 ml-1">(R)</span>
                 </button>
               </div>
 
@@ -1257,7 +1302,7 @@ export function CancerEpisodeDetailModal({
                   onClick={() => setShowInvestigationModal(true)}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
                 >
-                  + Add Investigation
+                  + Add Investigation <span className="text-xs opacity-70 ml-1">(I)</span>
                 </button>
               </div>
 

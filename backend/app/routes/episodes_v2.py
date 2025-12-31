@@ -856,7 +856,7 @@ async def add_treatment_to_episode(
             )
         
         # Add episode metadata to treatment
-        treatment['episode_id'] = str(episode['_id'])
+        treatment['episode_id'] = episode.get('episode_id')  # Use semantic ID, not ObjectId
         treatment['patient_id'] = episode.get('patient_id')
         treatment['created_at'] = datetime.utcnow()
         treatment['last_modified_at'] = datetime.utcnow()
@@ -869,11 +869,14 @@ async def add_treatment_to_episode(
         
         # Insert treatment into separate collection
         result = await treatments_collection.insert_one(treatment)
-        
-        # Update episode's last_modified_at
+
+        # Add treatment_id to episode's treatment_ids array and update last_modified_at
         await episodes_collection.update_one(
             {"episode_id": episode_id},
-            {"$set": {"last_modified_at": datetime.utcnow()}}
+            {
+                "$addToSet": {"treatment_ids": treatment['treatment_id']},
+                "$set": {"last_modified_at": datetime.utcnow()}
+            }
         )
         
         # Return created treatment (flattened for frontend)
@@ -1172,11 +1175,14 @@ async def add_tumour_to_episode(
         
         # Insert tumour into separate collection
         result = await tumours_collection.insert_one(tumour)
-        
-        # Update episode's last_modified_at
+
+        # Add tumour_id to episode's tumour_ids array and update last_modified_at
         await episodes_collection.update_one(
             {"episode_id": episode_id},
-            {"$set": {"last_modified_at": datetime.utcnow()}}
+            {
+                "$addToSet": {"tumour_ids": tumour['tumour_id']},
+                "$set": {"last_modified_at": datetime.utcnow()}
+            }
         )
         
         # Return created tumour

@@ -266,7 +266,8 @@ class ImpactDatabaseImporter:
             if surgery_date:
                 treat_seq = self.patient_treatment_count.get(patient_id, 0) + 1
                 self.patient_treatment_count[patient_id] = treat_seq
-                treatment_id = f"T-{patient_id}-{treat_seq:02d}"
+                # Use SUR- prefix for surgery treatments
+                treatment_id = f"SUR-{patient_id}-{treat_seq:02d}"
 
                 # Detect complications properly
                 has_complication = self.has_complication(row)

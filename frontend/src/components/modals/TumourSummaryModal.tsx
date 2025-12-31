@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { capitalize, formatAnatomicalSite, formatClinicalTNM, formatPathologicalTNM } from '../../utils/formatters'
 import { calculateStage, formatStage } from '../../utils/cancerStaging'
 import { useModalShortcuts } from '../../hooks/useModalShortcuts'
@@ -10,11 +11,30 @@ interface TumourSummaryModalProps {
 }
 
 export function TumourSummaryModal({ tumour, onClose, onEdit }: TumourSummaryModalProps) {
-  // Keyboard shortcuts: Escape to close (view-only modal)
+  // Keyboard shortcuts
+  // Escape to close, 'e' to edit
   useModalShortcuts({
     onClose,
     isOpen: true
   })
+
+  // 'e' key to edit
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'e' && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        const target = e.target as HTMLElement
+        // Don't trigger if typing in an input field
+        if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+          return
+        }
+        e.preventDefault()
+        onEdit()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [onEdit])
 
   if (!tumour) return null
 
@@ -265,10 +285,10 @@ export function TumourSummaryModal({ tumour, onClose, onEdit }: TumourSummaryMod
         {/* Footer */}
         <div className="border-t border-gray-200 px-4 sm:px-6 py-3 sm:py-4 bg-gray-50 flex justify-between">
           <Button variant="secondary" onClick={onClose}>
-            Close
+            Close <span className="text-xs opacity-60 ml-1">(Esc)</span>
           </Button>
           <Button variant="primary" onClick={onEdit}>
-            Edit Tumour
+            Edit Tumour <span className="text-xs opacity-60 ml-1">(E)</span>
           </Button>
         </div>
       </div>

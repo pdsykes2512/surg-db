@@ -3,6 +3,7 @@ import { useHotkeys } from 'react-hotkeys-hook'
 
 interface UseTableNavigationOptions<T> {
   items: T[]
+  onView?: (item: T) => void
   onEdit?: (item: T) => void
   onDelete?: (item: T) => void
   onPrevPage?: () => void
@@ -15,6 +16,7 @@ interface UseTableNavigationOptions<T> {
 /**
  * Custom hook for table keyboard navigation
  * - Arrow Up/Down: Select row
+ * - Enter: View selected row (summary modal)
  * - E: Edit selected row
  * - Shift+D: Delete selected row
  * - [: Previous page
@@ -26,6 +28,7 @@ interface UseTableNavigationOptions<T> {
 export function useTableNavigation<T>(options: UseTableNavigationOptions<T>) {
   const {
     items,
+    onView,
     onEdit,
     onDelete,
     onPrevPage,
@@ -43,6 +46,7 @@ export function useTableNavigation<T>(options: UseTableNavigationOptions<T>) {
   }, [])
 
   // Arrow Up - Select previous row
+  // Note: Don't enable on form tags so arrow keys work normally in input fields
   useHotkeys(
     'up',
     (e) => {
@@ -55,13 +59,13 @@ export function useTableNavigation<T>(options: UseTableNavigationOptions<T>) {
     },
     {
       enabled: enabled && items.length > 0,
-      preventDefault: true,
-      enableOnFormTags: ['INPUT', 'TEXTAREA', 'SELECT']
+      preventDefault: true
     },
     [items, enabled]
   )
 
   // Arrow Down - Select next row
+  // Note: Don't enable on form tags so arrow keys work normally in input fields
   useHotkeys(
     'down',
     (e) => {
@@ -74,13 +78,30 @@ export function useTableNavigation<T>(options: UseTableNavigationOptions<T>) {
     },
     {
       enabled: enabled && items.length > 0,
-      preventDefault: true,
-      enableOnFormTags: ['INPUT', 'TEXTAREA', 'SELECT']
+      preventDefault: true
     },
     [items, enabled]
   )
 
+  // Enter - View selected row (summary modal)
+  // Note: Don't enable on form tags so Enter works normally in input fields
+  useHotkeys(
+    'enter',
+    (e) => {
+      e.preventDefault()
+      if (selectedIndex >= 0 && selectedIndex < items.length && onView) {
+        onView(items[selectedIndex])
+      }
+    },
+    {
+      enabled: enabled && selectedIndex >= 0 && !!onView,
+      preventDefault: true
+    },
+    [selectedIndex, items, onView, enabled]
+  )
+
   // E - Edit selected row
+  // Note: Don't enable on form tags so 'e' can be typed in filter boxes
   useHotkeys(
     'e',
     (e) => {
@@ -91,8 +112,7 @@ export function useTableNavigation<T>(options: UseTableNavigationOptions<T>) {
     },
     {
       enabled: enabled && selectedIndex >= 0 && !!onEdit,
-      preventDefault: true,
-      enableOnFormTags: ['INPUT', 'TEXTAREA', 'SELECT']
+      preventDefault: true
     },
     [selectedIndex, items, onEdit, enabled]
   )
