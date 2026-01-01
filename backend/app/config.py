@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     api_host: str = "0.0.0.0"
     api_port: int = 8000
     api_title: str = "IMPACT API"
-    api_version: str = "1.2.0"
+    api_version: str = "1.3.0"
     
     # Security settings
     secret_key: str = "your-secret-key-change-in-production-min-32-characters-long"
