@@ -259,6 +259,28 @@ def safe_to_float(value) -> Optional[float]:
         return None
 
 
+def convert_height_to_cm(value) -> Optional[float]:
+    """
+    Convert height to centimeters, handling both meters and centimeters
+
+    If value < 10, assumes it's in meters and converts to cm (e.g., 1.65 → 165)
+    If value >= 10, assumes it's already in cm (e.g., 165 → 165)
+
+    Returns:
+        Height in centimeters, or None if invalid
+    """
+    height = safe_to_float(value)
+    if height is None:
+        return None
+
+    # If height is unrealistically small (< 10), it's likely in meters
+    if height < 10:
+        return round(height * 100, 1)
+
+    # Otherwise assume it's already in cm
+    return round(height, 1)
+
+
 def parse_gender(sex_val) -> Optional[str]:
     """Parse gender field"""
     if pd.isna(sex_val):
@@ -1204,7 +1226,7 @@ def import_patients(db, csv_path: str, stats: Dict) -> Dict[str, str]:
                 'deceased_date': deceased_date,
                 'bmi': float(row.get('BMI')) if pd.notna(row.get('BMI')) else None,
                 'weight_kg': float(row.get('Weight')) if pd.notna(row.get('Weight')) else None,
-                'height_cm': float(row.get('Height')) if pd.notna(row.get('Height')) else None
+                'height_cm': convert_height_to_cm(row.get('Height'))  # Converts meters to cm if < 10
             },
             'contact': {
                 'postcode': str(row.get('Postcode', '')).strip() or None
@@ -1425,8 +1447,9 @@ def import_tumours(db, csv_path: str, hosp_no_to_patient_id: Dict, episode_mappi
             'pathological_n': None,
             'pathological_m': None,
 
-            # Rectal cancer specific
-            'distance_from_anal_verge_cm': float(row.get('Height')) if pd.notna(row.get('Height')) else None,
+            # Rectal cancer specific (CO5160)
+            # TODO: This should map to a rectal-specific field, not 'Height' - appears to be a data mapping error
+            'distance_from_anal_verge_cm': safe_to_float(row.get('Height')),
 
             # Imaging results
             'imaging_results': {
@@ -1577,7 +1600,7 @@ def import_treatments_surgery(db, csv_path: str, hosp_no_to_patient_id: Dict, ep
             'provider_organisation': 'Portsmouth Hospitals University NHS Trust',  # CR1450 - COSD Provider Organisation
 
             # Patient vitals at time of treatment
-            'height_cm': float(row.get('Height')) if pd.notna(row.get('Height')) else None,
+            'height_cm': convert_height_to_cm(row.get('Height')),  # Converts meters to cm if < 10
             'weight_kg': float(row.get('Weight')) if pd.notna(row.get('Weight')) else None,
             'bmi': float(row.get('BMI')) if pd.notna(row.get('BMI')) else None,
 

@@ -53,6 +53,7 @@ interface CancerEpisodeDetailModalProps {
   initialTreatmentId?: string
   initialTumourId?: string
   initialInvestigationId?: string
+  openEditDirectly?: boolean
 }
 
 export function CancerEpisodeDetailModal({
@@ -62,7 +63,8 @@ export function CancerEpisodeDetailModal({
   initialTab = 'overview',
   initialTreatmentId,
   initialTumourId,
-  initialInvestigationId
+  initialInvestigationId,
+  openEditDirectly = false
 }: CancerEpisodeDetailModalProps) {
   const [treatments, setTreatments] = useState<Treatment[]>([])
   const [tumours, setTumours] = useState<any[]>([])
@@ -166,7 +168,13 @@ export function CancerEpisodeDetailModal({
     if (initialTreatmentId && treatments.length > 0) {
       const treatment = treatments.find(t => t.treatment_id === initialTreatmentId)
       if (treatment) {
-        setViewingTreatment(treatment)
+        // Open edit modal directly if requested (e.g., from recent activity update action)
+        if (openEditDirectly) {
+          setEditingTreatment(treatment)
+          setShowAddTreatment(true)
+        } else {
+          setViewingTreatment(treatment)
+        }
       }
     }
 
@@ -184,7 +192,7 @@ export function CancerEpisodeDetailModal({
         setShowInvestigationModal(true)
       }
     }
-  }, [treatments, tumours, investigations, initialTreatmentId, initialTumourId, initialInvestigationId])
+  }, [treatments, tumours, investigations, initialTreatmentId, initialTumourId, initialInvestigationId, openEditDirectly])
 
   const loadTreatments = async () => {
     if (!episode) return
@@ -255,7 +263,7 @@ export function CancerEpisodeDetailModal({
 
   const handleEditTreatment = async (treatment: any) => {
     if (!editingTreatment || !episode) return
-    
+
     try {
       // Use /api for relative URLs (uses Vite proxy)
       const API_URL = import.meta.env.VITE_API_URL || '/api'
@@ -270,7 +278,7 @@ export function CancerEpisodeDetailModal({
           body: JSON.stringify(treatment)
         }
       )
-      
+
       if (response.ok) {
         await loadTreatments()
         setEditingTreatment(null)

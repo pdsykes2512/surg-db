@@ -15,6 +15,89 @@ This file tracks significant changes made to the IMPACT application (formerly su
 
 ---
 
+## 2026-01-01 - Fixed Height Units Data Quality Issue (Meters → Centimeters)
+
+**Changed by:** AI Session (Claude Code)
+
+**Issue:** During data migration, patient heights were incorrectly stored in meters (e.g., 1.65) instead of centimeters (165) in the `height_cm` field. This affected 3,772 treatments (97.9% of all treatments with height data), making it impossible to correctly update vitals in the treatment edit modal.
+
+**Root Cause:** The import script or source data had heights in meters, but the database field is designed for centimeters.
+
+**Changes:**
+- Created data fix script: [execution/data-fixes/fix_height_units.py](execution/data-fixes/fix_height_units.py)
+- Converted all heights < 10 from meters to centimeters (multiplied by 100)
+- Recalculated BMI values where weight was available
+- Verified all heights are now in correct range (100-250cm)
+
+**Results:**
+- ✅ Fixed 3,772 treatment height values (1.65m → 165cm)
+- ✅ Recalculated 1,794 BMI values using correct height in meters
+- ✅ 0 treatments remain with height < 10
+- ✅ 3,850 treatments now have correct height values (100-250cm)
+
+**Example:**
+```
+Before: height_cm: 1.65, weight_kg: 69.8, bmi: 26.0
+After:  height_cm: 165,  weight_kg: 69.8, bmi: 25.6 (recalculated)
+```
+
+**Files affected:**
+- `execution/data-fixes/fix_height_units.py` - New data fix script
+- Database: 3,772 treatment documents updated
+
+**Testing:**
+1. Open any treatment with vitals (e.g., SUR-50D6F5-01)
+2. Verify height is displayed in centimeters (e.g., 165cm not 1.65)
+3. Edit height and BMI values
+4. Confirm they save correctly
+
+**Notes:**
+- This was a one-time data migration issue
+- Import script has been updated to prevent recurrence
+- BMI calculation now uses correct formula: weight(kg) / (height(m))²
+- No action needed for treatments without height data
+
+**Follow-up Fix:**
+- Updated import script ([execution/migrations/import_comprehensive.py](execution/migrations/import_comprehensive.py#L262-L281))
+- Added `convert_height_to_cm()` helper function to automatically detect and convert meters to centimeters
+- Updated all height imports (patients line 1229, treatments line 1602) to use conversion function
+- Future imports will now correctly store heights in centimeters regardless of source data format
+
+---
+
+## 2026-01-01 - Fixed Recent Activity to Open Edit Treatment Modal Directly
+
+**Changed by:** AI Session (Claude Code)
+
+**Issue:** Clicking on a treatment in the Recent Activity panel was not opening the edit modal directly. Users expect to be able to quickly edit treatments they recently updated.
+
+**Changes:**
+- Added `action` parameter to navigation state handling in [EpisodesPage.tsx](frontend/src/pages/EpisodesPage.tsx#L153)
+- Added `modalOpenEditDirectly` state to control modal behavior
+- Added `openEditDirectly` prop to CancerEpisodeDetailModal interface
+- Modified useEffect in [CancerEpisodeDetailModal.tsx](frontend/src/components/modals/CancerEpisodeDetailModal.tsx#L172-L177) to:
+  - Open AddTreatmentModal (edit form) directly when `openEditDirectly=true`
+  - Open TreatmentSummaryModal (view modal) when `openEditDirectly=false`
+- For "update" actions from recent activity, the edit modal now opens directly
+
+**Files affected:**
+- `frontend/src/pages/EpisodesPage.tsx` - Added action handling and modalOpenEditDirectly state
+- `frontend/src/components/modals/CancerEpisodeDetailModal.tsx` - Added openEditDirectly prop and logic
+
+**Testing:**
+1. Go to Dashboard (Home page)
+2. Find a treatment in the Recent Activity panel (preferably one with action="UPDATE")
+3. Click on the activity item
+4. Should navigate to Episodes page and open the edit treatment modal directly
+5. Treatment data should be pre-populated in the form
+
+**Notes:**
+- For "update" actions, users can now edit treatments immediately without clicking through a view modal first
+- For "create" actions and direct navigation, the view modal still opens (existing behavior)
+- This improves workflow efficiency for users working on data entry
+
+---
+
 ## 2026-01-01 - Applied Monospaced Font to Investigation and Treatment Table Dates
 
 **Changed by:** AI Session (Claude Code)

@@ -41,6 +41,7 @@ export function EpisodesPage() {
   const [modalInitialTreatmentId, setModalInitialTreatmentId] = useState<string | undefined>(undefined)
   const [modalInitialTumourId, setModalInitialTumourId] = useState<string | undefined>(undefined)
   const [modalInitialInvestigationId, setModalInitialInvestigationId] = useState<string | undefined>(undefined)
+  const [modalOpenEditDirectly, setModalOpenEditDirectly] = useState<boolean>(false)
   
   // Filters
   const [startDateFilter, setStartDateFilter] = useState('')
@@ -150,6 +151,7 @@ export function EpisodesPage() {
       openTreatment?: string
       openTumour?: string
       openInvestigation?: string
+      action?: string
     }
 
     // Handle adding new episode from quick action (doesn't require episodes to be loaded)
@@ -205,6 +207,8 @@ export function EpisodesPage() {
           setSelectedEpisode(episode)
           setModalInitialTab('treatments')
           setModalInitialTreatmentId(state.openTreatment)
+          // Open edit modal directly for update actions from recent activity
+          setModalOpenEditDirectly(state.action === 'update')
           setShowDetailModal(true)
           navigate(location.pathname, { replace: true, state: {} })
         } catch (error) {
@@ -658,6 +662,7 @@ export function EpisodesPage() {
           initialTreatmentId={modalInitialTreatmentId}
           initialTumourId={modalInitialTumourId}
           initialInvestigationId={modalInitialInvestigationId}
+          openEditDirectly={modalOpenEditDirectly}
           onClose={() => {
             setShowDetailModal(false)
             setSelectedEpisode(null)
@@ -665,6 +670,7 @@ export function EpisodesPage() {
             setModalInitialTreatmentId(undefined)
             setModalInitialTumourId(undefined)
             setModalInitialInvestigationId(undefined)
+            setModalOpenEditDirectly(false)
           }}
           onEdit={(episode) => {
             setEditingEpisode(episode)
