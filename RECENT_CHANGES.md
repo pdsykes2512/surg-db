@@ -15,6 +15,71 @@ This file tracks significant changes made to the IMPACT application (formerly su
 
 ---
 
+## 2026-01-01 - Enable Free Text Entry for Assistant Surgeon Fields
+
+**Changed by:** AI Session (Claude Code)
+
+**Issue:** The Assistant Surgeon and Second Assistant fields in the Add/Edit Treatment modal were restricted to selecting only from the clinicians directory. This prevented entering surgeon names for locums, visiting surgeons, or staff not yet added to the system.
+
+**Changes:**
+- ✅ Updated [SearchableSelect](frontend/src/components/common/SearchableSelect.tsx) to accept free text entry
+- When user types a name and tabs/clicks away, the free text is preserved as the value
+- Dropdown suggestions from clinicians collection still appear while typing
+- Users can either select from suggestions OR enter any name manually
+
+**Behavior:**
+1. Type to search clinicians (e.g., "John Smith") - matching clinicians appear in dropdown
+2. Click a suggestion to select from clinicians directory
+3. OR continue typing any name (e.g., "Dr. Jane Doe (Locum)") and tab/click away - it will be saved
+
+**Files affected:**
+- `frontend/src/components/common/SearchableSelect.tsx` - Updated onBlur handler to preserve free text
+
+**Testing:**
+1. Open any episode and click "Add Treatment"
+2. In the Assistant Surgeon field, type a name not in the clinicians list (e.g., "Dr. Test Locum")
+3. Tab away or click elsewhere
+4. ✅ Verify the typed name is preserved in the field
+5. ✅ Verify selecting from dropdown still works for existing clinicians
+
+**Notes:**
+- This applies to ALL fields using SurgeonSearch component (Assistant Surgeon, Second Assistant, Anaesthetist)
+- Primary Surgeon field should still require selection from clinicians for data quality
+- Free text entries won't have GMC numbers or subspecialty tags
+
+---
+
+## 2026-01-01 - Removed Surgeons Collection (Superseded by Clinicians)
+
+**Changed by:** AI Session (Claude Code)
+
+**Issue:** The `surgeons` collection was redundant - the system now uses the more comprehensive `clinicians` collection instead. The surgeons collection was never populated in production.
+
+**Changes:**
+- ✅ Removed backend route: [backend/app/routes/surgeons.py](backend/app/routes/surgeons.py)
+- ✅ Removed backend model: [backend/app/models/surgeon.py](backend/app/models/surgeon.py)
+- ✅ Archived migration scripts to [execution/migrations/_archived_surgeons/](execution/migrations/_archived_surgeons/)
+- ✅ Archived data fix scripts to [execution/data-fixes/_archived_surgeons/](execution/data-fixes/_archived_surgeons/)
+- ✅ Updated [DATABASE_SCHEMA.md](DATABASE_SCHEMA.md) to reflect clinicians superseded surgeons
+
+**Files affected:**
+- Removed: `backend/app/routes/surgeons.py`
+- Removed: `backend/app/models/surgeon.py`
+- Archived: All surgeon migration and data fix scripts
+- Updated: `DATABASE_SCHEMA.md`
+
+**Testing:**
+1. Backend still starts correctly: `sudo systemctl status surg-db-backend`
+2. Clinicians API works: `curl http://localhost:8000/api/admin/clinicians`
+3. No references to `/api/admin/surgeons` endpoint remain
+
+**Notes:**
+- The `clinicians` collection in the `impact_system` database is the single source of truth for all clinical staff
+- Frontend uses "surgeon" as a clinical role value (e.g., `clinical_role: 'surgeon'`), which is correct
+- Treatment documents still track surgeon-specific fields (e.g., `primary_surgeon`, `assistant_surgeons`) as data fields
+
+---
+
 ## 2026-01-01 - Fixed Height Units Data Quality Issue (Meters → Centimeters)
 
 **Changed by:** AI Session (Claude Code)

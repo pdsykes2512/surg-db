@@ -35,8 +35,7 @@ Patient (1) ──► Episode (N) ──► Treatment (N)
 - **treatments** - Individual treatments within episodes (surgery, chemo, radiotherapy, etc.)
 - **tumours** - Individual tumour sites tracked within cancer episodes
 - **investigations** - Clinical investigations and imaging studies
-- **clinicians** - Clinician directory
-- **surgeons** - Surgeon directory
+- **clinicians** - Clinician directory (superseded surgeons collection)
 - **users** - System users and authentication
 - **audit_logs** - System audit trail
 - **nhs_providers** - NHS organization codes and names

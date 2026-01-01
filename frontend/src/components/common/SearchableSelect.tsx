@@ -131,11 +131,17 @@ export function SearchableSelect<T>({
             setTimeout(() => {
               setShowDropdown(false)
               setIsEditing(false)
-              // Reset searchTerm to show selected value label when blurred
-              if (value) {
+              // If user has typed free text, accept it as the value
+              if (searchTerm && searchTerm.trim() !== '') {
+                onChange(searchTerm.trim())
+              } else if (value) {
+                // Reset searchTerm to show selected value label when blurred
                 const selectedOption = options.find(opt => getOptionValue(opt) === value)
                 if (selectedOption) {
                   setSearchTerm(getOptionLabel(selectedOption))
+                } else {
+                  // Keep the raw value if no matching option
+                  setSearchTerm(value)
                 }
               } else {
                 setSearchTerm('')
