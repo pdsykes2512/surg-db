@@ -14,13 +14,10 @@ interface AddTreatmentModalProps {
   initialData?: any
 }
 
-const generateTreatmentId = (type: string, nhsNumber: string, count: number) => {
-  // Clean NHS number (remove spaces)
-  const cleanNHS = nhsNumber.replace(/\s/g, '')
-  
+const generateTreatmentId = (type: string, patientId: string, count: number) => {
   // Format count as 2-digit number
   const incrementalNum = String(count + 1).padStart(2, '0')
-  
+
   // Map treatment type to prefix
   const prefixMap: Record<string, string> = {
     'surgery': 'SUR',
@@ -28,9 +25,9 @@ const generateTreatmentId = (type: string, nhsNumber: string, count: number) => 
     'radiotherapy': 'DXT',
     'immunotherapy': 'IMM'
   }
-  
+
   const prefix = prefixMap[type] || 'TRE'
-  return `${prefix}-${cleanNHS}-${incrementalNum}`
+  return `${prefix}-${patientId}-${incrementalNum}`
 }
 
 // OPCS-4 Procedure codes - common colorectal and general surgery procedures
@@ -118,7 +115,7 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
   const [treatmentType, setTreatmentType] = useState(initialData?.treatment_type || 'surgery')
   const [procedureSearch, setProcedureSearch] = useState(initialData?.procedure_name || '')
   const [showProcedureDropdown, setShowProcedureDropdown] = useState(false)
-  const [patientNhsNumber, setPatientNhsNumber] = useState<string>('')
+  const [patientId, setPatientId] = useState<string>('')
   const [treatmentCount, setTreatmentCount] = useState<number>(0)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
 
@@ -130,7 +127,7 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
     }
   }
 
-  // Fetch episode to get patient NHS number
+  // Fetch episode to get patient_id
   useEffect(() => {
     const fetchEpisodeData = async () => {
       try {
@@ -141,14 +138,8 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         })
         const episodeData = await episodeResponse.json()
-        
-        // Fetch patient to get NHS number
-        const patientResponse = await fetch(`${API_URL}/patients/${episodeData.patient_id}`, {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-        })
-        const patientData = await patientResponse.json()
-        setPatientNhsNumber(patientData.nhs_number)
-        
+        setPatientId(episodeData.patient_id)
+
         // Fetch existing treatments for this patient to get count
         const treatmentsResponse = await fetch(`${API_URL}/treatments/?episode_id=${episodeId}`, {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
@@ -159,7 +150,7 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
         console.error('Failed to fetch episode data:', error)
       }
     }
-    
+
     if (mode === 'create') {
       fetchEpisodeData()
     }
@@ -302,13 +293,13 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
   }
   })
 
-  // Generate treatment ID when NHS number is available
+  // Generate treatment ID when patient_id is available
   useEffect(() => {
-    if (patientNhsNumber && mode === 'create' && !formData.treatment_id) {
-      const newTreatmentId = generateTreatmentId(treatmentType, patientNhsNumber, treatmentCount)
+    if (patientId && mode === 'create' && !formData.treatment_id) {
+      const newTreatmentId = generateTreatmentId(treatmentType, patientId, treatmentCount)
       setFormData((prev: any) => ({ ...prev, treatment_id: newTreatmentId }))
     }
-  }, [patientNhsNumber, treatmentCount, mode, treatmentType])
+  }, [patientId, treatmentCount, mode, treatmentType])
 
   // Auto-calculate BMI when weight and height are entered
   useEffect(() => {
@@ -342,10 +333,10 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
       ...formData,
       treatment_type: type
     }
-    
-    // Regenerate treatment ID with new type prefix if NHS number is available
-    if (patientNhsNumber && mode === 'create') {
-      updatedFormData.treatment_id = generateTreatmentId(type, patientNhsNumber, treatmentCount)
+
+    // Regenerate treatment ID with new type prefix if patient_id is available
+    if (patientId && mode === 'create') {
+      updatedFormData.treatment_id = generateTreatmentId(type, patientId, treatmentCount)
     }
     
     setFormData(updatedFormData)
