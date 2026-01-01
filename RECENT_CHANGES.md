@@ -15,6 +15,106 @@ This file tracks significant changes made to the IMPACT application (formerly su
 
 ---
 
+## 2026-01-01 - Automated Semantic Versioning System
+
+**Changed by:** AI Session (Claude Code)
+
+**Issue:** The IMPACT application had no systematic versioning strategy. Version numbers in `frontend/package.json` and `backend/app/config.py` were updated manually and inconsistently, making it difficult to track releases and communicate changes.
+
+**Changes:**
+- ✅ Created `VERSION` file as single source of truth for version numbers
+- ✅ Implemented semantic versioning (MAJOR.MINOR.PATCH) based on conventional commits
+- ✅ Created Python scripts for version management:
+  - [execution/version_bump.py](execution/version_bump.py) - Analyzes commits and bumps version
+  - [execution/sync_version.py](execution/sync_version.py) - Syncs version across all files
+- ✅ Created GitHub Actions workflow [.github/workflows/auto-version.yml](.github/workflows/auto-version.yml)
+- ✅ Auto-bumps version on every push to main based on commit types
+- ✅ Auto-creates git tags and GitHub releases
+- ✅ Created comprehensive documentation:
+  - [VERSIONING.md](VERSIONING.md) - User-friendly versioning guide
+  - [execution/directives/version_management.md](execution/directives/version_management.md) - Technical directive
+
+**Behavior:**
+When developers push commits to main:
+1. GitHub Actions analyzes conventional commit messages
+2. Determines version bump type (major/minor/patch)
+3. Updates VERSION, frontend/package.json, backend/app/config.py
+4. Creates git tag (e.g., v1.2.0)
+5. Creates GitHub release with changelog
+6. Pushes changes back to repo
+
+**Version Bump Rules:**
+- `feat:` commits → MINOR bump (1.1.1 → 1.2.0)
+- `fix:` commits → PATCH bump (1.1.1 → 1.1.2)
+- `feat!:` or `BREAKING CHANGE:` → MAJOR bump (1.1.1 → 2.0.0)
+- `docs:`, `chore:`, `test:` → No bump
+
+**Files affected:**
+- `VERSION` (new) - Single source of truth
+- `.github/workflows/auto-version.yml` (new) - GitHub Actions workflow
+- `execution/version_bump.py` (new) - Version bump script
+- `execution/sync_version.py` (new) - Version sync script
+- `execution/directives/version_management.md` (new) - Technical directive
+- `VERSIONING.md` (new) - User documentation
+
+**Testing:**
+1. ✅ Test version bump script in interactive mode:
+   ```bash
+   python3 execution/version_bump.py
+   ```
+2. ✅ Test version bump in CI mode (detects 130 commits since v1.0.0, suggests 1.2.0)
+3. ✅ Test version sync script:
+   ```bash
+   python3 execution/sync_version.py
+   ```
+4. ✅ Verify VERSION file syncs to package.json and config.py
+5. GitHub Actions will run automatically on next push to main
+
+**Notes:**
+- Current version remains at 1.1.1 (tested but didn't apply the bump)
+- Developers should now use conventional commits (feat:, fix:, etc.)
+- No manual version editing needed - fully automated
+- GitHub Actions creates releases with auto-generated changelogs
+- See [VERSIONING.md](VERSIONING.md) for complete usage guide
+
+---
+
+## 2026-01-01 - Hide Keyboard Shortcut Hints on Mobile View
+
+**Changed by:** AI Session (Claude Code)
+
+**Issue:** Keyboard shortcut hints were displaying on mobile devices where keyboard shortcuts are not applicable or useful, causing visual clutter and confusion.
+
+**Changes:**
+- ✅ Updated [HelpDialog.tsx](frontend/src/components/modals/HelpDialog.tsx) to hide the entire keyboard shortcuts modal on mobile (< md/768px breakpoint)
+- ✅ Verified [Button.tsx](frontend/src/components/common/Button.tsx) already has `hidden md:inline` for keyboard hints
+- ✅ Verified [Layout.tsx](frontend/src/components/layout/Layout.tsx) "Press ? for shortcuts" hint already has `hidden sm:inline`
+
+**Behavior:**
+- On mobile devices (< 768px): Keyboard shortcuts dialog won't appear if triggered
+- On tablet/desktop (≥ 768px): Full keyboard shortcuts functionality remains
+- Keyboard hints on buttons (e.g., "[", "]", "⌘⇧P") are hidden on mobile but visible on desktop
+
+**Files affected:**
+- `frontend/src/components/modals/HelpDialog.tsx` - Added `hidden md:flex` to modal backdrop
+- `frontend/src/components/common/Button.tsx` - Already had responsive classes (no changes needed)
+- `frontend/src/components/layout/Layout.tsx` - Already had responsive classes (no changes needed)
+
+**Testing:**
+1. Open the app on mobile view (< 768px width)
+2. ✅ Verify keyboard hint badges don't appear on "Add Patient", "Add Episode", or pagination buttons
+3. ✅ Verify "Press ? for shortcuts" hint doesn't appear in footer
+4. Resize to desktop view (≥ 768px)
+5. ✅ Verify all keyboard hints appear correctly
+6. ✅ Verify help dialog opens with "?" shortcut and displays properly
+
+**Notes:**
+- Keyboard shortcuts are still functional on larger touch devices (tablets), they just won't show hints on small mobile phones
+- The help dialog uses `md:` breakpoint (768px) to align with Tailwind's tablet/desktop distinction
+- This improves mobile UX by removing irrelevant UI elements
+
+---
+
 ## 2026-01-01 - Enable Free Text Entry for Assistant Surgeon Fields
 
 **Changed by:** AI Session (Claude Code)

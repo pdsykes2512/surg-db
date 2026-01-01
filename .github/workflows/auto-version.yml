@@ -1,0 +1,102 @@
+name: Auto Version Bump
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'VERSION'
+      - 'frontend/package.json'
+      - 'backend/app/config.py'
+      - '.github/workflows/**'
+      - 'docs/**'
+      - '**.md'
+
+  workflow_dispatch:
+    inputs:
+      bump_type:
+        description: 'Force version bump type'
+        required: false
+        type: choice
+        options:
+          - auto
+          - major
+          - minor
+          - patch
+
+jobs:
+  version-bump:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for git log analysis
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Run version bump script
+        id: version_bump
+        run: |
+          python3 execution/version_bump.py --ci
+
+          # Check if VERSION file changed
+          if git diff --quiet VERSION; then
+            echo "version_changed=false" >> $GITHUB_OUTPUT
+            echo "No version bump needed"
+          else
+            NEW_VERSION=$(cat VERSION)
+            echo "version_changed=true" >> $GITHUB_OUTPUT
+            echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+            echo "Version bumped to $NEW_VERSION"
+          fi
+
+      - name: Commit version bump
+        if: steps.version_bump.outputs.version_changed == 'true'
+        run: |
+          git add VERSION frontend/package.json backend/app/config.py
+          git commit -m "chore: bump version to ${{ steps.version_bump.outputs.new_version }} [skip ci]"
+
+      - name: Push changes and tags
+        if: steps.version_bump.outputs.version_changed == 'true'
+        run: |
+          git push origin main
+          git push --tags
+
+      - name: Create GitHub Release
+        if: steps.version_bump.outputs.version_changed == 'true'
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.version_bump.outputs.new_version }}
+          release_name: Release v${{ steps.version_bump.outputs.new_version }}
+          draft: false
+          prerelease: false
+          body: |
+            Automated release generated from conventional commits.
+
+            See the [RECENT_CHANGES.md](https://github.com/${{ github.repository }}/blob/main/RECENT_CHANGES.md) for detailed changes.
+
+      - name: Summary
+        if: steps.version_bump.outputs.version_changed == 'true'
+        run: |
+          echo "### ✅ Version Bumped Successfully!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**New Version:** \`v${{ steps.version_bump.outputs.new_version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- Git tag created and pushed" >> $GITHUB_STEP_SUMMARY
+          echo "- GitHub release created" >> $GITHUB_STEP_SUMMARY
+          echo "- Version files updated" >> $GITHUB_STEP_SUMMARY
