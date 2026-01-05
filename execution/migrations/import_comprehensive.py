@@ -288,10 +288,11 @@ def parse_gender(sex_val) -> Optional[str]:
 
     sex_str = str(sex_val).strip().lower()
 
-    if sex_str.startswith('1') or 'male' in sex_str:
-        return 'male'
-    elif sex_str.startswith('2') or 'female' in sex_str:
+    # IMPORTANT: Check 'female' FIRST to avoid substring match ('female' contains 'male')
+    if sex_str.startswith('2') or 'female' in sex_str:
         return 'female'
+    elif sex_str.startswith('1') or sex_str == 'male':
+        return 'male'
 
     return None
 
