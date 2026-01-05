@@ -52,6 +52,7 @@ env/
 *.swp
 *.swo
 *~
+impact.code-workspace
 
 # OS
 .DS_Store
