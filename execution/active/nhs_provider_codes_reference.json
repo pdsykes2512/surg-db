@@ -2141,8 +2141,308 @@
       "type": "independent sector healthcare provider",
       "verified": true,
       "last_verified": "2025-12-30"
+    },
+    "694X0": {
+      "name": "southampton general hospital laboratory",
+      "type": "pathology lab",
+      "verified": true,
+      "last_verified": "2026-01-05"
+    },
+    "814": {
+      "name": "southampton city council",
+      "type": "local authority",
+      "verified": true,
+      "last_verified": "2026-01-05"
+    },
+    "8AH17": {
+      "name": "southampton counselling & therapy centre",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2026-01-05"
+    },
+    "8AH26": {
+      "name": "southampton care association",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2026-01-05"
+    },
+    "8DN07": {
+      "name": "southampton council for community services",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2026-01-05"
+    },
+    "8FT43": {
+      "name": "southampton counselling limited",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2026-01-05"
+    },
+    "8JE96": {
+      "name": "southampton centre for independent living continuing care",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2026-01-05"
+    },
+    "8KD75": {
+      "name": "southampton anaesthetists services ltd",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2026-01-05"
+    },
+    "AR4": {
+      "name": "southampton primary care limited",
+      "type": "independent sector healthcare provider",
+      "verified": true,
+      "last_verified": "2026-01-05"
+    },
+    "AR401": {
+      "name": "southampton primary care",
+      "type": "independent sector h/c provider site",
+      "verified": true,
+      "last_verified": "2026-01-05"
+    },
+    "EE133878": {
+      "name": "southampton solent university",
+      "type": "school",
+      "verified": true,
+      "last_verified": "2026-01-05"
+    },
+    "EE140649": {
+      "name": "southampton hospital school",
+      "type": "school",
+      "verified": true,
+      "last_verified": "2026-01-05"
+    },
+    "J82081": {
+      "name": "southampton sea city partnership",
+      "type": "prescribing cost centre",
+      "verified": true,
+      "last_verified": "2026-01-05"
+    },
+    "M0Y8X": {
+      "name": "southampton university hospital - nihr clinical research facility - janssen covid19 trials",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2026-01-05"
+    },
+    "N6J6J": {
+      "name": "southampton (west hampshire) magistrates' court",
+      "type": "non residential institution",
+      "verified": true,
+      "last_verified": "2026-01-05"
+    },
+    "NV513": {
+      "name": "southampton",
+      "type": "independent sector h/c provider site",
+      "verified": true,
+      "last_verified": "2026-01-05"
+    },
+    "NT9A5": {
+      "name": "southampton pet/ct centre",
+      "type": "independent sector h/c provider site",
+      "verified": true,
+      "last_verified": "2026-01-05"
+    },
+    "NTPLH": {
+      "name": "southampton community vasectomy service - aldermoor surgery (care uk)",
+      "type": "independent sector h/c provider site",
+      "verified": true,
+      "last_verified": "2026-01-05"
+    },
+    "NV1F2": {
+      "name": "southampton general hospital",
+      "type": "independent sector h/c provider site",
+      "verified": true,
+      "last_verified": "2026-01-05"
+    },
+    "O6U7V": {
+      "name": "southampton logistics & pharmacy unit",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2026-01-05"
+    },
+    "R1C40": {
+      "name": "southampton general hospital",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2026-01-05"
+    },
+    "R1C86": {
+      "name": "southampton university health centre",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2026-01-05"
+    },
+    "R1CGX": {
+      "name": "southampton civic offices",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2026-01-05"
+    },
+    "R1CHJ": {
+      "name": "southampton city council",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2026-01-05"
+    },
+    "R1CJR": {
+      "name": "southampton central library",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2026-01-05"
+    },
+    "R1CM2": {
+      "name": "southampton city college",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2026-01-05"
+    },
+    "RHM01": {
+      "name": "southampton general hospital",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2026-01-05"
+    },
+    "RHU35": {
+      "name": "southampton general hospital",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2026-01-05"
+    },
+    "RWV61": {
+      "name": "southampton adrc",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2026-01-05"
+    },
+    "T146L": {
+      "name": "southampton centre (nhs blood & transplant)",
+      "type": "special health authority site",
+      "verified": true,
+      "last_verified": "2026-01-05"
+    },
+    "U08561": {
+      "name": "southampton living well partnership pcn",
+      "type": "primary care network",
+      "verified": true,
+      "last_verified": "2026-01-05"
+    },
+    "U53997": {
+      "name": "southampton woolston & townhill pcn",
+      "type": "primary care network",
+      "verified": true,
+      "last_verified": "2026-01-05"
+    },
+    "U18986": {
+      "name": "southampton central pcn",
+      "type": "primary care network",
+      "verified": true,
+      "last_verified": "2026-01-05"
+    },
+    "U47004": {
+      "name": "southampton west pcn",
+      "type": "primary care network",
+      "verified": true,
+      "last_verified": "2026-01-05"
+    },
+    "U97340": {
+      "name": "southampton bitterne pcn",
+      "type": "primary care network",
+      "verified": true,
+      "last_verified": "2026-01-05"
+    },
+    "U91385": {
+      "name": "southampton north pcn",
+      "type": "primary care network",
+      "verified": true,
+      "last_verified": "2026-01-05"
+    },
+    "V13005": {
+      "name": "southampton orthodontic centre l",
+      "type": "general dental practice",
+      "verified": true,
+      "last_verified": "2026-01-05"
+    },
+    "VM8WX": {
+      "name": "southampton manor care home",
+      "type": "social care site",
+      "verified": true,
+      "last_verified": "2026-01-05"
+    },
+    "VN03W": {
+      "name": "southampton",
+      "type": "social care site",
+      "verified": true,
+      "last_verified": "2026-01-05"
+    },
+    "VN23T": {
+      "name": "southampton reablement service",
+      "type": "social care site",
+      "verified": true,
+      "last_verified": "2026-01-05"
+    },
+    "VN23V": {
+      "name": "southampton city council shared lives scheme",
+      "type": "social care site",
+      "verified": true,
+      "last_verified": "2026-01-05"
+    },
+    "VNEPR": {
+      "name": "southampton",
+      "type": "social care site",
+      "verified": true,
+      "last_verified": "2026-01-05"
+    },
+    "VNQC4": {
+      "name": "southampton manor care home",
+      "type": "social care site",
+      "verified": true,
+      "last_verified": "2026-01-05"
+    },
+    "WAR": {
+      "name": "southampton combined court centre",
+      "type": "non residential institution",
+      "verified": true,
+      "last_verified": "2026-01-05"
+    },
+    "WJP": {
+      "name": "southampton police custody suite",
+      "type": "non residential institution",
+      "verified": true,
+      "last_verified": "2026-01-05"
+    },
+    "X2605": {
+      "name": "southampton - strawberry fields",
+      "type": "executive agency site",
+      "verified": true,
+      "last_verified": "2026-01-05"
+    },
+    "Y04672": {
+      "name": "southampton minor injuries unit",
+      "type": "other prescribing cost centre",
+      "verified": true,
+      "last_verified": "2026-01-05"
+    },
+    "Y05074": {
+      "name": "southampton primary care hubs",
+      "type": "other prescribing cost centre",
+      "verified": true,
+      "last_verified": "2026-01-05"
+    },
+    "Y05817": {
+      "name": "southampton drug & alcohol services",
+      "type": "prescribing cost centre",
+      "verified": true,
+      "last_verified": "2026-01-05"
+    },
+    "U18494": {
+      "name": "southampton sea city pcn",
+      "type": "primary care network",
+      "verified": true,
+      "last_verified": "2026-01-05"
     }
   },
   "reference_note": "NHS Provider (Trust) Codes verified from ODS API - https://directory.spineservices.nhs.uk/STU3/",
-  "last_updated": "2025-12-30 12:17:02"
+  "last_updated": "2026-01-05 11:28:58"
 }

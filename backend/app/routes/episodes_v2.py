@@ -142,6 +142,13 @@ def flatten_treatment_for_frontend(treatment: dict, clinician_map: dict = None, 
         postop = treatment['postoperative_events']
         if 'return_to_theatre' in postop:
             flattened['return_to_theatre'] = postop['return_to_theatre'].get('occurred')
+            flattened['return_to_theatre_reason'] = postop['return_to_theatre'].get('reason')
+
+    # Flatten outcomes fields
+    if 'outcomes' in treatment:
+        outcomes = treatment['outcomes']
+        flattened['readmission_30d'] = outcomes.get('readmission_30day')
+        flattened['readmission_reason'] = outcomes.get('readmission_reason')
 
     return flattened
 

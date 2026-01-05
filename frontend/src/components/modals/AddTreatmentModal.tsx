@@ -462,15 +462,24 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
       
       // Complications
       if (formData.clavien_dindo_grade) treatment.clavien_dindo_grade = formData.clavien_dindo_grade
-      treatment.return_to_theatre = formData.return_to_theatre
-      if (formData.return_to_theatre_reason) treatment.return_to_theatre_reason = formData.return_to_theatre_reason
-      treatment.readmission_30d = formData.readmission_30d
-      if (formData.readmission_reason) treatment.readmission_reason = formData.readmission_reason
-      if (formData.complications?.length > 0) treatment.complications = formData.complications
-      
-      // Anastomotic Leak detailed tracking
-      if (formData.anastomotic_leak_occurred) {
-        treatment.anastomotic_leak = {
+
+      // Postoperative events - nested structure per DATABASE_SCHEMA.md
+      treatment.postoperative_events = {
+        return_to_theatre: {
+          occurred: formData.return_to_theatre,
+          date: null,
+          reason: formData.return_to_theatre_reason || null,
+          procedure_performed: null
+        },
+        escalation_of_care: {
+          occurred: false,
+          destination: null,
+          date: null,
+          reason: null,
+          duration_days: null
+        },
+        complications: formData.complications?.length > 0 ? formData.complications : [],
+        anastomotic_leak: formData.anastomotic_leak_occurred ? {
           occurred: formData.anastomotic_leak_occurred,
           severity: formData.anastomotic_leak_severity,
           date_identified: formData.anastomotic_leak_date || null,
@@ -491,7 +500,24 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
           resolution_date: formData.anastomotic_leak_resolution_date || null,
           defunctioning_stoma_present: formData.anastomotic_leak_defunctioning_stoma_present,
           notes: formData.anastomotic_leak_notes || null
+        } : {
+          occurred: false,
+          severity: null,
+          date_identified: null,
+          days_post_surgery: null,
+          presentation: null
         }
+      }
+
+      // Outcomes - flat structure per DATABASE_SCHEMA.md
+      treatment.outcomes = {
+        readmission_30day: formData.readmission_30d,
+        readmission_date: null,
+        readmission_reason: formData.readmission_reason || null,
+        mortality_30day: false,
+        mortality_90day: false,
+        date_of_death: null,
+        cause_of_death: null
       }
       
     } else if (treatmentType === 'chemotherapy') {

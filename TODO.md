@@ -246,6 +246,29 @@
   - ✅ Intelligent pagination with mobile page limiting
   - ✅ Visual step progress indicators scroll horizontally
   - ✅ Comprehensive responsive design documentation in STYLE_GUIDE.md
+- [ ] **Surveillance & Follow-up Timetabling** (NEW - High Priority)
+  - [ ] Create Pydantic models for surveillance schedules (✅ DONE - backend/app/models/surveillance.py)
+  - [ ] Create surveillance protocol engine with NBOCA colorectal guidelines
+  - [ ] Add surveillance_schedules collection to database.py
+  - [ ] Build backend API routes for surveillance CRUD operations
+  - [ ] Create GET /api/surveillance/due endpoint for filtering due investigations
+  - [ ] Create POST /api/surveillance/generate-schedule endpoint for auto-generation
+  - [ ] Create PUT /api/surveillance/{id}/complete endpoint to mark complete
+  - [ ] Create GET /api/surveillance/summary endpoint for dashboard statistics
+  - [ ] Create email notification utility for overdue investigations
+  - [ ] Create scheduled job/cron for checking overdue investigations
+  - [ ] Create SurveillanceScheduleModal.tsx component for creating/editing schedules
+  - [ ] Create SurveillancePage.tsx with calendar/table view and filters
+  - [ ] Add status badges (red/yellow/green) for overdue/due-soon/upcoming items
+  - [ ] Create UpcomingInvestigationsWidget.tsx for home page dashboard
+  - [ ] Add Surveillance link to navigation menu (Layout.tsx)
+  - [ ] Add 'Generate Surveillance Schedule' button to episode detail modals
+  - [ ] Create auto-schedule trigger when treatment marked as completed
+  - [ ] Add surveillance schedule display section to episode detail modals
+  - [ ] Create custom protocol builder modal for flexible surveillance schedules
+  - [ ] Test surveillance feature end-to-end with sample data
+  - [ ] Update DATABASE_SCHEMA.md with surveillance_schedules collection
+  - [ ] Update RECENT_CHANGES.md with surveillance feature documentation
 - [ ] Multi-language support
 - [ ] Advanced search with filters
 - [ ] Data visualization with charts (Chart.js/D3)
