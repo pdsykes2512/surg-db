@@ -78,7 +78,8 @@ class Intraoperative(BaseModel):
     # Colorectal-specific: Stoma
     stoma_created: bool = Field(False, description="Whether a stoma was created")
     stoma_type: Optional[str] = Field(None, description="Type of stoma: ileostomy_temporary/ileostomy_permanent/colostomy_temporary/colostomy_permanent")
-    stoma_closure_date: Optional[Union[datetime, date, str]] = Field(None, description="Date when stoma was closed")
+    stoma_closure_date: Optional[Union[datetime, date, str]] = Field(None, description="Date when stoma was closed - auto-set from surgery_reversal")
+    reversal_treatment_id: Optional[str] = Field(None, description="Treatment ID of surgery_reversal that closed this stoma")
     # Colorectal-specific: Anastomosis
     anastomosis_performed: bool = Field(False, description="Whether an anastomosis was performed")
     anastomosis_type: Optional[str] = Field(None, description="Type: hand_sewn/stapled/hybrid")
@@ -155,11 +156,12 @@ class HerniaSpecific(BaseModel):
 
 
 class ReturnToTheatre(BaseModel):
-    """Return to theatre event"""
+    """Return to theatre event - auto-populated from surgery_rtt relationships"""
     occurred: bool = False
     date: Optional[datetime] = None
     reason: Optional[str] = None
     procedure_performed: Optional[str] = None
+    rtt_treatment_id: Optional[str] = Field(None, description="Treatment ID of first surgery_rtt")
 
 
 class EscalationOfCare(BaseModel):

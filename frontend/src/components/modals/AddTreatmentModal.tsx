@@ -12,6 +12,9 @@ interface AddTreatmentModalProps {
   onCancel: () => void
   mode?: 'create' | 'edit'
   initialData?: any
+  surgeryType?: 'primary' | 'rtt' | 'reversal'
+  parentSurgeryId?: string
+  parentSurgeryData?: any
 }
 
 const generateTreatmentId = (type: string, patientId: string, count: number) => {
@@ -21,6 +24,9 @@ const generateTreatmentId = (type: string, patientId: string, count: number) => 
   // Map treatment type to prefix
   const prefixMap: Record<string, string> = {
     'surgery': 'SUR',
+    'surgery_primary': 'SUR',
+    'surgery_rtt': 'SUR',
+    'surgery_reversal': 'SUR',
     'chemotherapy': 'ONC',
     'radiotherapy': 'DXT',
     'immunotherapy': 'IMM'
@@ -110,9 +116,27 @@ const calculateLengthOfStay = (admissionDate: string, dischargeDate: string): nu
   return diffDays >= 0 ? diffDays : null
 }
 
-export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'create', initialData }: AddTreatmentModalProps) {
+export function AddTreatmentModal({
+  episodeId,
+  onSubmit,
+  onCancel,
+  mode = 'create',
+  initialData,
+  surgeryType = 'primary',
+  parentSurgeryId,
+  parentSurgeryData
+}: AddTreatmentModalProps) {
+  // Map surgeryType to treatment_type
+  const mapSurgeryTypeToTreatmentType = (sType: 'primary' | 'rtt' | 'reversal') => {
+    if (sType === 'rtt') return 'surgery_rtt'
+    if (sType === 'reversal') return 'surgery_reversal'
+    return 'surgery_primary'
+  }
+
   const [currentStep, setCurrentStep] = useState(1)
-  const [treatmentType, setTreatmentType] = useState(initialData?.treatment_type || 'surgery')
+  const [treatmentType, setTreatmentType] = useState(
+    initialData?.treatment_type || mapSurgeryTypeToTreatmentType(surgeryType)
+  )
   const [procedureSearch, setProcedureSearch] = useState(initialData?.procedure_name || '')
   const [showProcedureDropdown, setShowProcedureDropdown] = useState(false)
   const [patientId, setPatientId] = useState<string>('')
@@ -140,12 +164,23 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
         const episodeData = await episodeResponse.json()
         setPatientId(episodeData.patient_id)
 
-        // Fetch existing treatments for this patient to get count
-        const treatmentsResponse = await fetch(`${API_URL}/treatments/?episode_id=${episodeId}`, {
+        // Fetch existing treatments for this PATIENT (not just episode) to get count
+        // Treatment IDs are unique per patient, not per episode
+        const treatmentsUrl = `${API_URL}/episodes/treatments?patient_id=${episodeData.patient_id}`
+        console.log('Fetching treatments for patient:', episodeData.patient_id, 'from:', treatmentsUrl)
+        const treatmentsResponse = await fetch(treatmentsUrl, {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         })
         const treatments = await treatmentsResponse.json()
-        setTreatmentCount(Array.isArray(treatments) ? treatments.length : 0)
+        console.log('Treatments received:', treatments.length, 'treatments')
+        const count = Array.isArray(treatments) ? treatments.length : 0
+        setTreatmentCount(count)
+
+        // Generate treatment ID immediately after getting the count
+        console.log('Generating treatment ID with:', { treatmentType, patientId: episodeData.patient_id, treatmentCount: count })
+        const newTreatmentId = generateTreatmentId(treatmentType, episodeData.patient_id, count)
+        console.log('Generated treatment ID:', newTreatmentId)
+        setFormData((prev: any) => ({ ...prev, treatment_id: newTreatmentId }))
       } catch (error) {
         console.error('Failed to fetch episode data:', error)
       }
@@ -154,22 +189,40 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
     if (mode === 'create') {
       fetchEpisodeData()
     }
-  }, [episodeId, mode])
+  }, [episodeId, mode, treatmentType])
   
   const [formData, setFormData] = useState(() => {
     if (initialData) {
+      // Flatten nested intraoperative fields for form editing
+      const intraop = initialData.intraoperative || {}
       return {
         ...initialData,
+        // Flatten intraoperative fields
+        anesthesia_type: intraop.anesthesia_type || 'general',
+        blood_loss_ml: intraop.blood_loss_ml ? String(intraop.blood_loss_ml) : '',
+        transfusion_required: intraop.transfusion_required || false,
+        units_transfused: intraop.units_transfused ? String(intraop.units_transfused) : '',
+        findings: intraop.findings || '',
+        drains_placed: intraop.drains_placed || false,
+        drain_types: intraop.drain_types || [],
+        specimens_sent: intraop.specimens_sent || [],
+        stoma_created: intraop.stoma_created || false,
+        stoma_type: intraop.stoma_type || '',
+        planned_reversal_date: intraop.planned_reversal_date || '',
+        stoma_closure_date: intraop.stoma_closure_date || '',
+        anastomosis_performed: intraop.anastomosis_performed || false,
+        anastomosis_type: intraop.anastomosis_type || '',
+        anastomosis_configuration: intraop.anastomosis_configuration || '',
+        anastomosis_height_cm: intraop.anastomosis_height_cm ? String(intraop.anastomosis_height_cm) : '',
+        anastomosis_location: intraop.anastomosis_location || '',
+        anterior_resection_type: intraop.anterior_resection_type || '',
+        defunctioning_stoma: intraop.defunctioning_stoma || false,
         // Ensure arrays are properly initialized
         additional_procedures: initialData.additional_procedures || [],
         assistant_surgeons: initialData.assistant_surgeons || [],
-        specimens_sent: initialData.specimens_sent || [],
-        drain_types: initialData.drain_types || [],
         complications: initialData.complications || [],
         // Convert numeric fields to strings for form inputs
         asa_score: initialData.asa_score ? String(initialData.asa_score) : '',
-        blood_loss_ml: initialData.blood_loss_ml ? String(initialData.blood_loss_ml) : '',
-        units_transfused: initialData.units_transfused ? String(initialData.units_transfused) : '',
         anesthesia_duration_minutes: initialData.anesthesia_duration_minutes ? String(initialData.anesthesia_duration_minutes) : '',
         operation_duration_minutes: initialData.operation_duration_minutes ? String(initialData.operation_duration_minutes) : '',
         // Patient vitals
@@ -180,7 +233,7 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
     }
     return {
     treatment_id: '', // Will be generated when NHS number is available
-    treatment_type: 'surgery',
+    treatment_type: mapSurgeryTypeToTreatmentType(surgeryType),
     treatment_date: new Date().toISOString().split('T')[0],
     provider_organisation: 'RHU',
 
@@ -225,7 +278,12 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
     stoma_type: '',
     planned_reversal_date: '',
     stoma_closure_date: '',
-    reverses_stoma_from_treatment_id: '',
+
+    // Surgery relationship fields (for RTT and reversal)
+    parent_surgery_id: parentSurgeryId || '',
+    parent_episode_id: episodeId || '',
+    rtt_reason: '',
+    reversal_notes: '',
     
     // Colorectal-specific: Anastomosis
     anastomosis_performed: false,
@@ -293,14 +351,6 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
   }
   })
 
-  // Generate treatment ID when patient_id is available
-  useEffect(() => {
-    if (patientId && mode === 'create' && !formData.treatment_id) {
-      const newTreatmentId = generateTreatmentId(treatmentType, patientId, treatmentCount)
-      setFormData((prev: any) => ({ ...prev, treatment_id: newTreatmentId }))
-    }
-  }, [patientId, treatmentCount, mode, treatmentType])
-
   // Auto-calculate BMI when weight and height are entered
   useEffect(() => {
     const weight = parseFloat(formData.weight_kg)
@@ -343,7 +393,13 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
   }
 
   // Step navigation
-  const totalSteps = treatmentType === 'surgery' ? 4 : 2
+  const isSurgeryType = treatmentType === 'surgery' || treatmentType === 'surgery_primary' || treatmentType === 'surgery_rtt' || treatmentType === 'surgery_reversal'
+
+  // Check if this is a colorectal procedure (OPCS-4 code starts with H)
+  const isColorectalProcedure = formData.opcs4_code?.startsWith('H') || false
+
+  // Colorectal surgeries have an extra step for colorectal-specific details
+  const totalSteps = isSurgeryType ? (isColorectalProcedure ? 5 : 4) : 2
 
   // Keyboard shortcuts: Escape to close, Cmd/Ctrl+Enter to submit (only on final step)
   useModalShortcuts({
@@ -372,9 +428,16 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
   }
 
   const getStepTitle = (step: number) => {
-    if (treatmentType === 'surgery') {
-      const titles = ['Treatment Details', 'Personnel & Timeline', 'Intraoperative Details', 'Post-operative & Complications']
-      return titles[step - 1]
+    if (isSurgeryType) {
+      if (isColorectalProcedure) {
+        // Colorectal: 5 steps
+        const titles = ['Treatment Details', 'Team & Approach', 'Intraoperative', 'Technical Details', 'Post-operative']
+        return titles[step - 1]
+      } else {
+        // Non-colorectal: 4 steps
+        const titles = ['Treatment Details', 'Team & Approach', 'Intraoperative', 'Post-operative']
+        return titles[step - 1]
+      }
     } else {
       return step === 1 ? 'Treatment Details' : 'Additional Information'
     }
@@ -402,7 +465,7 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
     if (formData.weight_kg) treatment.weight_kg = parseFloat(formData.weight_kg)
     if (formData.bmi) treatment.bmi = parseFloat(formData.bmi)
 
-    if (treatmentType === 'surgery') {
+    if (isSurgeryType) {
       // Procedure details
       treatment.procedure_name = formData.procedure_name
       if (formData.opcs4_code) treatment.opcs4_code = formData.opcs4_code
@@ -432,29 +495,39 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
         }
       }
       
-      // Intraoperative
-      treatment.anesthesia_type = formData.anesthesia_type
-      if (formData.blood_loss_ml) treatment.blood_loss_ml = parseInt(formData.blood_loss_ml)
-      treatment.transfusion_required = formData.transfusion_required
-      if (formData.units_transfused) treatment.units_transfused = parseInt(formData.units_transfused)
-      if (formData.findings) treatment.findings = formData.findings
-      treatment.drains_placed = formData.drains_placed
-      
-      // Colorectal-specific: Stoma
-      treatment.stoma_created = formData.stoma_created
-      if (formData.stoma_type) treatment.stoma_type = formData.stoma_type
-      if (formData.planned_reversal_date) treatment.planned_reversal_date = formData.planned_reversal_date
-      if (formData.stoma_closure_date) treatment.stoma_closure_date = formData.stoma_closure_date
-      if (formData.reverses_stoma_from_treatment_id) treatment.reverses_stoma_from_treatment_id = formData.reverses_stoma_from_treatment_id
-      
-      // Colorectal-specific: Anastomosis
-      treatment.anastomosis_performed = formData.anastomosis_performed
-      if (formData.anastomosis_type) treatment.anastomosis_type = formData.anastomosis_type
-      if (formData.anastomosis_configuration) treatment.anastomosis_configuration = formData.anastomosis_configuration
-      if (formData.anastomosis_height_cm) treatment.anastomosis_height_cm = parseFloat(formData.anastomosis_height_cm)
-      if (formData.anastomosis_location) treatment.anastomosis_location = formData.anastomosis_location
-      if (formData.anterior_resection_type) treatment.anterior_resection_type = formData.anterior_resection_type
-      treatment.defunctioning_stoma = formData.defunctioning_stoma
+      // Intraoperative (nested object per DATABASE_SCHEMA.md)
+      treatment.intraoperative = {
+        anesthesia_type: formData.anesthesia_type,
+        transfusion_required: formData.transfusion_required,
+        drains_placed: formData.drains_placed,
+        drain_types: formData.drain_types || [],
+        specimens_sent: formData.specimens_sent || [],
+
+        // Colorectal-specific: Stoma
+        stoma_created: formData.stoma_created,
+
+        // Colorectal-specific: Anastomosis
+        anastomosis_performed: formData.anastomosis_performed,
+        defunctioning_stoma: formData.defunctioning_stoma
+      }
+
+      // Add optional intraoperative fields
+      if (formData.blood_loss_ml) treatment.intraoperative.blood_loss_ml = parseInt(formData.blood_loss_ml)
+      if (formData.units_transfused) treatment.intraoperative.units_transfused = parseInt(formData.units_transfused)
+      if (formData.findings) treatment.intraoperative.findings = formData.findings
+      if (formData.stoma_type) treatment.intraoperative.stoma_type = formData.stoma_type
+      if (formData.planned_reversal_date) treatment.intraoperative.planned_reversal_date = formData.planned_reversal_date
+      if (formData.stoma_closure_date) treatment.intraoperative.stoma_closure_date = formData.stoma_closure_date
+      if (formData.anastomosis_type) treatment.intraoperative.anastomosis_type = formData.anastomosis_type
+      if (formData.anastomosis_configuration) treatment.intraoperative.anastomosis_configuration = formData.anastomosis_configuration
+      if (formData.anastomosis_height_cm) treatment.intraoperative.anastomosis_height_cm = parseFloat(formData.anastomosis_height_cm)
+      if (formData.anastomosis_location) treatment.intraoperative.anastomosis_location = formData.anastomosis_location
+      if (formData.anterior_resection_type) treatment.intraoperative.anterior_resection_type = formData.anterior_resection_type
+
+      // Surgery relationship fields (top-level per DATABASE_SCHEMA.md)
+      if (formData.parent_surgery_id) treatment.parent_surgery_id = formData.parent_surgery_id
+      if (formData.rtt_reason) treatment.rtt_reason = formData.rtt_reason
+      if (formData.reversal_notes) treatment.reversal_notes = formData.reversal_notes
       
       // Colorectal-specific: Surgical Intent
       if (formData.surgical_intent) treatment.surgical_intent = formData.surgical_intent
@@ -538,11 +611,16 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" style={{ margin: 0 }}>
       <div className="bg-white rounded-lg max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b z-10">
+        <div className="sticky top-0 bg-white border-b z-10 overflow-visible">
           {/* Header */}
           <div className="px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
             <div className="flex-1 min-w-0">
-              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 truncate">{mode === 'edit' ? 'Edit Treatment' : 'Add Treatment'}</h2>
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 truncate">
+                {mode === 'edit' ? 'Edit Treatment' :
+                  surgeryType === 'rtt' ? 'Add Return to Theatre' :
+                  surgeryType === 'reversal' ? 'Add Stoma Reversal' :
+                  'Add Treatment'}
+              </h2>
               <p className="text-xs text-gray-500 mt-1">
                 <span className="hidden sm:inline">Step {currentStep} of {totalSteps} • </span>
                 <span className="sm:hidden">{currentStep}/{totalSteps} • </span>
@@ -560,33 +638,26 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
           </div>
           
           {/* Progress Bar */}
-          <div className="px-6 pb-4">
-            <div className="flex items-center justify-between mb-2 overflow-x-auto pb-2">
+          <div className="px-6 pb-4 pt-2">
+            <div className="flex overflow-x-auto pb-2 pt-1">
               {Array.from({ length: totalSteps }, (_, i) => i + 1).map((step) => (
-                <div key={step} className="flex items-center flex-1">
-                  <div className="flex flex-col items-center flex-1">
-                    <button
-                      type="button"
-                      onClick={() => mode === 'edit' ? setCurrentStep(step) : undefined}
-                      disabled={mode === 'create'}
-                      className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm transition-all ${
-                        currentStep === step ? 'bg-blue-600 text-white' :
-                        currentStep > step ? 'bg-green-600 text-white' :
-                        'bg-gray-200 text-gray-600'
-                      } ${mode === 'edit' ? 'cursor-pointer hover:ring-2 hover:ring-blue-400' : 'cursor-default'}`}
-                      title={mode === 'edit' ? `Jump to ${getStepTitle(step)}` : ''}
-                    >
-                      {currentStep > step ? '✓' : step}
-                    </button>
-                    <div className={`text-xs mt-1 text-center font-medium ${mode === 'edit' ? 'cursor-pointer' : ''}`}>
-                      {getStepTitle(step)}
-                    </div>
+                <div key={step} className="flex-1 flex flex-col items-center">
+                  <button
+                    type="button"
+                    onClick={() => mode === 'edit' ? setCurrentStep(step) : undefined}
+                    disabled={mode === 'create'}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm transition-all mb-2 ${
+                      currentStep === step ? 'bg-blue-600 text-white' :
+                      currentStep > step ? 'bg-green-600 text-white' :
+                      'bg-gray-200 text-gray-600'
+                    } ${mode === 'edit' ? 'cursor-pointer hover:ring-2 hover:ring-blue-400' : 'cursor-default'}`}
+                    title={mode === 'edit' ? `Jump to ${getStepTitle(step)}` : ''}
+                  >
+                    {currentStep > step ? '✓' : step}
+                  </button>
+                  <div className={`text-xs font-medium text-center px-1 ${mode === 'edit' ? 'cursor-pointer' : ''}`}>
+                    {getStepTitle(step)}
                   </div>
-                  {step < totalSteps && (
-                    <div className={`h-1 flex-1 mx-2 rounded ${
-                      currentStep > step ? 'bg-green-600' : 'bg-gray-200'
-                    }`} />
-                  )}
                 </div>
               ))}
             </div>
@@ -600,34 +671,55 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
             nextStep()
           }
         }}>
-          {/* Treatment Type Selection - Only show when creating and on Step 1 */}
-          {mode === 'create' && currentStep === 1 && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Treatment Type *
-              </label>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {[
-                  { value: 'surgery', label: 'Surgery', icon: '🔪' },
-                  { value: 'chemotherapy', label: 'Chemotherapy', icon: '💊' },
-                  { value: 'radiotherapy', label: 'Radiotherapy', icon: '☢️' },
-                  { value: 'immunotherapy', label: 'Immunotherapy', icon: '🧬' }
-                ].map((type) => (
-                  <button
-                    key={type.value}
-                    type="button"
-                    onClick={() => handleTreatmentTypeChange(type.value)}
-                    className={`p-3 border-2 rounded-lg text-center transition-all ${
-                      treatmentType === type.value
-                        ? 'border-blue-600 bg-blue-50 text-blue-700'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <div className="text-2xl mb-1">{type.icon}</div>
-                    <div className="text-sm font-medium">{type.label}</div>
-                  </button>
-                ))}
-              </div>
+          {/* RTT/Reversal Context - Show parent surgery information */}
+          {(surgeryType === 'rtt' || surgeryType === 'reversal') && currentStep === 1 && (
+            <div className={`p-4 rounded-lg border-2 ${surgeryType === 'rtt' ? 'bg-amber-50 border-amber-300' : 'bg-green-50 border-green-300'}`}>
+              <h3 className="font-semibold text-gray-900 mb-2">
+                {surgeryType === 'rtt' ? 'Return to Theatre - ' : 'Stoma Reversal - '}
+                Parent Surgery
+              </h3>
+              {parentSurgeryData && (
+                <div className="text-sm text-gray-700 space-y-1">
+                  <p><strong>Procedure:</strong> {parentSurgeryData.procedure_name || 'Unknown'}</p>
+                  <p><strong>Date:</strong> {parentSurgeryData.treatment_date ? new Date(parentSurgeryData.treatment_date).toLocaleDateString('en-GB') : 'Unknown'}</p>
+                  <p><strong>Surgeon:</strong> {parentSurgeryData.surgeon || 'Unknown'}</p>
+                  <p><strong>Treatment ID:</strong> {parentSurgeryData.treatment_id}</p>
+                  {surgeryType === 'reversal' && parentSurgeryData.intraoperative?.stoma_type && (
+                    <p><strong>Stoma Type:</strong> {parentSurgeryData.intraoperative.stoma_type.replace(/_/g, ' ')}</p>
+                  )}
+                </div>
+              )}
+
+              {surgeryType === 'rtt' && (
+                <div className="mt-3">
+                  <label className="block text-sm font-medium text-gray-900 mb-1">
+                    RTT Reason *
+                  </label>
+                  <textarea
+                    value={formData.rtt_reason}
+                    onChange={(e) => updateFormData({ rtt_reason: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 bg-white"
+                    placeholder="Why is the patient returning to theatre?"
+                    rows={3}
+                    required
+                  />
+                </div>
+              )}
+
+              {surgeryType === 'reversal' && (
+                <div className="mt-3">
+                  <label className="block text-sm font-medium text-gray-900 mb-1">
+                    Reversal Notes
+                  </label>
+                  <textarea
+                    value={formData.reversal_notes}
+                    onChange={(e) => updateFormData({ reversal_notes: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 bg-white"
+                    placeholder="Additional notes about the stoma reversal..."
+                    rows={3}
+                  />
+                </div>
+              )}
             </div>
           )}
 
@@ -728,7 +820,7 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
               </div>
 
               {/* Surgery-Specific Fields */}
-              {treatmentType === 'surgery' && (
+              {isSurgeryType && (
                 <>
               {/* Procedure Details */}
               <div className="grid grid-cols-3 gap-4">
@@ -947,7 +1039,7 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
           )}
 
           {/* STEP 2: Personnel & Timeline */}
-          {currentStep === 2 && treatmentType === 'surgery' && (
+          {currentStep === 2 && isSurgeryType && (
             <>
               {/* Team */}
               <div className="grid grid-cols-2 gap-4">
@@ -1041,7 +1133,7 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
           )}
 
           {/* STEP 3: Intraoperative Details */}
-          {currentStep === 3 && treatmentType === 'surgery' && (
+          {currentStep === 3 && isSurgeryType && (
             <>
               {/* Patient Fitness */}
               <div>
@@ -1164,11 +1256,16 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
                   </label>
                 </div>
               </div>
+            </>
+          )}
 
+          {/* STEP 4: Colorectal-Specific Details (only for colorectal procedures) */}
+          {currentStep === 4 && isSurgeryType && isColorectalProcedure && (
+            <>
               {/* Colorectal-Specific Fields */}
               <div className="bg-amber-50 p-4 rounded-lg space-y-4">
                 <h4 className="text-sm font-semibold text-gray-900">Colorectal-Specific Details</h4>
-                
+
                 {/* Anastomosis */}
                 <div className="space-y-3">
                   <label className="flex items-center">
@@ -1180,7 +1277,7 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
                     />
                     <span className="text-sm font-medium text-gray-700">Anastomosis Performed</span>
                   </label>
-                  
+
                   {formData.anastomosis_performed && (
                     <div className="grid grid-cols-2 gap-4 ml-6">
                       <div>
@@ -1271,7 +1368,7 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
                     </div>
                   )}
                 </div>
-                
+
                 {/* Stoma */}
                 <div className="space-y-3">
                   <label className="flex items-center">
@@ -1283,7 +1380,7 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
                     />
                     <span className="text-sm font-medium text-gray-700">Stoma Created</span>
                   </label>
-                  
+
                   {formData.stoma_created && (
                     <div className="space-y-4 ml-6">
                       <div className="grid grid-cols-2 gap-4">
@@ -1295,10 +1392,13 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
                             value={formData.stoma_type}
                             onChange={(value) => updateFormData({ stoma_type: value })}
                             options={[
-                              { value: 'ileostomy_temporary', label: 'Ileostomy (Temporary)' },
-                              { value: 'ileostomy_permanent', label: 'Ileostomy (Permanent)' },
-                              { value: 'colostomy_temporary', label: 'Colostomy (Temporary)' },
-                              { value: 'colostomy_permanent', label: 'Colostomy (Permanent)' }
+                              { value: 'loop_ileostomy', label: 'Loop ileostomy' },
+                              { value: 'end_ileostomy', label: 'End ileostomy' },
+                              { value: 'loop_colostomy', label: 'Loop colostomy' },
+                              { value: 'end_colostomy', label: 'End colostomy' },
+                              { value: 'double_barrelled_ileostomy', label: 'Double-barrelled ileostomy' },
+                              { value: 'double_barrelled_ileo_colostomy', label: 'Double-barrelled ileo-colostomy' },
+                              { value: 'double_barrelled_colostomy', label: 'Double-barrelled colostomy' }
                             ]}
                             getOptionValue={(opt) => opt.value}
                             getOptionLabel={(opt) => opt.label}
@@ -1306,59 +1406,46 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
                           />
                         </div>
                         <div>
-                          <label className="flex items-center h-full items-end pb-2">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Defunctioning/Protective Stoma
+                          </label>
+                          <label className="flex items-center">
                             <input
                               type="checkbox"
                               checked={formData.defunctioning_stoma}
                               onChange={(e) => updateFormData({ defunctioning_stoma: e.target.checked })}
                               className="mr-2 h-4 w-4"
                             />
-                            <span className="text-sm font-medium text-gray-700">Defunctioning/Protective Stoma</span>
+                            <span className="text-xs text-gray-500">Created to protect an anastomosis</span>
                           </label>
-                          <p className="text-xs text-gray-500 mt-1">Created to protect an anastomosis</p>
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Link to Reversal Surgery
-                          </label>
-                          <input
-                            type="text"
-                            value={formData.reverses_stoma_from_treatment_id}
-                            onChange={(e) => updateFormData({ reverses_stoma_from_treatment_id: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
-                            placeholder="Treatment ID of original stoma"
-                          />
-                          <p className="mt-1 text-xs text-gray-500">
-                            If this surgery reverses a previous stoma, enter the treatment ID
-                          </p>
-                        </div>
-                      </div>
-                      
-                      {formData.stoma_type?.includes('temporary') && (
-                        <div className="grid grid-cols-2 gap-4">
-                          <DateInputTypeable
-                            label="Planned Reversal Date"
-                            value={formData.planned_reversal_date}
-                            onChange={(e) => updateFormData({ planned_reversal_date: e.target.value })}
-                          />
-                          <div className="text-xs text-gray-500 flex items-center">
-                            <svg className="w-4 h-4 mr-1 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            Should be within 2 years of surgery date
+
+                      {formData.defunctioning_stoma && (
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-2 gap-4 items-end">
+                            <DateInputTypeable
+                              label="Planned Reversal Date"
+                              value={formData.planned_reversal_date}
+                              onChange={(e) => updateFormData({ planned_reversal_date: e.target.value })}
+                            />
+                            <p className="text-xs text-gray-500 flex items-center pb-2">
+                              <svg className="w-4 h-4 mr-1 flex-shrink-0 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              Should be within 2 years of surgery date
+                            </p>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4">
+                            <DateInputTypeable
+                              label="Actual Stoma Closure Date (if already closed)"
+                              value={formData.stoma_closure_date}
+                              onChange={(e) => updateFormData({ stoma_closure_date: e.target.value })}
+                            />
                           </div>
                         </div>
                       )}
-                      
-                      <div>
-                        <DateInputTypeable
-                          label="Actual Stoma Closure Date (if already closed)"
-                          value={formData.stoma_closure_date}
-                          onChange={(e) => updateFormData({ stoma_closure_date: e.target.value })}
-                        />
-                      </div>
                     </div>
                   )}
                 </div>
@@ -1366,8 +1453,8 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
             </>
           )}
 
-          {/* STEP 4: Post-operative & Complications */}
-          {currentStep === 4 && treatmentType === 'surgery' && (
+          {/* STEP 4 (non-colorectal) or STEP 5 (colorectal): Post-operative & Complications */}
+          {((currentStep === 4 && !isColorectalProcedure) || (currentStep === 5 && isColorectalProcedure)) && isSurgeryType && (
             <>
               {/* Complications Section */}
               <div className="border-t pt-4 space-y-4">
@@ -1876,7 +1963,7 @@ export function AddTreatmentModal({ episodeId, onSubmit, onCancel, mode = 'creat
           )}
 
           {/* Notes - Show on last step for all treatment types */}
-          {((treatmentType === 'surgery' && currentStep === 4) || 
+          {((isSurgeryType && currentStep === 4) || 
             ((treatmentType === 'chemotherapy' || treatmentType === 'radiotherapy' || treatmentType === 'immunotherapy') && currentStep === 2)) && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">

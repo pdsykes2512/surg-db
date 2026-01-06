@@ -18,8 +18,9 @@ async def get_summary_report() -> Dict[str, Any]:
     treatments_collection = db.treatments
     
     # Get all surgical treatments with valid OPCS-4 codes
+    # Only count primary surgeries (RTT and reversals are captured in other metrics)
     all_treatments = await treatments_collection.find({
-        "treatment_type": "surgery",
+        "treatment_type": "surgery_primary",
         "opcs4_code": {"$exists": True, "$ne": ""}
     }).to_list(length=None)
     total_surgeries = len(all_treatments)
@@ -137,7 +138,7 @@ async def get_summary_report() -> Dict[str, Any]:
             "2024": metrics_2024,
             "2025": metrics_2025
         },
-        "filter_applied": "Only surgical treatments with valid OPCS-4 codes",
+        "filter_applied": "Only primary surgical treatments (surgery_primary) with valid OPCS-4 codes",
         "generated_at": datetime.utcnow().isoformat()
     }
 
@@ -189,8 +190,9 @@ async def get_surgeon_performance() -> Dict[str, Any]:
                 episode_to_lead_clinician[episode_id] = matched_id
     
     # Get all surgical treatments with valid OPCS-4 codes
+    # Only count primary surgeries (RTT and reversals are captured in other metrics)
     all_treatments = await treatments_collection.find({
-        "treatment_type": "surgery",
+        "treatment_type": "surgery_primary",
         "opcs4_code": {"$exists": True, "$ne": ""}
     }).to_list(length=None)
     
@@ -290,7 +292,7 @@ async def get_surgeon_performance() -> Dict[str, Any]:
     
     return {
         "surgeons": surgeon_list,
-        "filter_applied": "Only surgical treatments with valid OPCS-4 codes",
+        "filter_applied": "Only primary surgical treatments (surgery_primary) with valid OPCS-4 codes",
         "generated_at": datetime.utcnow().isoformat()
     }
 

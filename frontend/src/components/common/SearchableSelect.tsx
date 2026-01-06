@@ -40,23 +40,37 @@ export function SearchableSelect<T>({
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 })
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // Update dropdown position when shown
+  // Continuously update dropdown position while open using requestAnimationFrame
   useEffect(() => {
-    if (showDropdown && inputRef.current) {
-      const rect = inputRef.current.getBoundingClientRect()
-      const viewportHeight = window.innerHeight
-      const spaceBelow = viewportHeight - rect.bottom
-      const spaceAbove = rect.top
-      
-      // Decide whether to show dropdown above or below
-      const maxDropdownHeight = 240 // max-h-60 in pixels
-      const showAbove = spaceBelow < maxDropdownHeight && spaceAbove > spaceBelow
-      
-      setDropdownPosition({
-        top: showAbove ? rect.top - maxDropdownHeight - 4 : rect.bottom + 4,
-        left: rect.left,
-        width: rect.width
-      })
+    if (!showDropdown) return
+
+    let rafId: number
+
+    const updatePosition = () => {
+      if (inputRef.current) {
+        const rect = inputRef.current.getBoundingClientRect()
+
+        // Always show dropdown below the input field
+        // Let the max-height and overflow handle scrolling if needed
+        setDropdownPosition({
+          top: rect.bottom + 4,
+          left: rect.left,
+          width: rect.width
+        })
+      }
+
+      // Continue updating while dropdown is shown
+      rafId = requestAnimationFrame(updatePosition)
+    }
+
+    // Start the update loop
+    rafId = requestAnimationFrame(updatePosition)
+
+    // Cleanup: cancel animation frame when dropdown closes
+    return () => {
+      if (rafId) {
+        cancelAnimationFrame(rafId)
+      }
     }
   }, [showDropdown])
 
@@ -159,8 +173,10 @@ export function SearchableSelect<T>({
               e.preventDefault()
               onChange('')
               setSearchTerm('')
-              setShowDropdown(false)
-              setIsEditing(false)
+              setShowDropdown(true)
+              setIsEditing(true)
+              // Refocus input after clearing
+              setTimeout(() => inputRef.current?.focus(), 0)
             }}
             className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
           >

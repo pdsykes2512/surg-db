@@ -447,16 +447,27 @@ async def get_treatment_breakdown():
 
 
 @router.get("/treatments")
-async def get_all_treatments():
-    """Get all treatments with minimal data (for dashboard statistics)"""
+async def get_all_treatments(
+    patient_id: Optional[str] = Query(None, description="Filter by patient ID"),
+    episode_id: Optional[str] = Query(None, description="Filter by episode ID")
+):
+    """Get all treatments with optional filtering by patient or episode"""
     from ..database import get_treatments_collection
     treatments_collection = await get_treatments_collection()
 
-    # Fetch only the fields we need for date calculations
-    treatments = await treatments_collection.find(
-        {},
-        {"treatment_date": 1, "treatment_type": 1, "_id": 0}
-    ).to_list(length=None)
+    # Build query based on filters
+    query = {}
+    if patient_id:
+        query["patient_id"] = patient_id
+    if episode_id:
+        query["episode_id"] = episode_id
+
+    # Fetch treatments
+    treatments = await treatments_collection.find(query).to_list(length=None)
+
+    # Convert ObjectId to string
+    for treatment in treatments:
+        treatment["_id"] = str(treatment["_id"])
 
     return treatments
 
@@ -660,7 +671,36 @@ async def get_episode(episode_id: str):
     treatment_ids = episode.get("treatment_ids", [])
     treatments_cursor = treatments_collection.find({"treatment_id": {"$in": treatment_ids}}) if treatment_ids else []
     treatments = await treatments_cursor.to_list(length=None) if treatment_ids else []
-    
+
+    # Populate related_surgery_ids for primary surgeries
+    # Find all RTT and reversal surgeries that have a parent in this episode
+    primary_surgery_ids = [t["treatment_id"] for t in treatments if t.get("treatment_type") == "surgery_primary"]
+    if primary_surgery_ids:
+        # Find all RTT and reversal surgeries linked to these primaries
+        related_surgeries_cursor = treatments_collection.find({
+            "parent_surgery_id": {"$in": primary_surgery_ids},
+            "treatment_type": {"$in": ["surgery_rtt", "surgery_reversal"]}
+        })
+        related_surgeries = await related_surgeries_cursor.to_list(length=None)
+
+        # Build a map of parent_id -> list of related surgeries
+        related_map = {}
+        for related in related_surgeries:
+            parent_id = related.get("parent_surgery_id")
+            if parent_id not in related_map:
+                related_map[parent_id] = []
+            related_map[parent_id].append({
+                "treatment_id": related["treatment_id"],
+                "treatment_type": related["treatment_type"],
+                "date_created": related.get("created_at", related.get("treatment_date"))
+            })
+
+        # Add related_surgery_ids to each primary surgery
+        for treatment in treatments:
+            if treatment.get("treatment_type") == "surgery_primary":
+                treatment_id = treatment["treatment_id"]
+                treatment["related_surgery_ids"] = related_map.get(treatment_id, [])
+
     # Fetch tumours using tumour_ids array
     tumour_ids = episode.get("tumour_ids", [])
     tumours_cursor = tumours_collection.find({"tumour_id": {"$in": tumour_ids}}) if tumour_ids else []

@@ -9,7 +9,7 @@ from slowapi.errors import RateLimitExceeded
 
 from .config import settings
 from .database import Database
-from .routes import patients, episodes_v2, reports, auth, admin, clinicians, exports, codes, nhs_providers, audit, investigations, backups
+from .routes import patients, episodes_v2, reports, auth, admin, clinicians, exports, codes, nhs_providers, audit, investigations, backups, treatments_surgery
 from .middleware import limiter, rate_limit_exceeded_handler, RequestLoggingMiddleware, register_error_handlers
 
 
@@ -54,6 +54,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(patients.router)
 app.include_router(episodes_v2.router)  # Episode-based care (cancer, IBD, benign)
+app.include_router(treatments_surgery.router)  # Surgery treatments with RTT and reversal relationships
 app.include_router(reports.router)
 app.include_router(admin.router)
 app.include_router(clinicians.router)

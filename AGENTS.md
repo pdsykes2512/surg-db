@@ -61,6 +61,8 @@ You operate within a 3-layer architecture that separates concerns to maximize re
 - Duplicating code that was already added
 - Reverting fixes that were previously applied
 
+**0.1 Use the context 7 MCP**
+
 **0.5. Follow the style guide** **When creating or modifying UI components, read `STYLE_GUIDE.md`** to ensure consistency. This prevents:
 - Inconsistent modal layouts and button placements
 - Mismatched color schemes and typography

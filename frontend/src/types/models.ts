@@ -127,11 +127,32 @@ export interface Complication {
   intervention_required?: boolean
 }
 
+// Treatment Types
+export type TreatmentType =
+  | 'surgery_primary'
+  | 'surgery_rtt'
+  | 'surgery_reversal'
+  | 'chemotherapy'
+  | 'radiotherapy'
+  | 'immunotherapy'
+  | 'hormone_therapy'
+  | 'targeted_therapy'
+  | 'palliative'
+  | 'surveillance'
+
+// Related surgery reference
+export interface RelatedSurgery {
+  treatment_id: string
+  treatment_type: 'surgery_rtt' | 'surgery_reversal'
+  date_created: string
+}
+
 export interface Treatment {
   _id?: string
   treatment_id: string
   episode_id: string
   patient_id: string
+  treatment_type?: TreatmentType  // NEW: Treatment type enum
   treatment_date?: string  // ISO date string
   admission_date?: string  // ISO date string
   discharge_date?: string  // ISO date string
@@ -146,6 +167,7 @@ export interface Treatment {
   complications?: Complication[]
   return_to_theatre?: boolean
   return_to_theatre_date?: string
+  return_to_theatre_reason?: string
   escalation_of_care?: boolean
   mortality_30d?: boolean
   mortality_90d?: boolean
@@ -160,6 +182,14 @@ export interface Treatment {
     weight_kg?: number
     bmi?: number
   }
+
+  // NEW: Surgery relationship fields (for RTT and reversal)
+  parent_surgery_id?: string
+  parent_episode_id?: string
+  rtt_reason?: string
+  reversal_notes?: string
+  related_surgery_ids?: RelatedSurgery[]
+
   created_at?: string
   updated_at?: string
 }

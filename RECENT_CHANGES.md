@@ -15,6 +15,222 @@ This file tracks significant changes made to the IMPACT application (formerly su
 
 ---
 
+## 2026-01-06 - AddTreatmentModal UI/UX Improvements and Treatment ID Fix
+
+**Changed by:** AI Session (Claude Code)
+
+**Issue:** Multiple UI/UX issues in AddTreatmentModal including layout problems, missing fields after surgery type migration, dropdown positioning issues, and critical treatment ID incrementing bug preventing new treatments from being created.
+
+**Changes:**
+
+1. **Defunctioning Stoma Checkbox Layout**
+   - Restructured checkbox and helper text with proper label hierarchy
+   - Reduced excessive spacing between checkbox and helper text
+   - Aligned with adjacent "Stoma Type" field
+
+2. **Planned Reversal Date Field Layout**
+   - Changed to 2-column grid layout (date field + helper text side-by-side)
+   - Helper text now visible instead of being obscured by closure date field
+   - Added info icon with "Should be within 2 years" guidance
+
+3. **Colorectal-Specific Fields Separation**
+   - Moved all colorectal-specific fields to conditional Step 4 "Technical Details"
+   - Only appears when OPCS-4 code starts with 'H' (colorectal procedures)
+   - Reduces scrolling for non-colorectal surgeries (4 steps instead of 5)
+
+4. **Step Indicator Improvements**
+   - Shortened step titles to fit within 2 lines max
+   - Updated titles: Treatment Details, Team & Approach, Intraoperative, Technical Details, Post-operative
+   - Removed connecting lines between step circles (cleaner design)
+   - Increased circle size from w-8 h-8 (32px) to w-10 h-10 (40px)
+   - Fixed alignment and spacing using simple flex layout
+
+5. **Fixed Missing OPCS Code Fields**
+   - Updated condition from `treatmentType === 'surgery'` to `isSurgeryType`
+   - Fields now show correctly after surgery type migration to surgery_primary/rtt/reversal
+
+6. **SearchableSelect Dropdown Positioning**
+   - Implemented continuous position updates using requestAnimationFrame
+   - Dropdowns now stay correctly positioned when modal scrolls
+   - Always show dropdown below field (removed complex show-above logic)
+
+7. **SearchableSelect Clear Button Behavior**
+   - Clear button (X) now keeps dropdown open showing all options
+   - Changed from closing dropdown to maintaining open state with full list
+   - Auto-refocuses input field after clearing
+
+8. **Treatment ID Incrementing Fix (CRITICAL)**
+   - **Root cause:** React timing issue - ID generated before treatment count fetched
+   - **Solution:** Moved ID generation to fetchEpisodeData callback (after count available)
+   - Removed separate useEffect that was generating ID with stale treatmentCount: 0
+   - IDs now correctly increment per patient (e.g., SUR-42E227-01 → SUR-42E227-02)
+   - Added extensive console.log debugging for troubleshooting
+
+**Files affected:**
+- `frontend/src/components/modals/AddTreatmentModal.tsx`
+  - Lines 167-192: Treatment fetch and ID generation in single useEffect
+  - Lines 395-399: Colorectal procedure detection
+  - Lines 427-441: Step titles function
+  - Lines 637-661: Step indicator layout (no connecting lines)
+  - Lines 820: Fixed surgery type condition
+  - Lines 1259-1449: Moved colorectal fields to Step 4
+  - Lines 1396-1408: Fixed defunctioning stoma checkbox
+  - Lines 1412-1424: Fixed planned reversal date layout
+  - Removed lines 354-362: Old separate ID generation useEffect
+- `frontend/src/components/common/SearchableSelect.tsx`
+  - Lines 43-75: requestAnimationFrame continuous position updates
+  - Lines 156-166: Clear button keeps dropdown open
+- `backend/app/routes/episodes_v2.py`
+  - Lines 449-472: Added patient_id filter support to /api/episodes/treatments endpoint
+
+**Testing:**
+1. **Layout fixes:** Check defunctioning stoma checkbox and planned reversal date field alignment
+2. **Colorectal step:** Add colorectal surgery (H-code) → verify 5 steps; non-colorectal → verify 4 steps
+3. **Step indicators:** Verify circles evenly spaced, no connecting lines, proper size
+4. **Dropdown positioning:** Open urgency/complexity dropdowns while scrolling modal
+5. **Clear button:** Click X on SearchableSelect → verify dropdown stays open with all options
+6. **Treatment ID (CRITICAL):**
+   - Patient 42E227 has 1 treatment (SUR-42E227-01)
+   - Add new treatment → should generate SUR-42E227-02
+   - Check browser console for logs: "Treatments received: 1 treatments" and "Generated treatment ID: SUR-42E227-02"
+
+**Notes:**
+- Frontend service restarted multiple times during debugging
+- Cleared Vite build cache (removed node_modules/.vite and dist) to resolve browser caching
+- Treatment ID bug was blocking all new treatment creation - critical fix
+- Console logging left in place for future debugging
+- Backend endpoint verified working with curl before frontend changes
+
+---
+
+## 2026-01-06 - Stoma Type Clinical Terminology Update
+
+**Changed by:** AI Session (Claude Code)
+
+**Issue:** Stoma type options used temporary/permanent terminology which didn't match clinical practice. Needed to use proper surgical stoma classification.
+
+**Changes:**
+- Updated stoma type dropdown to use clinically accurate terminology
+- Replaced "Temporary" and "Permanent" with specific stoma types:
+  - Loop ileostomy
+  - End ileostomy
+  - Loop colostomy
+  - End colostomy
+  - Double-barrelled ileostomy
+  - Double-barrelled ileo-colostomy
+  - Double-barrelled colostomy
+- Updated planned reversal date field to show for reversible stoma types (loop and double-barrelled)
+- Updated DATABASE_SCHEMA.md with all 7 stoma type options
+
+**Files affected:**
+- `frontend/src/components/modals/AddTreatmentModal.tsx` (lines 1381-1389, 1409)
+- `DATABASE_SCHEMA.md` (line 282)
+
+**Testing:**
+1. Open AddTreatmentModal for a surgery
+2. Check "Stoma created" checkbox
+3. Verify stoma type dropdown shows all 7 clinical options
+4. Select a loop or double-barrelled type → Planned reversal date field appears
+5. Select an end type → Planned reversal date field does not appear
+
+**Notes:**
+- Frontend restarted successfully, compiled without errors
+- This change aligns with proper surgical terminology for stoma classification
+
+---
+
+## 2026-01-06 - Surgery Relationship System (RTT & Reversal Linking) - Complete ✅
+
+**Changed by:** AI Session (Claude Code)
+
+**Issue:** Return to theatre (RTT) complications and stoma reversals were recorded as simple flags rather than linked surgery records. This made it difficult to track multiple RTTs, link reversals to original surgeries, and maintain proper surgical relationships.
+
+**Changes:**
+
+**Phase 1 & 2 (COMPLETE ✅):**
+- ✅ Updated database schema with surgery_primary/surgery_rtt/surgery_reversal types
+- ✅ Created backend API endpoints for surgery relationship management
+- ✅ Created SurgeryTypeSelectionModal and OncologyTypeSelectionModal components
+- ✅ Updated TypeScript models and migration script
+
+**Phase 3 - Frontend UI Integration (COMPLETE ✅):**
+- ✅ **Episode Page Buttons**: Replaced "Add Treatment" with "Add Surgical Rx" and "Add Oncology Rx" buttons
+- ✅ **AddTreatmentModal**:
+  - Added surgeryType, parentSurgeryId, parentSurgeryData props
+  - Conditional header (Add Treatment / Add RTT / Add Reversal)
+  - RTT-specific section with parent surgery context and reason field
+  - Reversal-specific section with stoma info and notes field
+  - Removed old reverses_stoma_from_treatment_id field
+- ✅ **TreatmentSummaryModal**:
+  - Header badges for RTT/Reversal surgeries
+  - Parent surgery link display
+  - RTT reason and reversal notes sections
+  - Updated treatment type colors
+- ✅ **Database Migration**: Successfully migrated 7,945 surgical treatments from `'surgery'` to `'surgery_primary'`
+  - 0 errors during migration
+  - Verification passed - no old surgery types remain
+  - Also found: 3 chemotherapy, 2 radiotherapy treatments
+- ✅ **Backend Endpoint Update**: Auto-populate related_surgery_ids in episode endpoint
+  - Automatic lookup of RTT/reversal surgeries for each primary surgery
+  - Builds relationship map before sending to frontend
+- ✅ **Visual Hierarchy in Treatments List**:
+  - Primary surgeries displayed normally
+  - RTT/reversal surgeries indented with "└─" symbol
+  - Gray background and left border for related surgeries
+  - RTT (amber) and REVERSAL (green) badges in Type column
+  - RTT reason shown in Details column (truncated with tooltip)
+  - Updated treatment type colors for surgery_primary/surgery_rtt/surgery_reversal
+
+- ✅ **Reports Endpoint Update**: Updated to handle surgery_primary type
+  - Both `/api/reports/summary` and `/api/reports/surgeon-performance` now filter for surgery_primary
+  - RTT surgeries not counted in totals (already captured in return_to_theatre_rate metric)
+  - All 7,945 primary surgeries reported correctly
+  - Filter message updated to clarify only primary surgeries counted
+
+- ✅ **AddTreatmentModal Fixes**:
+  - Fixed edit mode to support new surgery types (surgery_primary, surgery_rtt, surgery_reversal)
+  - Updated all step conditions from `treatmentType === 'surgery'` to `isSurgeryType` helper
+  - Auto-map surgeryType prop to correct treatment_type (primary→surgery_primary, rtt→surgery_rtt, reversal→surgery_reversal)
+  - Removed oncology treatment options (chemotherapy, radiotherapy, immunotherapy) from treatment type selection
+  - These now go through "Add Oncology Rx" button instead
+  - Added parent_episode_id to formData initialization
+  - Fixed treatment ID generation to use SUR- prefix for all surgery types (surgery_primary, surgery_rtt, surgery_reversal)
+  - Fixed z-index issue where step circles' hover rings were clipped at the top
+  - **CRITICAL FIX**: Properly nested intraoperative fields (stoma_created, anastomosis_performed, etc.) under `intraoperative` object per DATABASE_SCHEMA.md
+  - This fixes the issue where stoma checkbox and other intraoperative fields weren't saving on treatment update
+  - Added proper flattening of nested intraoperative fields when loading treatment data for editing
+
+**Files affected:**
+- `frontend/src/components/modals/CancerEpisodeDetailModal.tsx` - Added surgery type modal integration + visual hierarchy
+- `backend/app/routes/episodes_v2.py` - Added related_surgery_ids auto-population
+- `backend/app/routes/reports.py` - Updated to filter for surgery_primary type
+- `frontend/src/components/modals/AddTreatmentModal.tsx` - Added RTT/reversal modes
+- `frontend/src/components/modals/TreatmentSummaryModal.tsx` - Added relationship display
+- `execution/migrations/migrate_surgery_types.py` - Ran migration on production (7,945 treatments)
+- `SURGERY_RELATIONSHIPS_IMPLEMENTATION_STATUS.md` - Updated progress tracking
+- `RECENT_CHANGES.md` - This file
+
+**Testing:**
+1. Navigate to episode treatments tab
+2. Click "Add Surgical Rx" → Surgery type modal appears
+3. Select RTT/Reversal → Parent surgery selection appears
+4. Select parent → AddTreatmentModal opens with appropriate header and context
+5. Fill in RTT reason or reversal notes → Submit
+6. View treatment summary → Badges and relationship info displayed
+
+**Notes:**
+- ✅ **System fully functional** - All phases complete
+- Frontend compiles successfully with no errors
+- Backend and frontend both deployed and running
+- All 7,945 existing surgeries migrated to `surgery_primary` type
+- Edit mode now works correctly for all surgery types
+- Oncology treatments now use dedicated "Add Oncology Rx" flow
+- Visual hierarchy displays correctly in episode treatment lists
+- Reports endpoint updated to count only primary surgeries
+- Ready for production use
+
+---
+
 ## 2026-01-01 - Automated Semantic Versioning System
 
 **Changed by:** AI Session (Claude Code)

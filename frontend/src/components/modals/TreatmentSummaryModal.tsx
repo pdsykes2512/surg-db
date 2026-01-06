@@ -41,6 +41,9 @@ export function TreatmentSummaryModal({ treatment, onClose, onEdit }: TreatmentS
   const getTreatmentTypeColor = (type: string) => {
     switch (type) {
       case 'surgery': return 'bg-blue-100 text-blue-800'
+      case 'surgery_primary': return 'bg-blue-100 text-blue-800'
+      case 'surgery_rtt': return 'bg-amber-100 text-amber-800'
+      case 'surgery_reversal': return 'bg-green-100 text-green-800'
       case 'chemotherapy': return 'bg-purple-100 text-purple-800'
       case 'radiotherapy': return 'bg-green-100 text-green-800'
       case 'immunotherapy': return 'bg-yellow-100 text-yellow-800'
@@ -103,8 +106,21 @@ export function TreatmentSummaryModal({ treatment, onClose, onEdit }: TreatmentS
         {/* Header */}
         <div className="bg-gradient-to-r from-purple-600 to-purple-700 px-4 sm:px-6 py-3 flex justify-between items-center">
           <div>
-            <h2 className="text-xl font-bold text-white">Treatment Summary</h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-xl font-bold text-white">Treatment Summary</h2>
+              {treatment.treatment_type === 'surgery_rtt' && (
+                <span className="px-2 py-1 text-xs font-semibold bg-amber-500 text-white rounded">RTT</span>
+              )}
+              {treatment.treatment_type === 'surgery_reversal' && (
+                <span className="px-2 py-1 text-xs font-semibold bg-green-500 text-white rounded">REVERSAL</span>
+              )}
+            </div>
             <p className="text-purple-100 text-sm mt-1 tabular-nums">{treatment.treatment_id}</p>
+            {(treatment.treatment_type === 'surgery_rtt' || treatment.treatment_type === 'surgery_reversal') && treatment.parent_surgery_id && (
+              <p className="text-purple-100 text-xs mt-1">
+                Parent Surgery: <span className="tabular-nums font-medium">{treatment.parent_surgery_id}</span>
+              </p>
+            )}
           </div>
           <button
             onClick={onClose}
@@ -134,8 +150,35 @@ export function TreatmentSummaryModal({ treatment, onClose, onEdit }: TreatmentS
             <Field label="Institution" value={treatment.institution} />
           </Section>
 
+          {/* RTT/Reversal Specific */}
+          {treatment.treatment_type === 'surgery_rtt' && treatment.rtt_reason && (
+            <Section title="Return to Theatre Information">
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <p className="text-sm font-medium text-gray-900 mb-1">RTT Reason:</p>
+                <p className="text-sm text-gray-700 whitespace-pre-wrap">{treatment.rtt_reason}</p>
+              </div>
+              {treatment.parent_surgery_id && (
+                <Field label="Parent Surgery ID" value={treatment.parent_surgery_id} />
+              )}
+            </Section>
+          )}
+
+          {treatment.treatment_type === 'surgery_reversal' && (
+            <Section title="Stoma Reversal Information">
+              {treatment.reversal_notes && (
+                <div className="p-3 bg-green-50 border border-green-200 rounded-lg mb-2">
+                  <p className="text-sm font-medium text-gray-900 mb-1">Reversal Notes:</p>
+                  <p className="text-sm text-gray-700 whitespace-pre-wrap">{treatment.reversal_notes}</p>
+                </div>
+              )}
+              {treatment.parent_surgery_id && (
+                <Field label="Parent Surgery ID" value={treatment.parent_surgery_id} />
+              )}
+            </Section>
+          )}
+
           {/* Surgery Specific */}
-          {treatment.treatment_type === 'surgery' && (
+          {(treatment.treatment_type === 'surgery' || treatment.treatment_type === 'surgery_primary' || treatment.treatment_type === 'surgery_rtt' || treatment.treatment_type === 'surgery_reversal') && (
             <>
               <Section title="Surgical Details">
                 <Field label="Procedure Name" value={treatment.procedure_name} />

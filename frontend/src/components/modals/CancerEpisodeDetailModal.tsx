@@ -9,6 +9,8 @@ import { TumourSummaryModal } from './TumourSummaryModal'
 import { TreatmentSummaryModal } from './TreatmentSummaryModal'
 import { InvestigationModal } from './InvestigationModal'
 import { FollowUpModal } from './FollowUpModal'
+import { SurgeryTypeSelectionModal } from './SurgeryTypeSelectionModal'
+import { OncologyTypeSelectionModal } from './OncologyTypeSelectionModal'
 import { formatStatus, formatTreatmentType, formatSurgeon, capitalize, formatTreatmentPlan, formatCodedValue, formatAnatomicalSite, formatClinicalTNM, formatPathologicalTNM, formatInvestigationType, formatDate } from '../../utils/formatters'
 import { calculateStage, getStageColor, formatStage } from '../../utils/cancerStaging'
 
@@ -73,6 +75,10 @@ export function CancerEpisodeDetailModal({
   const [loading, setLoading] = useState(false)
   const [showAddTreatment, setShowAddTreatment] = useState(false)
   const [editingTreatment, setEditingTreatment] = useState<Treatment | null>(null)
+  const [showSurgeryTypeModal, setShowSurgeryTypeModal] = useState(false)
+  const [showOncologyTypeModal, setShowOncologyTypeModal] = useState(false)
+  const [selectedSurgeryType, setSelectedSurgeryType] = useState<'primary' | 'rtt' | 'reversal' | null>(null)
+  const [selectedParentSurgery, setSelectedParentSurgery] = useState<Treatment | null>(null)
   const [showTumourModal, setShowTumourModal] = useState(false)
   const [editingTumour, setEditingTumour] = useState<any>(null)
   const [showInvestigationModal, setShowInvestigationModal] = useState(false)
@@ -92,7 +98,7 @@ export function CancerEpisodeDetailModal({
   const [deleteInvestigationConfirmText, setDeleteInvestigationConfirmText] = useState('')
 
   // Check if any nested modal is open
-  const hasNestedModalOpen = showAddTreatment || showTumourModal || showInvestigationModal || showFollowUpModal ||
+  const hasNestedModalOpen = showAddTreatment || showSurgeryTypeModal || showOncologyTypeModal || showTumourModal || showInvestigationModal || showFollowUpModal ||
     editingTreatment || editingTumour || editingInvestigation || editingFollowUp ||
     viewingTumour || viewingTreatment ||
     deleteTumourConfirmation.show || deleteTreatmentConfirmation.show || deleteInvestigationConfirmation.show
@@ -291,6 +297,20 @@ export function CancerEpisodeDetailModal({
       console.error('Failed to update treatment:', error)
       alert('Failed to update treatment')
     }
+  }
+
+  const handleSurgeryTypeSelect = (type: 'primary' | 'rtt' | 'reversal', parentSurgery?: Treatment) => {
+    setSelectedSurgeryType(type)
+    setSelectedParentSurgery(parentSurgery || null)
+    setShowSurgeryTypeModal(false)
+    setShowAddTreatment(true)
+  }
+
+  const handleOncologyTypeSelect = (type: 'chemotherapy' | 'radiotherapy' | 'immunotherapy' | 'hormone_therapy' | 'targeted_therapy') => {
+    // For now, just open the AddTreatmentModal
+    // In the future, we can pass the oncology type to the modal
+    setShowOncologyTypeModal(false)
+    setShowAddTreatment(true)
   }
 
   const handleAddTumour = async (tumour: any) => {
@@ -564,6 +584,9 @@ export function CancerEpisodeDetailModal({
   const getTreatmentTypeColor = (type: string) => {
     const colors: Record<string, string> = {
       surgery: 'bg-blue-100 text-blue-800',
+      surgery_primary: 'bg-blue-100 text-blue-800',
+      surgery_rtt: 'bg-amber-100 text-amber-800',
+      surgery_reversal: 'bg-green-100 text-green-800',
       chemotherapy: 'bg-purple-100 text-purple-800',
       radiotherapy: 'bg-orange-100 text-orange-800',
       immunotherapy: 'bg-green-100 text-green-800',
@@ -1173,16 +1196,24 @@ export function CancerEpisodeDetailModal({
           {/* Treatments Tab */}
           {activeTab === 'treatments' && (
             <div className="bg-white rounded-lg border">
-              <div className="px-4 sm:px-6 py-3 sm:py-4 border-b flex flex-col sm:flex-row gap-2 sm:gap-0 items-start sm:items-center justify-between">
+              <div className="px-4 sm:px-6 py-3 sm:py-4 border-b flex flex-col sm:flex-row gap-2 items-start sm:items-center justify-between">
                 <h3 className="text-lg font-semibold text-gray-900">
                   Treatments ({treatments.length})
                 </h3>
-                <button
-                  onClick={() => setShowAddTreatment(true)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-                >
-                  + Add Treatment <span className="text-xs opacity-70 ml-1">(R)</span>
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowSurgeryTypeModal(true)}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                  >
+                    + Add Surgical Rx <span className="text-xs opacity-70 ml-1">(R)</span>
+                  </button>
+                  <button
+                    onClick={() => setShowOncologyTypeModal(true)}
+                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
+                  >
+                    + Add Oncology Rx
+                  </button>
+                </div>
               </div>
 
               {loading ? (
@@ -1217,26 +1248,91 @@ export function CancerEpisodeDetailModal({
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {treatments.map((treatment) => (
-                        <tr 
-                          key={treatment.treatment_id} 
-                          className="hover:bg-blue-50 cursor-pointer transition-colors"
+                      {(() => {
+                        // Organize treatments hierarchically: primary surgeries with their related RTT/reversals
+                        const organizedTreatments: Array<{ treatment: Treatment; isRelated?: boolean; parentId?: string }> = []
+                        const addedIds = new Set<string>()
+
+                        // First, add all primary surgeries and their related surgeries
+                        treatments.forEach((treatment) => {
+                          if (treatment.treatment_type === 'surgery_primary') {
+                            organizedTreatments.push({ treatment })
+                            addedIds.add(treatment.treatment_id)
+
+                            // Add related surgeries (RTT and reversals) immediately after primary
+                            const relatedIds = treatment.related_surgery_ids || []
+                            relatedIds.forEach((related: any) => {
+                              const relatedTreatment = treatments.find(t => t.treatment_id === related.treatment_id)
+                              if (relatedTreatment && !addedIds.has(relatedTreatment.treatment_id)) {
+                                organizedTreatments.push({
+                                  treatment: relatedTreatment,
+                                  isRelated: true,
+                                  parentId: treatment.treatment_id
+                                })
+                                addedIds.add(relatedTreatment.treatment_id)
+                              }
+                            })
+                          }
+                        })
+
+                        // Add remaining treatments (non-surgery or orphaned RTT/reversals)
+                        treatments.forEach((treatment) => {
+                          if (!addedIds.has(treatment.treatment_id)) {
+                            organizedTreatments.push({ treatment })
+                          }
+                        })
+
+                        return organizedTreatments.map(({ treatment, isRelated, parentId }) => (
+                        <tr
+                          key={treatment.treatment_id}
+                          className={`hover:bg-blue-50 cursor-pointer transition-colors ${
+                            isRelated ? 'bg-gray-50' : ''
+                          }`}
                           onClick={() => setViewingTreatment(treatment)}
                         >
-                          <td className="px-2 sm:px-4 md:px-6 py-3 md:py-4 whitespace-nowrap text-sm font-medium text-gray-900 tabular-nums">
+                          <td className={`py-3 md:py-4 whitespace-nowrap text-sm font-medium text-gray-900 tabular-nums ${
+                            isRelated
+                              ? 'pl-8 sm:pl-12 md:pl-16 pr-2 border-l-4 border-gray-300'
+                              : 'px-2 sm:px-4 md:px-6'
+                          }`}>
+                            {isRelated && (
+                              <span className="mr-2 text-gray-400">└─</span>
+                            )}
                             {treatment.treatment_id}
                           </td>
-                          <td className="px-2 sm:px-4 md:px-6 py-3 md:py-4 whitespace-nowrap text-sm text-gray-900">
-                            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getTreatmentTypeColor(treatment.treatment_type)}`}>
-                              {formatTreatmentType(treatment.treatment_type)}
-                            </span>
+                          <td className={`py-3 md:py-4 whitespace-nowrap text-sm text-gray-900 ${
+                            isRelated ? 'px-2' : 'px-2 sm:px-4 md:px-6'
+                          }`}>
+                            <div className="flex items-center gap-2">
+                              <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getTreatmentTypeColor(treatment.treatment_type)}`}>
+                                {formatTreatmentType(treatment.treatment_type)}
+                              </span>
+                              {treatment.treatment_type === 'surgery_rtt' && (
+                                <span className="px-1.5 py-0.5 text-xs font-semibold bg-amber-500 text-white rounded">RTT</span>
+                              )}
+                              {treatment.treatment_type === 'surgery_reversal' && (
+                                <span className="px-1.5 py-0.5 text-xs font-semibold bg-green-500 text-white rounded">REVERSAL</span>
+                              )}
+                            </div>
                           </td>
                           <td className="px-2 sm:px-4 md:px-6 py-3 md:py-4 whitespace-nowrap text-sm text-gray-900 tabular-nums">
                             {formatDate(treatment.treatment_date)}
                           </td>
-                          <td className="px-2 sm:px-4 md:px-6 py-3 md:py-4 whitespace-nowrap text-sm text-gray-900 max-w-xs truncate">
-                            {treatment.treatment_type === 'surgery' && treatment.procedure_name ? (
-                              treatment.procedure_name
+                          <td className={`py-3 md:py-4 whitespace-nowrap text-sm text-gray-900 max-w-xs truncate ${
+                            isRelated ? 'px-2' : 'px-2 sm:px-4 md:px-6'
+                          }`}>
+                            {(treatment.treatment_type === 'surgery' ||
+                              treatment.treatment_type === 'surgery_primary' ||
+                              treatment.treatment_type === 'surgery_rtt' ||
+                              treatment.treatment_type === 'surgery_reversal') && treatment.procedure_name ? (
+                              <div>
+                                {treatment.procedure_name}
+                                {treatment.treatment_type === 'surgery_rtt' && treatment.rtt_reason && (
+                                  <div className="text-xs text-amber-700 mt-1 truncate" title={treatment.rtt_reason}>
+                                    {treatment.rtt_reason}
+                                  </div>
+                                )}
+                              </div>
                             ) : treatment.treatment_type === 'chemotherapy' && treatment.regimen ? (
                               `${treatment.regimen} (Cycle ${treatment.cycle_number || '?'})`
                             ) : treatment.treatment_type === 'radiotherapy' && treatment.site ? (
@@ -1278,7 +1374,8 @@ export function CancerEpisodeDetailModal({
                             </div>
                           </td>
                         </tr>
-                      ))}
+                        ))
+                      })()}
                     </tbody>
                   </table>
                 </div>
@@ -1539,6 +1636,26 @@ export function CancerEpisodeDetailModal({
           />
         )}
 
+        {/* Surgery Type Selection Modal */}
+        {showSurgeryTypeModal && (
+          <SurgeryTypeSelectionModal
+            isOpen={showSurgeryTypeModal}
+            onClose={() => setShowSurgeryTypeModal(false)}
+            onSelectType={handleSurgeryTypeSelect}
+            episodeTreatments={treatments}
+            episodeId={episode.episode_id}
+          />
+        )}
+
+        {/* Oncology Type Selection Modal */}
+        {showOncologyTypeModal && (
+          <OncologyTypeSelectionModal
+            isOpen={showOncologyTypeModal}
+            onClose={() => setShowOncologyTypeModal(false)}
+            onSelectType={handleOncologyTypeSelect}
+          />
+        )}
+
         {/* Add Treatment Modal */}
         {showAddTreatment && (
           <AddTreatmentModal
@@ -1547,9 +1664,14 @@ export function CancerEpisodeDetailModal({
             onCancel={() => {
               setShowAddTreatment(false)
               setEditingTreatment(null)
+              setSelectedSurgeryType(null)
+              setSelectedParentSurgery(null)
             }}
             mode={editingTreatment ? 'edit' : 'create'}
             initialData={editingTreatment}
+            surgeryType={selectedSurgeryType || undefined}
+            parentSurgeryId={selectedParentSurgery?.treatment_id}
+            parentSurgeryData={selectedParentSurgery}
           />
         )}
 

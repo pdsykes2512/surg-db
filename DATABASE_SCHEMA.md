@@ -164,19 +164,52 @@ Patient (1) ──► Episode (N) ──► Treatment (N)
     "treatment_id": str,             # Unique identifier (e.g., "T-ABC123-01")
     "episode_id": str,               # Foreign key to episodes.episode_id
     "patient_id": str,               # Foreign key to patients.patient_id
-    "treatment_type": str,           # surgery/chemotherapy/radiotherapy/immunotherapy/hormone_therapy/targeted_therapy/palliative/surveillance
+    "treatment_type": str,           # surgery_primary/surgery_rtt/surgery_reversal/chemotherapy/radiotherapy/immunotherapy/hormone_therapy/targeted_therapy/palliative/surveillance
     "treatment_date": datetime | str,
     "treating_clinician": str,
     "treatment_intent": str,         # curative/palliative/adjuvant/neoadjuvant/prophylactic
-    "notes": str | null
+    "notes": str | null,
+
+    # Surgery Relationship Fields (for surgery_rtt and surgery_reversal only)
+    "parent_surgery_id": str | null,      # Treatment ID of parent surgery (required for surgery_rtt and surgery_reversal)
+    "parent_episode_id": str | null,      # Episode ID of parent surgery (auto-populated)
+    "rtt_reason": str | null,             # Reason for return to theatre (required for surgery_rtt)
+    "reversal_notes": str | null,         # Notes for stoma reversal (optional for surgery_reversal)
+
+    # Related Surgeries (for surgery_primary with RTT/reversals)
+    "related_surgery_ids": [              # Array of related surgery IDs (RTT and reversals linked to this primary surgery)
+        {
+            "treatment_id": str,
+            "treatment_type": str,        # "surgery_rtt" | "surgery_reversal"
+            "date_created": datetime
+        }
+    ]
 }
 ```
+
+#### Treatment Type Values
+
+**Surgery Types:**
+- `surgery_primary` - Original/primary surgical procedures
+- `surgery_rtt` - Return to theatre surgeries (complications requiring reoperation)
+- `surgery_reversal` - Stoma reversal surgeries
+
+**Oncology Types:**
+- `chemotherapy` - Systemic chemotherapy regimens
+- `radiotherapy` - Radiation therapy
+- `immunotherapy` - Immune checkpoint inhibitors
+- `hormone_therapy` - Hormonal treatment
+- `targeted_therapy` - Targeted molecular therapy
+
+**Other Types:**
+- `palliative` - Palliative care interventions
+- `surveillance` - Active surveillance/watchful waiting
 
 #### Surgery Treatment Fields
 ```python
 {
     # ... common fields above ...
-    "treatment_type": "surgery",
+    "treatment_type": str,  # "surgery_primary" | "surgery_rtt" | "surgery_reversal"
 
     # Provider
     "provider_organisation": str | null,  # CR1450: NHS Trust code
@@ -246,8 +279,9 @@ Patient (1) ──► Episode (N) ──► Treatment (N)
 
         # Colorectal-specific: Stoma
         "stoma_created": bool,
-        "stoma_type": str | null,        # ileostomy/colostomy/urostomy/none
-        "stoma_closure_date": datetime | str | null,
+        "stoma_type": str | null,        # loop_ileostomy/end_ileostomy/loop_colostomy/end_colostomy/double_barrelled_ileostomy/double_barrelled_ileo_colostomy/double_barrelled_colostomy
+        "stoma_closure_date": datetime | str | null,  # Auto-set when surgery_reversal created
+        "reversal_treatment_id": str | null,          # Treatment ID of surgery_reversal that closed this stoma
 
         # Colorectal-specific: Anastomosis
         "anastomosis_performed": bool,
@@ -275,10 +309,11 @@ Patient (1) ──► Episode (N) ──► Treatment (N)
     # Postoperative events
     "postoperative_events": {
         "return_to_theatre": {
-            "occurred": bool,
-            "date": datetime | null,
-            "reason": str | null,
-            "procedure_performed": str | null
+            "occurred": bool,                    # Auto-set to True when surgery_rtt created
+            "date": datetime | null,             # Auto-set from first surgery_rtt date
+            "reason": str | null,                # Auto-set from first surgery_rtt reason
+            "procedure_performed": str | null,   # Auto-set from first surgery_rtt procedure
+            "rtt_treatment_id": str | null       # Treatment ID of first surgery_rtt
         },
         "escalation_of_care": {
             "occurred": bool,
@@ -352,6 +387,17 @@ Patient (1) ──► Episode (N) ──► Treatment (N)
 - `defunctioning_stoma`: Returns "yes" ONLY if both anastomosis AND stoma performed
 - `readmission_30day`: Uses Post_IP field (readmission for complications)
 - `primary_surgeon_text`: Clean surgeon name (NOT ObjectId)
+
+#### Surgery Relationship Validation Rules
+- **surgery_rtt** MUST have `parent_surgery_id` and `rtt_reason`
+- **surgery_reversal** MUST have `parent_surgery_id`
+- **surgery_primary** MUST NOT have `parent_surgery_id`
+- Parent surgery MUST be `surgery_primary`
+- `episode_id` for RTT/reversal MUST match parent's `episode_id` (auto-populated)
+- When `surgery_rtt` created: Parent surgery's `return_to_theatre.occurred` auto-set to True
+- When `surgery_reversal` created: Parent surgery's `stoma_closure_date` auto-set to reversal date
+- Multiple RTTs are supported via `related_surgery_ids` array
+- Deleting RTT/reversal removes from parent's `related_surgery_ids` and resets flags if no other related surgeries exist
 
 ---
 

@@ -19,12 +19,19 @@ from .surgery import (
 
 
 class TreatmentType(str, Enum):
-    SURGERY = "surgery"
+    # Surgery types (distinct for relationship tracking)
+    SURGERY_PRIMARY = "surgery_primary"      # Original/primary surgeries
+    SURGERY_RTT = "surgery_rtt"              # Return to theatre surgeries
+    SURGERY_REVERSAL = "surgery_reversal"    # Stoma reversal surgeries
+
+    # Oncology treatments
     CHEMOTHERAPY = "chemotherapy"
     RADIOTHERAPY = "radiotherapy"
     IMMUNOTHERAPY = "immunotherapy"
     HORMONE_THERAPY = "hormone_therapy"
     TARGETED_THERAPY = "targeted_therapy"
+
+    # Other
     PALLIATIVE = "palliative"
     SURVEILLANCE = "surveillance"
 
@@ -37,6 +44,13 @@ class TreatmentIntent(str, Enum):
     PROPHYLACTIC = "prophylactic"
 
 
+class RelatedSurgery(BaseModel):
+    """Related surgery reference (for surgery_rtt or surgery_reversal linked to a primary)"""
+    treatment_id: str
+    treatment_type: str  # "surgery_rtt" | "surgery_reversal"
+    date_created: datetime = Field(default_factory=datetime.utcnow)
+
+
 class TreatmentBase(BaseModel):
     """Base treatment information"""
     treatment_id: str = Field(..., min_length=1, description="Unique treatment identifier")
@@ -45,7 +59,31 @@ class TreatmentBase(BaseModel):
     treating_clinician: str = Field(..., min_length=1)
     treatment_intent: TreatmentIntent
     notes: Optional[str] = None
-    
+
+    # Surgery relationship fields (for surgery_rtt and surgery_reversal)
+    parent_surgery_id: Optional[str] = Field(
+        None,
+        description="Treatment ID of parent surgery (required for surgery_rtt and surgery_reversal)"
+    )
+    parent_episode_id: Optional[str] = Field(
+        None,
+        description="Episode ID of parent surgery (auto-populated)"
+    )
+    rtt_reason: Optional[str] = Field(
+        None,
+        description="Reason for return to theatre (required for surgery_rtt)"
+    )
+    reversal_notes: Optional[str] = Field(
+        None,
+        description="Notes for stoma reversal (optional for surgery_reversal)"
+    )
+
+    # Related surgeries (for surgery_primary with RTT/reversals)
+    related_surgery_ids: List[RelatedSurgery] = Field(
+        default_factory=list,
+        description="Array of related surgery IDs (RTT and reversals linked to this primary surgery)"
+    )
+
     @field_validator('treatment_date', mode='before')
     @classmethod
     def parse_date(cls, v):
@@ -56,8 +94,8 @@ class TreatmentBase(BaseModel):
 
 class SurgeryTreatment(TreatmentBase):
     """Surgery as a treatment within an episode"""
-    treatment_type: TreatmentType = TreatmentType.SURGERY
-    
+    # treatment_type can be: surgery_primary, surgery_rtt, or surgery_reversal
+
     # NBOCA COSD field
     provider_organisation: Optional[str] = Field(None, description="CR1450: NHS Trust code of provider")
     
