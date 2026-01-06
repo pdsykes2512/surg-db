@@ -181,10 +181,16 @@ export function TreatmentSummaryModal({ treatment, onClose, onEdit }: TreatmentS
           {(treatment.treatment_type === 'surgery' || treatment.treatment_type === 'surgery_primary' || treatment.treatment_type === 'surgery_rtt' || treatment.treatment_type === 'surgery_reversal') && (
             <>
               <Section title="Surgical Details">
-                <Field label="Procedure Name" value={treatment.procedure_name} />
+                <Field label="Primary Procedure" value={treatment.procedure?.primary_procedure || treatment.procedure_name} />
+                {treatment.procedure?.additional_procedures && treatment.procedure.additional_procedures.length > 0 && (
+                  <Field
+                    label="Additional Procedures"
+                    value={treatment.procedure.additional_procedures.join(', ')}
+                  />
+                )}
                 <Field label="OPCS-4 Code" value={treatment.opcs4_code} />
                 <div className="grid grid-cols-3 gap-4 py-1.5 border-b border-gray-100">
-                  <CompactField label="Approach" value={treatment.approach?.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())} />
+                  <CompactField label="Approach" value={treatment.procedure?.approach?.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) || treatment.approach?.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())} />
                   <CompactField label="Urgency" value={treatment.urgency?.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())} />
                   <CompactField label="Complexity" value={treatment.complexity?.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())} />
                 </div>

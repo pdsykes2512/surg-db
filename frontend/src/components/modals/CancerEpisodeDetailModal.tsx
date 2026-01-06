@@ -998,16 +998,22 @@ export function CancerEpisodeDetailModal({
                             </div>
                           </div>
                           <div className="space-y-1 text-xs">
-                            {treatment.treatment_type === 'surgery' && treatment.procedure_name && (
+                            {(treatment.treatment_type === 'surgery' || treatment.treatment_type === 'surgery_primary' || treatment.treatment_type === 'surgery_rtt' || treatment.treatment_type === 'surgery_reversal') && (treatment.procedure?.primary_procedure || treatment.procedure_name) && (
                               <div>
                                 <span className="text-gray-500">Procedure:</span>
-                                <span className="ml-1 text-gray-900">{treatment.procedure_name}</span>
+                                <span className="ml-1 text-gray-900">{treatment.procedure?.primary_procedure || treatment.procedure_name}</span>
                               </div>
                             )}
-                            {treatment.treatment_type === 'surgery' && treatment.approach && (
+                            {(treatment.treatment_type === 'surgery' || treatment.treatment_type === 'surgery_primary' || treatment.treatment_type === 'surgery_rtt' || treatment.treatment_type === 'surgery_reversal') && treatment.opcs4_code && (
+                              <div>
+                                <span className="text-gray-500">OPCS-4:</span>
+                                <span className="ml-1 text-gray-900 tabular-nums">{treatment.opcs4_code}</span>
+                              </div>
+                            )}
+                            {(treatment.treatment_type === 'surgery' || treatment.treatment_type === 'surgery_primary' || treatment.treatment_type === 'surgery_rtt' || treatment.treatment_type === 'surgery_reversal') && (treatment.procedure?.approach || treatment.approach) && (
                               <div>
                                 <span className="text-gray-500">Approach:</span>
-                                <span className="ml-1 text-gray-900 capitalize">{treatment.approach}</span>
+                                <span className="ml-1 text-gray-900 capitalize">{(treatment.procedure?.approach || treatment.approach).replace('_', ' ')}</span>
                               </div>
                             )}
                             {(treatment.treatment_type === 'surgery' || treatment.treatment_type === 'endoscopy') && (
@@ -1324,12 +1330,17 @@ export function CancerEpisodeDetailModal({
                             {(treatment.treatment_type === 'surgery' ||
                               treatment.treatment_type === 'surgery_primary' ||
                               treatment.treatment_type === 'surgery_rtt' ||
-                              treatment.treatment_type === 'surgery_reversal') && treatment.procedure_name ? (
+                              treatment.treatment_type === 'surgery_reversal') && (treatment.procedure?.primary_procedure || treatment.procedure_name) ? (
                               <div>
-                                {treatment.procedure_name}
+                                <div>{treatment.procedure?.primary_procedure || treatment.procedure_name}</div>
+                                {treatment.procedure?.approach && (
+                                  <div className="text-xs text-gray-600 mt-0.5 capitalize">
+                                    {treatment.procedure.approach.replace('_', ' ')}
+                                  </div>
+                                )}
                                 {treatment.treatment_type === 'surgery_rtt' && treatment.rtt_reason && (
                                   <div className="text-xs text-amber-700 mt-1 truncate" title={treatment.rtt_reason}>
-                                    {treatment.rtt_reason}
+                                    RTT: {treatment.rtt_reason}
                                   </div>
                                 )}
                               </div>
