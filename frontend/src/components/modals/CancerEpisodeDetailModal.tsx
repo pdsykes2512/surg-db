@@ -109,7 +109,7 @@ export function CancerEpisodeDetailModal({
     isOpen: !hasNestedModalOpen
   })
 
-  // Quick add keyboard shortcuts: I (investigation), P (tumour/primary), R (treatment)
+  // Quick add keyboard shortcuts: I (investigation), P (tumour/primary), S (surgery), O (oncology)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Don't trigger if typing in an input field or if any modal is already open
@@ -137,9 +137,13 @@ export function CancerEpisodeDetailModal({
           e.preventDefault()
           setShowTumourModal(true)
           break
-        case 'r':
+        case 's':
           e.preventDefault()
-          setShowAddTreatment(true)
+          setShowSurgeryTypeModal(true)
+          break
+        case 'o':
+          e.preventDefault()
+          setShowOncologyTypeModal(true)
           break
       }
     }
@@ -1211,13 +1215,13 @@ export function CancerEpisodeDetailModal({
                     onClick={() => setShowSurgeryTypeModal(true)}
                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
                   >
-                    + Add Surgical Rx <span className="text-xs opacity-70 ml-1">(R)</span>
+                    + Add Surgical Rx <span className="text-xs opacity-70 ml-1">(S)</span>
                   </button>
                   <button
                     onClick={() => setShowOncologyTypeModal(true)}
                     className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
                   >
-                    + Add Oncology Rx
+                    + Add Oncology Rx <span className="text-xs opacity-70 ml-1">(O)</span>
                   </button>
                 </div>
               </div>

@@ -2,7 +2,8 @@
  * Oncology Treatment Type Selection Modal
  * Allows user to select between Chemotherapy, Radiotherapy, Immunotherapy, etc.
  */
-import React from 'react'
+import React, { useState, useEffect } from 'react'
+import { useModalShortcuts } from '../../hooks/useModalShortcuts'
 
 interface OncologyTypeSelectionModalProps {
   isOpen: boolean
@@ -15,7 +16,13 @@ export function OncologyTypeSelectionModal({
   onClose,
   onSelectType
 }: OncologyTypeSelectionModalProps) {
-  if (!isOpen) return null
+  const [focusedIndex, setFocusedIndex] = useState(0)
+
+  // Enable Escape key to close modal
+  useModalShortcuts({
+    onClose,
+    isOpen
+  })
 
   const treatmentTypes = [
     {
@@ -55,6 +62,29 @@ export function OncologyTypeSelectionModal({
     }
   ]
 
+  // Keyboard navigation for treatment type selection
+  useEffect(() => {
+    if (!isOpen) return
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+        e.preventDefault()
+        setFocusedIndex(prev => (prev + 1) % treatmentTypes.length)
+      } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+        e.preventDefault()
+        setFocusedIndex(prev => (prev - 1 + treatmentTypes.length) % treatmentTypes.length)
+      } else if (e.key === 'Enter') {
+        e.preventDefault()
+        onSelectType(treatmentTypes[focusedIndex].type)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, focusedIndex, treatmentTypes, onSelectType])
+
+  if (!isOpen) return null
+
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex min-h-screen items-center justify-center p-4">
@@ -84,11 +114,15 @@ export function OncologyTypeSelectionModal({
           {/* Content */}
           <div className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {treatmentTypes.map(treatment => (
+              {treatmentTypes.map((treatment, index) => (
                 <button
                   key={treatment.type}
                   onClick={() => onSelectType(treatment.type)}
-                  className={`p-6 border-2 border-${treatment.color}-200 rounded-lg hover:border-${treatment.color}-500 hover:bg-${treatment.color}-50 transition text-left group`}
+                  className={`p-6 border-2 rounded-lg hover:border-${treatment.color}-500 hover:bg-${treatment.color}-50 transition text-left group ${
+                    focusedIndex === index
+                      ? `border-${treatment.color}-500 bg-${treatment.color}-50 ring-2 ring-${treatment.color}-500`
+                      : `border-${treatment.color}-200`
+                  }`}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">

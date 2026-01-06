@@ -247,7 +247,7 @@ export function AddTreatmentModal({
     opcs4_code: '',
     additional_procedures: [] as string[],
     approach: '',
-    urgency: 'elective',
+    urgency: surgeryType === 'rtt' ? 'emergency' : 'elective',
     complexity: 'routine',
     asa_score: '',
     surgeon: '',

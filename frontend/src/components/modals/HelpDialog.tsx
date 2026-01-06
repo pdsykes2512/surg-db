@@ -56,7 +56,8 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
     // Episode Detail Modal
     { category: 'Episode Detail Modal', key: 'I', description: 'Add Investigation', context: 'Episode detail' },
     { category: 'Episode Detail Modal', key: 'P', description: 'Add Pathology (Tumour)', context: 'Episode detail' },
-    { category: 'Episode Detail Modal', key: 'R', description: 'Add Treatment', context: 'Episode detail' },
+    { category: 'Episode Detail Modal', key: 'S', description: 'Add Surgical Treatment', context: 'Episode detail' },
+    { category: 'Episode Detail Modal', key: 'O', description: 'Add Oncology Treatment', context: 'Episode detail' },
 
     // Help
     { category: 'Help', key: '?', description: 'Show this help dialog' },

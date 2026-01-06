@@ -2,8 +2,9 @@
  * Surgery Type Selection Modal
  * Allows user to select between Primary Surgery, RTT, or Stoma Reversal
  */
-import React from 'react'
+import React, { useEffect } from 'react'
 import { Treatment } from '../../types/models'
+import { useModalShortcuts } from '../../hooks/useModalShortcuts'
 
 interface SurgeryTypeSelectionModalProps {
   isOpen: boolean
@@ -19,6 +20,12 @@ export function SurgeryTypeSelectionModal({
   onSelectType,
   episodeTreatments
 }: SurgeryTypeSelectionModalProps) {
+  // Enable Escape key to close modal
+  useModalShortcuts({
+    onClose,
+    isOpen
+  })
+
   if (!isOpen) return null
 
   // Get primary surgeries for RTT/reversal selection
@@ -35,6 +42,46 @@ export function SurgeryTypeSelectionModal({
   const [selectedPrimaryForReversal, setSelectedPrimaryForReversal] = React.useState<string | null>(null)
   const [showRTTSelection, setShowRTTSelection] = React.useState(false)
   const [showReversalSelection, setShowReversalSelection] = React.useState(false)
+  const [focusedIndex, setFocusedIndex] = React.useState(0)
+
+  // Keyboard navigation for surgery type selection
+  useEffect(() => {
+    if (!isOpen || showRTTSelection || showReversalSelection) return
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        setFocusedIndex(prev => {
+          // Skip disabled options
+          let next = (prev + 1) % 3
+          // RTT is disabled if no primary surgeries
+          if (next === 1 && primarySurgeries.length === 0) next = 2
+          // Reversal is disabled if no open stomas
+          if (next === 2 && surgeriesWithOpenStomas.length === 0) next = 0
+          return next
+        })
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        setFocusedIndex(prev => {
+          // Skip disabled options
+          let next = (prev - 1 + 3) % 3
+          // Reversal is disabled if no open stomas
+          if (next === 2 && surgeriesWithOpenStomas.length === 0) next = 1
+          // RTT is disabled if no primary surgeries
+          if (next === 1 && primarySurgeries.length === 0) next = 0
+          return next
+        })
+      } else if (e.key === 'Enter') {
+        e.preventDefault()
+        if (focusedIndex === 0) handlePrimaryClick()
+        else if (focusedIndex === 1) handleRTTClick()
+        else if (focusedIndex === 2) handleReversalClick()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, showRTTSelection, showReversalSelection, focusedIndex, primarySurgeries.length, surgeriesWithOpenStomas.length])
 
   const handlePrimaryClick = () => {
     onSelectType('primary')
@@ -120,7 +167,7 @@ export function SurgeryTypeSelectionModal({
                 {/* Primary Surgery */}
                 <button
                   onClick={handlePrimaryClick}
-                  className="w-full p-6 border-2 border-blue-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition text-left group"
+                  className={`w-full p-6 border-2 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition text-left group ${focusedIndex === 0 ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-500' : 'border-blue-200'}`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
@@ -139,7 +186,7 @@ export function SurgeryTypeSelectionModal({
                 <button
                   onClick={handleRTTClick}
                   disabled={primarySurgeries.length === 0}
-                  className="w-full p-6 border-2 border-amber-200 rounded-lg hover:border-amber-500 hover:bg-amber-50 transition text-left group disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-amber-200 disabled:hover:bg-white"
+                  className={`w-full p-6 border-2 rounded-lg hover:border-amber-500 hover:bg-amber-50 transition text-left group disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-amber-200 disabled:hover:bg-white ${focusedIndex === 1 && primarySurgeries.length > 0 ? 'border-amber-500 bg-amber-50 ring-2 ring-amber-500' : 'border-amber-200'}`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
@@ -168,7 +215,7 @@ export function SurgeryTypeSelectionModal({
                 <button
                   onClick={handleReversalClick}
                   disabled={surgeriesWithOpenStomas.length === 0}
-                  className="w-full p-6 border-2 border-green-200 rounded-lg hover:border-green-500 hover:bg-green-50 transition text-left group disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-green-200 disabled:hover:bg-white"
+                  className={`w-full p-6 border-2 rounded-lg hover:border-green-500 hover:bg-green-50 transition text-left group disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-green-200 disabled:hover:bg-white ${focusedIndex === 2 && surgeriesWithOpenStomas.length > 0 ? 'border-green-500 bg-green-50 ring-2 ring-green-500' : 'border-green-200'}`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
