@@ -15,6 +15,52 @@ This file tracks significant changes made to the IMPACT application (formerly su
 
 ---
 
+## 2026-01-06 - COSD Export Compatibility Fix for Surgery Type Migration
+
+**Changed by:** AI Session (Claude Code)
+
+**Issue:** COSD export, validation, and dashboard statistics were still checking for `treatment_type == "surgery"` which no longer exists after the surgery type migration to `surgery_primary`, `surgery_rtt`, and `surgery_reversal`. This caused all surgical treatments to be excluded from COSD exports and data completeness reports.
+
+**Changes:**
+1. **Backend COSD Export (backend/app/routes/exports.py)**
+   - Line 289: Updated surgery-specific field export to check for all surgery types
+   - Line 572: Updated data completeness check to include all surgery types
+   - Line 796: Updated NBOCA validator to recognize all surgery types
+   - All checks now use: `treatment_type in ["surgery", "surgery_primary", "surgery_rtt", "surgery_reversal"]`
+
+2. **Backend Mortality Flags (backend/app/utils/update_mortality_flags.py)**
+   - Line 35: Updated mortality flag calculation to find all surgical treatments
+   - Changed from `"treatment_type": "surgery"` to `"treatment_type": {"$in": [...]}`
+
+3. **Frontend Dashboard Stats (frontend/src/pages/HomePage.tsx)**
+   - Added `isSurgeryType()` helper function
+   - Updated monthly surgery counts to include all surgery types
+   - Updated year-to-date surgery counts to include all surgery types
+   - Updated treatment breakdown display to aggregate all surgery types
+
+4. **Test Script (execution/dev-tools/test_cosd_export.py)**
+   - Line 175: Updated test COSD export to handle all surgery types
+
+**Files affected:**
+- backend/app/routes/exports.py
+- backend/app/utils/update_mortality_flags.py
+- frontend/src/pages/HomePage.tsx
+- execution/dev-tools/test_cosd_export.py
+
+**Testing:**
+1. COSD XML export should now include all 7,945 surgical treatments
+2. Data completeness check should show correct surgical treatment counts
+3. NBOCA validator should validate all surgical episodes
+4. Dashboard surgery counts should display correctly
+5. Mortality flags should update for all surgery types when patient deceased date changes
+
+**Notes:**
+- The migration from `surgery` to `surgery_primary` was completed successfully, but several backend endpoints and frontend components were not updated
+- All COSD-related functionality now properly handles the new surgery type schema
+- The `"surgery"` type is kept in the checks for backwards compatibility during the transition period
+
+---
+
 ## 2026-01-06 - AddTreatmentModal UI/UX Improvements and Treatment ID Fix
 
 **Changed by:** AI Session (Claude Code)

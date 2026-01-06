@@ -170,9 +170,9 @@ def create_episode_xml(episode: dict, patient: dict, treatments: list, tumours: 
             if treatment.get("treatment_date"):
                 t_date = ET.SubElement(treatment_elem, "TreatmentDate")
                 t_date.text = format_date(treatment["treatment_date"])
-            
-            # Surgery-specific
-            if treatment.get("treatment_type") == "surgery":
+
+            # Surgery-specific (includes all surgery types: primary, RTT, reversal)
+            if treatment.get("treatment_type") in ["surgery", "surgery_primary", "surgery_rtt", "surgery_reversal"]:
                 surgery_elem = ET.SubElement(treatment_elem, "Surgery")
                 
                 if treatment.get("opcs4_code"):

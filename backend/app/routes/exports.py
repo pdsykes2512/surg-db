@@ -285,8 +285,8 @@ def create_episode_xml(episode: dict, patient: dict, treatments: list, tumours: 
                 provider_org = ET.SubElement(treatment_elem, "ProviderOrganisation")
                 provider_org.text = treatment["provider_organisation"]
             
-            # Surgery-specific fields
-            if treatment.get("treatment_type") == "surgery":
+            # Surgery-specific fields (includes all surgery types: primary, RTT, reversal)
+            if treatment.get("treatment_type") in ["surgery", "surgery_primary", "surgery_rtt", "surgery_reversal"]:
                 surgery_elem = ET.SubElement(treatment_elem, "Surgery")
                 
                 # OPCS-4 procedure code (CR0720) - MANDATORY for surgical patients
@@ -569,8 +569,8 @@ async def check_data_completeness(
             "opcs4_code": {"$exists": True, "$ne": ""}
         })
         treatments = await treatments_cursor.to_list(length=None)
-        surgical_treatments = [t for t in treatments if t.get("treatment_type") == "surgery"]
-        
+        surgical_treatments = [t for t in treatments if t.get("treatment_type") in ["surgery", "surgery_primary", "surgery_rtt", "surgery_reversal"]]
+
         if surgical_treatments:
             completeness["surgery"]["total_surgical_episodes"] += 1
             
@@ -792,9 +792,9 @@ async def validate_nboca_submission(
                     episode_validation["warnings"].append("CRM distance should be recorded when CRM is clear")
         
         # === TREATMENT VALIDATION ===
-        
-        surgical_treatments = [t for t in treatments if t.get("treatment_type") == "surgery"]
-        
+
+        surgical_treatments = [t for t in treatments if t.get("treatment_type") in ["surgery", "surgery_primary", "surgery_rtt", "surgery_reversal"]]
+
         if not surgical_treatments:
             episode_validation["warnings"].append("No surgical treatment recorded")
         else:

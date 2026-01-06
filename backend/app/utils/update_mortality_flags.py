@@ -29,10 +29,10 @@ async def update_mortality_flags_for_patient(
     """
     treatments_collection = db.treatments
     
-    # Get all surgical treatments for this patient
+    # Get all surgical treatments for this patient (all surgery types)
     treatments = await treatments_collection.find({
         "patient_id": patient_id,
-        "treatment_type": "surgery",
+        "treatment_type": {"$in": ["surgery", "surgery_primary", "surgery_rtt", "surgery_reversal"]},
         "treatment_date": {"$exists": True, "$ne": None}
     }).to_list(length=None)
     

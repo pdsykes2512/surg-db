@@ -20,6 +20,11 @@ export function HomePage() {
   const [recentActivity, setRecentActivity] = useState<any[]>([])
   const [activityLoading, setActivityLoading] = useState(true)
 
+  // Helper to check if treatment is a surgery type
+  const isSurgeryType = (treatmentType: string) => {
+    return ['surgery', 'surgery_primary', 'surgery_rtt', 'surgery_reversal'].includes(treatmentType)
+  }
+
   useEffect(() => {
     const fetchStats = async () => {
       try {
@@ -43,7 +48,7 @@ export function HomePage() {
           const nextMonth = new Date(now.getFullYear(), now.getMonth() - i + 1, 1)
           
           const count = treatments.filter((t: any) => {
-            if (t.treatment_type !== 'surgery') return false
+            if (!isSurgeryType(t.treatment_type)) return false
             const treatmentDate = t.treatment_date
             if (!treatmentDate) return false
             const date = new Date(treatmentDate)
@@ -58,7 +63,7 @@ export function HomePage() {
         // Calculate year-to-date total (all surgical treatments in 2025)
         const yearStart = new Date(2025, 0, 1) // January 1, 2025
         const yearToDateEpisodes = treatments.filter((t: any) => {
-          if (t.treatment_type !== 'surgery') return false
+          if (!isSurgeryType(t.treatment_type)) return false
           const treatmentDate = t.treatment_date
           if (!treatmentDate) return false
           const date = new Date(treatmentDate)
@@ -218,11 +223,11 @@ export function HomePage() {
                     <div className="text-xs font-medium text-gray-700 mb-1 text-center">Surgery</div>
                     <div className="text-center">
                       {stats.treatmentBreakdown
-                        .filter(item => item.treatment_type === 'surgery')
+                        .filter(item => isSurgeryType(item.treatment_type))
                         .map((item, idx) => (
                           <div key={idx} className="text-lg font-semibold text-gray-900">{item.count}</div>
                         ))}
-                      {stats.treatmentBreakdown.filter(item => item.treatment_type === 'surgery').length === 0 && (
+                      {stats.treatmentBreakdown.filter(item => isSurgeryType(item.treatment_type)).length === 0 && (
                         <div className="text-sm text-gray-400">None</div>
                       )}
                     </div>
