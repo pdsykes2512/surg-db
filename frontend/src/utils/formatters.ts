@@ -241,9 +241,12 @@ export const formatCancerType = (type: string): string => {
  */
 export const formatTreatmentType = (type: string): string => {
   if (!type) return '-'
-  
+
   const typeMap: Record<string, string> = {
     'surgery': 'Surgery',
+    'surgery_primary': 'Primary Surgery',
+    'surgery_rtt': 'RTT Surgery',
+    'surgery_reversal': 'Reversal Surgery',
     'chemotherapy': 'Chemotherapy',
     'radiotherapy': 'Radiotherapy',
     'immunotherapy': 'Immunotherapy',
@@ -252,7 +255,7 @@ export const formatTreatmentType = (type: string): string => {
     'palliative': 'Palliative Care',
     'surveillance': 'Surveillance'
   }
-  
+
   return typeMap[type.toLowerCase()] || snakeToTitle(type)
 }
 
