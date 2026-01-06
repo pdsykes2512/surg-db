@@ -15,6 +15,40 @@ This file tracks significant changes made to the IMPACT application (formerly su
 
 ---
 
+## 2026-01-06 - COSD Treatment Type Normalization for Standard Compliance
+
+**Changed by:** AI Session (Claude Code)
+
+**Issue:** COSD export was exporting internal treatment types (`SURGERY_PRIMARY`, `SURGERY_RTT`, `SURGERY_REVERSAL`) instead of the COSD-standard `SURGERY` type. This would cause COSD validation errors because the NHS Data Dictionary expects all surgical procedures to be exported with treatment type "SURGERY", not our internal type distinctions.
+
+**Changes:**
+1. **Backend COSD Export (backend/app/routes/exports.py)**
+   - Line 273-276: Added treatment type normalization for COSD export
+   - All surgery types (surgery, surgery_primary, surgery_rtt, surgery_reversal) now export as `<TreatmentType>SURGERY</TreatmentType>`
+   - Internal tracking preserved, only export format changed to meet COSD standard
+   - Other treatment types (chemotherapy, radiotherapy, etc.) export as-is in uppercase
+
+2. **Test Script (execution/dev-tools/test_cosd_export.py)**
+   - Line 171-174: Applied same normalization logic for consistency
+
+**Files affected:**
+- backend/app/routes/exports.py
+- execution/dev-tools/test_cosd_export.py
+
+**Testing:**
+1. Export COSD XML and verify all surgical treatments show `<TreatmentType>SURGERY</TreatmentType>`
+2. RTT surgeries should export correctly with all required surgical fields (OPCS-4, ASA, approach, urgency)
+3. Primary surgeries, RTT surgeries, and reversals all export as "SURGERY" per COSD v9/v10 standard
+4. Internal `treatment_type` field preserved in database for relationship tracking
+
+**Notes:**
+- **RTT status tracking:** Internally tracked via `treatment_type: surgery_rtt` field and `return_to_theatre: true` flag
+- **COSD compliance:** Export normalizes to standard "SURGERY" type while preserving all surgical procedure details in sub-elements
+- **Relationship preservation:** Internal surgery relationships (primary→RTT→reversal) maintained in database, only export format normalized
+- This ensures COSD validation passes while maintaining full internal surgery relationship functionality
+
+---
+
 ## 2026-01-06 - COSD Export Compatibility Fix for Surgery Type Migration
 
 **Changed by:** AI Session (Claude Code)

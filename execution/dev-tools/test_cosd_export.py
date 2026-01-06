@@ -163,9 +163,15 @@ def create_episode_xml(episode: dict, patient: dict, treatments: list, tumours: 
         
         for treatment in treatments:
             treatment_elem = ET.SubElement(treatments_elem, "Treatment")
-            
+
+            # Treatment type - normalize for COSD (all surgery types export as "SURGERY")
             t_type = ET.SubElement(treatment_elem, "TreatmentType")
-            t_type.text = treatment.get("treatment_type", "").upper()
+            treatment_type = treatment.get("treatment_type", "")
+            # Normalize internal surgery types to COSD standard
+            if treatment_type in ["surgery", "surgery_primary", "surgery_rtt", "surgery_reversal"]:
+                t_type.text = "SURGERY"
+            else:
+                t_type.text = treatment_type.upper()
             
             if treatment.get("treatment_date"):
                 t_date = ET.SubElement(treatment_elem, "TreatmentDate")
