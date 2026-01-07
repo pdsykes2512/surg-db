@@ -61,7 +61,10 @@ You operate within a 3-layer architecture that separates concerns to maximize re
 - Duplicating code that was already added
 - Reverting fixes that were previously applied
 
-**0.1 Use the context 7 MCP**
+**0.1 Use the context7 MCP** **Always use Context7 MCP tools before planning or implementing code that involves external libraries or frameworks.**
+1. Use `resolve-library-id` to get the correct library identifier.
+2. Use `get-library-docs` to pull current documentation.
+3. Base all code suggestions on the retrieved documentation, not training data.
 
 **0.5. Follow the style guide** **When creating or modifying UI components, read `STYLE_GUIDE.md`** to ensure consistency. This prevents:
 - Inconsistent modal layouts and button placements
