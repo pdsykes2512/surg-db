@@ -15,6 +15,35 @@ This file tracks significant changes made to the IMPACT application (formerly su
 
 ---
 
+## 2026-01-07 - Hide Surgical Intent Field for RTT and Reversal Surgeries
+
+**Changed by:** AI Session (Claude Code)
+
+**Issue:** The surgical intent field (Curative/Palliative/Uncertain) was appearing in the Add Treatment modal for all surgery types (Primary, RTT, Reversal). However, RTT and Reversal surgeries have implicit intents - RTT is an intervention for complications and Reversal is to restore bowel continuity - so the intent field is not applicable.
+
+**Changes:**
+- Added conditional rendering to surgical intent section in AddTreatmentModal
+- Intent field now only shows when `surgeryType === 'primary'`
+- Hidden for RTT and Reversal surgery types
+- Updated code comment to clarify this is for primary surgeries only
+
+**Files affected:**
+- frontend/src/components/modals/AddTreatmentModal.tsx (lines 993-1037)
+
+**Testing:**
+1. Open episode detail modal and press 'S' to add surgical treatment
+2. Select "Primary Surgery" → Intent field should be visible
+3. Select "Return to Theatre" → Intent field should be hidden
+4. Select "Reversal Surgery" → Intent field should be hidden
+5. Verify primary surgery can still save with curative/palliative intent
+
+**Notes:**
+- This simplifies the UI for RTT and Reversal surgeries
+- Primary surgeries still capture full intent information for NBOCA/COSD reporting
+- No database changes needed - existing RTT/Reversal treatments (if any) retain their intent data, just won't be editable in this way going forward
+
+---
+
 ## 2026-01-07 - Subdivide Side-to-Side Anastomosis Configuration
 
 **Changed by:** AI Session (Claude Code)
