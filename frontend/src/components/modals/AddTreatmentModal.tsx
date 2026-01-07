@@ -1307,7 +1307,8 @@ export function AddTreatmentModal({
                           options={[
                             { value: 'end_to_end', label: 'End-to-End' },
                             { value: 'end_to_side', label: 'End-to-Side' },
-                            { value: 'side_to_side', label: 'Side-to-Side' },
+                            { value: 'side_to_side_isoperistaltic', label: 'Side-to-Side (Isoperistaltic)' },
+                            { value: 'side_to_side_antiperistaltic', label: 'Side-to-Side (Antiperistaltic)' },
                             { value: 'side_to_end', label: 'Side-to-End' }
                           ]}
                           getOptionValue={(opt) => opt.value}

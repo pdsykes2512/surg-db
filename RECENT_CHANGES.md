@@ -15,6 +15,38 @@ This file tracks significant changes made to the IMPACT application (formerly su
 
 ---
 
+## 2026-01-07 - Subdivide Side-to-Side Anastomosis Configuration
+
+**Changed by:** AI Session (Claude Code)
+
+**Issue:** The anastomosis configuration field had a single "Side-to-Side" option that didn't differentiate between isoperistaltic and antiperistaltic orientations, which are clinically important distinctions in bowel anastomosis technique.
+
+**Changes:**
+- Updated anastomosis configuration options in AddTreatmentModal
+- Replaced single "Side-to-Side" option with two options:
+  - Side-to-Side (Isoperistaltic)
+  - Side-to-Side (Antiperistaltic)
+- Updated field values:
+  - `side_to_side_isoperistaltic`
+  - `side_to_side_antiperistaltic`
+
+**Files affected:**
+- frontend/src/components/modals/AddTreatmentModal.tsx
+
+**Testing:**
+1. Open episode detail modal and add a new surgical treatment
+2. Navigate to Technical Details step
+3. Enable "Anastomosis Performed" checkbox
+4. Check Configuration dropdown shows both Side-to-Side options
+5. Verify both isoperistaltic and antiperistaltic can be selected and saved
+
+**Notes:**
+- No database migration needed - zero existing treatments had the old `side_to_side` value
+- This provides more granular surgical documentation for anastomosis technique
+- Both orientations are important for NBOCA/COSD surgical outcome tracking
+
+---
+
 ## 2026-01-06 - COSD Treatment Type Normalization for Standard Compliance
 
 **Changed by:** AI Session (Claude Code)
