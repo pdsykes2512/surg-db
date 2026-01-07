@@ -33,8 +33,8 @@ This guide explains how to configure the IMPACT application environment variable
 
 4. **Start the application:**
    ```bash
-   sudo systemctl restart surg-db-backend
-   sudo systemctl restart surg-db-frontend
+   sudo systemctl restart impact-backend
+   sudo systemctl restart impact-frontend
    ```
 
 ## Environment Files
@@ -100,7 +100,7 @@ API_VERSION=1.1.0
 
 #### CORS Configuration
 ```bash
-CORS_ORIGINS=http://localhost:3000,http://surg-db.vps:3000
+CORS_ORIGINS=http://localhost:3000,http://impact.vps:3000
 CORS_ORIGIN_REGEX=http://192\.168\.(10|11)\.\d{1,3}:\d+
 ```
 
@@ -185,7 +185,7 @@ Generate one with: python -c 'import secrets; print(secrets.token_urlsafe(32))'
 The backend service loads environment files in this order:
 
 ```ini
-# /etc/systemd/system/surg-db-backend.service
+# /etc/systemd/system/impact-backend.service
 [Service]
 EnvironmentFile=/etc/impact/secrets.env  # Loaded first
 EnvironmentFile=/root/impact/.env        # Loaded second (can override)
@@ -194,7 +194,7 @@ EnvironmentFile=/root/impact/.env        # Loaded second (can override)
 **Reload after changes:**
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl restart surg-db-backend
+sudo systemctl restart impact-backend
 ```
 
 ## Troubleshooting
@@ -203,7 +203,7 @@ sudo systemctl restart surg-db-backend
 
 **Check startup logs:**
 ```bash
-sudo systemctl status surg-db-backend
+sudo systemctl status impact-backend
 tail -50 ~/.tmp/backend.log
 ```
 
@@ -228,14 +228,14 @@ tail -50 ~/.tmp/backend.log
 **Verify systemd loads them:**
 ```bash
 # Check service environment
-systemctl show surg-db-backend --property=Environment
-systemctl show surg-db-backend --property=EnvironmentFiles
+systemctl show impact-backend --property=Environment
+systemctl show impact-backend --property=EnvironmentFiles
 ```
 
 **Test configuration:**
 ```bash
 # Temporarily run with debug logging
-LOG_LEVEL=DEBUG sudo systemctl restart surg-db-backend
+LOG_LEVEL=DEBUG sudo systemctl restart impact-backend
 tail -f ~/.tmp/backend.log
 ```
 
@@ -250,7 +250,7 @@ python -c 'import secrets; print(secrets.token_urlsafe(32))'
 sudo nano /etc/impact/secrets.env
 
 # 3. Restart service
-sudo systemctl restart surg-db-backend
+sudo systemctl restart impact-backend
 
 # Note: All users will need to log in again
 ```
@@ -276,7 +276,7 @@ Database backups use a separate encryption key stored at:
 |----------|----------|---------|-------|
 | SECRET_KEY | **Yes** | *None* | Min 32 chars, validated |
 | ENCRYPTION_KEY | **Yes** | *None* | Fernet key format |
-| MONGODB_URI | **Yes** | `mongodb://surg-db.vps:27017` | Validated format |
+| MONGODB_URI | **Yes** | `mongodb://impact.vps:27017` | Validated format |
 | MONGODB_DB_NAME | No | `impact` | Clinical database |
 | MONGODB_SYSTEM_DB_NAME | No | `impact_system` | System database |
 | API_HOST | No | `0.0.0.0` | Listen address |
