@@ -15,6 +15,37 @@ This file tracks significant changes made to the IMPACT application (formerly su
 
 ---
 
+## 2026-01-07 - Auto-clear Stoma and Anastomosis Fields When Unchecked
+
+**Changed by:** AI Session (Claude Code)
+
+**Issue:** When editing a treatment and unchecking the "Stoma Created" or "Anastomosis Performed" checkboxes, the previously entered details remained in the form. This could lead to confusing data where `stoma_created: false` but stoma_type still has a value, or `anastomosis_performed: false` but anastomosis details persist.
+
+**Changes:**
+- Modified "Stoma Created" checkbox onChange handler to clear all stoma-related fields when unchecked:
+  - `stoma_type`, `defunctioning_stoma`, `planned_reversal_date`, `stoma_closure_date`
+- Modified "Anastomosis Performed" checkbox onChange handler to clear all anastomosis-related fields when unchecked:
+  - `anastomosis_type`, `anastomosis_configuration`, `anastomosis_height_cm`, `anastomosis_location`, `anterior_resection_type`
+  - All 17 anastomotic leak tracking fields (severity, dates, clinical signs, management, outcomes, etc.)
+- Prevents data inconsistency between checkbox state and field values
+
+**Files affected:**
+- [frontend/src/components/modals/AddTreatmentModal.tsx](frontend/src/components/modals/AddTreatmentModal.tsx#L1381-L1394) (stoma)
+- [frontend/src/components/modals/AddTreatmentModal.tsx](frontend/src/components/modals/AddTreatmentModal.tsx#L1277-L1312) (anastomosis)
+
+**Testing:**
+1. Edit a treatment with stoma/anastomosis data
+2. Uncheck "Stoma Created" → verify all stoma fields clear
+3. Uncheck "Anastomosis Performed" → verify all anastomosis and leak tracking fields clear
+4. Save and verify data is clean
+
+**Notes:**
+- Follows consistent UX pattern for conditional fields
+- Prevents accidental data retention when conditions change
+- Anastomosis clears extensive NBOCA leak tracking fields to prevent orphaned data
+
+---
+
 ## 2026-01-07 - Fix Treatment Deletion Error
 
 **Changed by:** AI Session (Claude Code)

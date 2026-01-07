@@ -1274,7 +1274,42 @@ export function AddTreatmentModal({
                     <input
                       type="checkbox"
                       checked={formData.anastomosis_performed}
-                      onChange={(e) => updateFormData({ anastomosis_performed: e.target.checked })}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          updateFormData({ anastomosis_performed: true })
+                        } else {
+                          // Clear all anastomosis-related fields when unchecked
+                          updateFormData({
+                            anastomosis_performed: false,
+                            anastomosis_type: '',
+                            anastomosis_configuration: '',
+                            anastomosis_height_cm: '',
+                            anastomosis_location: '',
+                            anterior_resection_type: '',
+                            // Clear anastomotic leak tracking fields
+                            anastomotic_leak_occurred: false,
+                            anastomotic_leak_severity: '',
+                            anastomotic_leak_date: '',
+                            anastomotic_leak_days_post_surgery: '',
+                            anastomotic_leak_presentation: '',
+                            anastomotic_leak_clinical_signs: [],
+                            anastomotic_leak_ct_finding: '',
+                            anastomotic_leak_endoscopy_finding: '',
+                            anastomotic_leak_management: '',
+                            anastomotic_leak_reoperation: false,
+                            anastomotic_leak_reoperation_procedure: '',
+                            anastomotic_leak_reoperation_date: '',
+                            anastomotic_leak_icu_admission: false,
+                            anastomotic_leak_icu_los_days: '',
+                            anastomotic_leak_total_hospital_stay: '',
+                            anastomotic_leak_mortality: false,
+                            anastomotic_leak_resolved: false,
+                            anastomotic_leak_resolution_date: '',
+                            anastomotic_leak_defunctioning_stoma_present: false,
+                            anastomotic_leak_notes: ''
+                          })
+                        }
+                      }}
                       className="mr-2 h-4 w-4"
                     />
                     <span className="text-sm font-medium text-gray-700">Anastomosis Performed</span>
@@ -1378,7 +1413,20 @@ export function AddTreatmentModal({
                     <input
                       type="checkbox"
                       checked={formData.stoma_created}
-                      onChange={(e) => updateFormData({ stoma_created: e.target.checked })}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          updateFormData({ stoma_created: true })
+                        } else {
+                          // Clear all stoma-related fields when unchecked
+                          updateFormData({
+                            stoma_created: false,
+                            stoma_type: '',
+                            defunctioning_stoma: false,
+                            planned_reversal_date: '',
+                            stoma_closure_date: ''
+                          })
+                        }
+                      }}
                       className="mr-2 h-4 w-4"
                     />
                     <span className="text-sm font-medium text-gray-700">Stoma Created</span>
