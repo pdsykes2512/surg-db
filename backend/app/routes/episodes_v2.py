@@ -1450,13 +1450,13 @@ async def delete_treatment_from_episode(
         # Get treatment info before deletion
         existing_treatment = await treatments_collection.find_one({
             "treatment_id": treatment_id,
-            "episode_id": str(episode["_id"])
+            "episode_id": episode_id  # Use semantic episode_id, not ObjectId
         })
-        
+
         # Delete treatment from separate collection
         result = await treatments_collection.delete_one({
             "treatment_id": treatment_id,
-            "episode_id": str(episode["_id"])
+            "episode_id": episode_id  # Use semantic episode_id, not ObjectId
         })
         
         if result.deleted_count == 0:

@@ -15,6 +15,35 @@ This file tracks significant changes made to the IMPACT application (formerly su
 
 ---
 
+## 2026-01-07 - Fix Treatment Deletion Error
+
+**Changed by:** AI Session (Claude Code)
+
+**Issue:** When attempting to delete treatments from episodes, users received a 404 error: "Treatment {treatment_id} not found in episode {episode_id}". The deletion endpoint was using the wrong field to query treatments - it was using the MongoDB ObjectId (`str(episode["_id"])`) instead of the semantic episode ID (e.g., "E-42E227-01").
+
+**Changes:**
+- Fixed `delete_treatment_from_episode()` in episodes_v2.py to use `episode_id` (semantic ID) instead of `str(episode["_id"])` (ObjectId)
+- Changed line 1453: `"episode_id": str(episode["_id"])` → `"episode_id": episode_id`
+- Changed line 1459: `"episode_id": str(episode["_id"])` → `"episode_id": episode_id`
+- Now consistent with how treatments are created (line 906 uses semantic episode_id)
+
+**Files affected:**
+- [backend/app/routes/episodes_v2.py](backend/app/routes/episodes_v2.py#L1451-L1460)
+
+**Testing:**
+1. Open any episode with treatments
+2. Try to delete a treatment
+3. Treatment should be deleted successfully without 404 error
+4. Episode should update with last_modified_at timestamp
+5. Audit log should record the deletion
+
+**Notes:**
+- Root cause: Mismatch between how treatments are stored (with semantic episode_id) vs. how the delete query was searching (with ObjectId)
+- The create endpoint correctly uses `episode.get('episode_id')` but delete was using `str(episode["_id"])`
+- This affects the treatments collection which stores episode_id as a string field, not as a reference to the ObjectId
+
+---
+
 ## 2026-01-07 - Hide Surgical Intent Field for RTT and Reversal Surgeries
 
 **Changed by:** AI Session (Claude Code)
