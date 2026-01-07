@@ -989,50 +989,52 @@ export function AddTreatmentModal({
                   />
                 </div>
               )}
-              
-              {/* Surgical Intent (for cancer cases) */}
-              <div className="bg-purple-50 p-4 rounded-lg space-y-4">
-                <h4 className="text-sm font-semibold text-gray-900">Surgical Intent (Cancer Cases)</h4>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Intent
-                    </label>
-                    <SearchableSelect
-                      value={formData.surgical_intent}
-                      onChange={(value) => updateFormData({ surgical_intent: value })}
-                      options={[
-                        { value: '', label: 'Not specified' },
-                        { value: 'curative', label: 'Curative' },
-                        { value: 'palliative', label: 'Palliative' },
-                        { value: 'uncertain', label: 'Uncertain' }
-                      ]}
-                      getOptionValue={(opt) => opt.value}
-                      getOptionLabel={(opt) => opt.label}
-                      placeholder="Select intent..."
-                    />
-                  </div>
-                  {formData.surgical_intent === 'palliative' && (
+
+              {/* Surgical Intent (for cancer cases) - only for primary surgeries */}
+              {surgeryType === 'primary' && (
+                <div className="bg-purple-50 p-4 rounded-lg space-y-4">
+                  <h4 className="text-sm font-semibold text-gray-900">Surgical Intent (Cancer Cases)</h4>
+                  <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Palliative Reason
+                        Intent
                       </label>
                       <SearchableSelect
-                        value={formData.palliative_reason}
-                        onChange={(value) => updateFormData({ palliative_reason: value })}
+                        value={formData.surgical_intent}
+                        onChange={(value) => updateFormData({ surgical_intent: value })}
                         options={[
-                          { value: 'local_disease', label: 'Local Disease' },
-                          { value: 'distant_disease', label: 'Distant Disease' },
-                          { value: 'other', label: 'Other' }
+                          { value: '', label: 'Not specified' },
+                          { value: 'curative', label: 'Curative' },
+                          { value: 'palliative', label: 'Palliative' },
+                          { value: 'uncertain', label: 'Uncertain' }
                         ]}
                         getOptionValue={(opt) => opt.value}
                         getOptionLabel={(opt) => opt.label}
-                        placeholder="Select reason..."
+                        placeholder="Select intent..."
                       />
                     </div>
-                  )}
+                    {formData.surgical_intent === 'palliative' && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Palliative Reason
+                        </label>
+                        <SearchableSelect
+                          value={formData.palliative_reason}
+                          onChange={(value) => updateFormData({ palliative_reason: value })}
+                          options={[
+                            { value: 'local_disease', label: 'Local Disease' },
+                            { value: 'distant_disease', label: 'Distant Disease' },
+                            { value: 'other', label: 'Other' }
+                          ]}
+                          getOptionValue={(opt) => opt.value}
+                          getOptionLabel={(opt) => opt.label}
+                          placeholder="Select reason..."
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
                 </>
               )}
             </>
