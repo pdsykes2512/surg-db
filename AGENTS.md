@@ -9,14 +9,14 @@
 When restarting services, ALWAYS use systemd:
 ```bash
 # Restart backend
-sudo systemctl restart surg-db-backend
+sudo systemctl restart impact-backend
 
-# Restart frontend  
-sudo systemctl restart surg-db-frontend
+# Restart frontend
+sudo systemctl restart impact-frontend
 
 # Check status
-sudo systemctl status surg-db-backend
-sudo systemctl status surg-db-frontend
+sudo systemctl status impact-backend
+sudo systemctl status impact-frontend
 ```
 
 **NEVER use these commands:**
@@ -25,8 +25,8 @@ sudo systemctl status surg-db-frontend
 - ❌ `cd frontend && npm run dev` (except for development/debugging)
 
 **Service files location:** `/etc/systemd/system/`
-- `surg-db-backend.service` - Backend FastAPI (port 8000)
-- `surg-db-frontend.service` - Frontend Vite dev server (port 3000)
+- `impact-backend.service` - Backend FastAPI (port 8000)
+- `impact-frontend.service` - Frontend Vite dev server (port 3000)
 
 **Log locations:**
 - Backend: `~/.tmp/backend.log`

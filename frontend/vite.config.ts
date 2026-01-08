@@ -10,6 +10,7 @@ export default defineConfig({
     strictPort: true,
     allowedHosts: [
       'surg-db.vps',
+      'impact.vps',
       'localhost',
       '127.0.0.1'
     ],
