@@ -118,12 +118,41 @@ export function ReportsPage() {
   const [cosdData, setCosdData] = useState<COSDReport | null>(null)
   const [cosdYear, setCosdYear] = useState<number | null>(2024)
   const [loading, setLoading] = useState(true)
-  const [chartData, setChartData] = useState<{
-    outcomeTrends: any[]
-    complicationByCategory: any[]
-    surgeonPerformance: any[]
+  
+  interface OutcomeTrendData {
+    period: string
+    totalCases: number
+    complicationRate: number
+    mortality30d: number
+    mortality90d: number
+    readmissionRate: number
+    rttRate: number
+  }
+  
+  interface ComplicationCategoryData {
+    category: string
+    rate: number
+    count: number
+    total: number
+  }
+  
+  interface SurgeonPerformanceData {
+    surgeon: string
+    totalCases: number
+    complicationRate: number
+    mortality30d: number
+    readmissionRate: number
+    rttRate: number
+  }
+  
+  interface ChartData {
+    outcomeTrends: OutcomeTrendData[]
+    complicationByCategory: ComplicationCategoryData[]
+    surgeonPerformance: SurgeonPerformanceData[]
     loading: boolean
-  }>({
+  }
+  
+  const [chartData, setChartData] = useState<ChartData>({
     outcomeTrends: [],
     complicationByCategory: [],
     surgeonPerformance: [],
@@ -133,12 +162,15 @@ export function ReportsPage() {
 
   useEffect(() => {
     loadReports()
-    if (activeTab === 'outcomes') {
-      loadChartData()
-    }
   }, [activeTab])
 
-  const loadChartData = async () => {
+  useEffect(() => {
+    if (activeTab === 'quality') {
+      loadCOSDData()
+    }
+  }, [cosdYear, activeTab])
+
+  const loadChartData = async (surgeons: SurgeonPerformance[]) => {
     try {
       const API_URL = import.meta.env.VITE_API_URL || '/api'
       
@@ -155,8 +187,8 @@ export function ReportsPage() {
       const trendsData = await trendsRes.json()
       const complicationsData = await complicationsRes.json()
 
-      // Transform surgeon performance data  
-      const surgeonData = surgeonPerf
+      // Transform surgeon performance data using passed surgeons array
+      const surgeonData: SurgeonPerformanceData[] = surgeons
         .filter(s => s.total_surgeries >= 10) // Only show surgeons with 10+ cases
         .map(s => ({
           surgeon: s._id,
@@ -179,16 +211,6 @@ export function ReportsPage() {
     }
   }
 
-  useEffect(() => {
-    loadReports()
-  }, [activeTab])
-
-  useEffect(() => {
-    if (activeTab === 'quality') {
-      loadCOSDData()
-    }
-  }, [cosdYear, activeTab])
-
   const loadReports = async () => {
     try {
       setLoading(true)
@@ -198,10 +220,11 @@ export function ReportsPage() {
           apiService.reports.surgeonPerformance()
         ])
         setSummary(summaryRes.data)
-        setSurgeonPerf(surgeonRes.data.surgeons || [])
+        const surgeons = surgeonRes.data.surgeons || []
+        setSurgeonPerf(surgeons)
         
-        // Load chart data after surgeon data is available
-        setTimeout(() => loadChartData(), 100)
+        // Load chart data immediately after surgeon data is set
+        loadChartData(surgeons)
       } else {
         // Use /api for relative URLs (uses Vite proxy)
         const API_URL = import.meta.env.VITE_API_URL || '/api'

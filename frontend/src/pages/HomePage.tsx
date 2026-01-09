@@ -20,11 +20,14 @@ export function HomePage() {
   })
   const [recentActivity, setRecentActivity] = useState<any[]>([])
   const [activityLoading, setActivityLoading] = useState(true)
-  const [chartData, setChartData] = useState<{
-    monthlyVolume: any[]
-    treatmentDistribution: any[]
+  
+  interface ChartData {
+    monthlyVolume: Array<{ month: string; surgeries: number }>
+    treatmentDistribution: Array<{ name: string; value: number }>
     loading: boolean
-  }>({
+  }
+  
+  const [chartData, setChartData] = useState<ChartData>({
     monthlyVolume: [],
     treatmentDistribution: [],
     loading: true
