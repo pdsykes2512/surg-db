@@ -15,6 +15,137 @@ This file tracks significant changes made to the IMPACT application (formerly su
 
 ---
 
+## 2026-01-09 - Interactive Data Visualization with Charts
+
+**Changed by:** AI Session (GitHub Copilot)
+
+**Issue:** The IMPACT system needed interactive data visualization to help users identify trends and patterns in surgical outcomes. The existing reports page only showed tables and summary statistics without visual representations.
+
+**Changes:**
+
+**Created 6 Reusable Chart Components:**
+- `ChartWrapper` - Base wrapper providing consistent styling, loading states, empty states, and export placeholders
+- `OutcomeTrendsChart` - Line chart for visualizing outcome metrics over time (complications, mortality, readmissions, RTT)
+- `ComplicationRateChart` - Bar chart with color-coded rates (green=low, yellow=moderate, red=high)
+- `SurgeonPerformanceChart` - Comparative bar charts for surgeon metrics with metric selector
+- `TreatmentDistributionChart` - Pie chart showing treatment type distribution
+- `MonthlyVolumeChart` - Area chart displaying surgical volume trends
+
+**Added Backend API Endpoints:**
+- `GET /api/reports/outcome-trends` - Time-series data for outcome metrics
+  - Parameters: `period` (monthly/quarterly/yearly), `start_year`, `end_year`
+  - Returns quarterly trends for complications, mortality (30/90 day), readmissions, and RTT rates
+- `GET /api/reports/complication-by-category` - Complication breakdown
+  - Groups complications by urgency, complexity, and surgical approach
+  - Returns rate, count, and total for each category
+
+**Enhanced HomePage Dashboard:**
+- Added `MonthlyVolumeChart` - Shows last 4 months of surgical volume as area chart
+- Added `TreatmentDistributionChart` - Shows breakdown of treatment types as pie chart
+- Charts automatically update when stats data loads
+- Placed in 2-column responsive grid below existing stat cards
+
+**Enhanced ReportsPage (Outcomes Tab):**
+- Added `OutcomeTrendsChart` - Displays quarterly trends for all outcome metrics (2023-2025)
+- Added `ComplicationRateChart` - Shows complication rates by surgical urgency
+- Added `SurgeonPerformanceChart` - Comparative metrics with interactive selector:
+  - Metric buttons: Complications, Mortality, Readmissions, RTT
+  - Filters to surgeons with 10+ cases
+  - Color-coded bars based on clinical significance
+- Charts load asynchronously with dedicated loading states
+- Positioned above the surgeon performance table for better context
+
+**Updated STYLE_GUIDE.md:**
+- Added comprehensive "Data Visualizations" section (200+ lines)
+- Documented all available chart components and their usage
+- Provided examples for each chart type
+- Defined color standards (green=good, red=concerning)
+- Included patterns for interactive metric selection
+- Added tooltips, data fetching, and best practices
+
+**Files affected:**
+- **New Files Created:**
+  - `frontend/src/components/charts/ChartWrapper.tsx`
+  - `frontend/src/components/charts/OutcomeTrendsChart.tsx`
+  - `frontend/src/components/charts/ComplicationRateChart.tsx`
+  - `frontend/src/components/charts/SurgeonPerformanceChart.tsx`
+  - `frontend/src/components/charts/TreatmentDistributionChart.tsx`
+  - `frontend/src/components/charts/MonthlyVolumeChart.tsx`
+  - `frontend/src/components/charts/index.ts`
+
+- **Modified Files:**
+  - `backend/app/routes/reports.py` - Added 2 new API endpoints
+  - `frontend/src/pages/HomePage.tsx` - Integrated 2 charts
+  - `frontend/src/pages/ReportsPage.tsx` - Integrated 3 chart sections with metric selector
+  - `STYLE_GUIDE.md` - Added data visualization patterns and standards
+
+**Testing:**
+1. **Backend API:**
+   ```bash
+   # Test outcome trends endpoint
+   curl -H "Authorization: Bearer <token>" \
+     "http://localhost:8000/api/reports/outcome-trends?period=quarterly&start_year=2023&end_year=2025"
+   
+   # Test complication breakdown endpoint
+   curl -H "Authorization: Bearer <token>" \
+     "http://localhost:8000/api/reports/complication-by-category"
+   ```
+
+2. **Frontend Build:**
+   ```bash
+   cd frontend && npm run build
+   # Should build successfully without errors
+   # Bundle size: 1.01 MB (acceptable for feature-rich app)
+   ```
+
+3. **Visual Testing:**
+   - Navigate to Dashboard (HomePage)
+     - Verify monthly volume chart displays last 4 months
+     - Verify treatment distribution pie chart shows correct breakdown
+   - Navigate to Reports page, Outcomes tab
+     - Verify outcome trends chart shows quarterly data
+     - Verify complication rate chart shows data by urgency
+     - Verify surgeon performance chart updates when metric buttons clicked
+     - Test metric selector: Complications, Mortality, Readmissions, RTT
+   - Test on different screen sizes (mobile, tablet, desktop)
+   - Verify loading states appear while data loads
+   - Verify empty states appear when no data available
+
+**Notes:**
+- **Library Used:** recharts v2.15.0 (already installed in package.json)
+- **Color Scheme:** Consistent across all charts
+  - Green (#10b981) - Good/low rates
+  - Yellow/Amber (#f59e0b) - Moderate/acceptable rates
+  - Red (#ef4444) - High/concerning rates
+  - Blue (#3b82f6) - Neutral/volume metrics
+- **Responsive Design:** All charts use ResponsiveContainer and work on mobile/tablet/desktop
+- **Performance:** Charts render efficiently with reasonable data volumes
+- **Tooltips:** All charts include custom tooltips with formatted data
+- **Loading States:** All charts show loading spinner while data is being fetched
+- **Empty States:** All charts show helpful message when no data available
+- **Future Enhancements:**
+  - Export functionality (PNG/SVG) - placeholders in place
+  - Interactive filters (date range, cancer type, surgeon)
+  - Customizable dashboard widgets with user preferences
+  - Additional chart types as needed
+
+**Key Improvements:**
+- ✅ Users can now **visualize trends** instead of just reading tables
+- ✅ **Interactive metric selection** allows comparison of different outcomes
+- ✅ **Color-coded visualizations** make it easy to identify concerning trends
+- ✅ **Responsive design** works on all devices
+- ✅ **Professional appearance** suitable for clinical audit presentations
+
+**Priority Delivered:**
+- ✅ Visualize trends and patterns in surgical outcomes
+- ✅ Create interactive dashboards
+- ✅ Support multiple chart types
+- ✅ Outcome trends charts
+- ✅ Complication rate visualization
+- ✅ Surgeon performance charts
+
+---
+
 ## 2026-01-07 - Comprehensive System Documentation Created
 
 **Changed by:** AI Session (Claude Code)

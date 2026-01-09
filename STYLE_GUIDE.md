@@ -929,4 +929,228 @@ When creating or updating components:
 
 ---
 
-*Last updated: 2025-12-28*
+## Data Visualizations
+
+### Chart Components
+
+The application uses **recharts** for data visualization. All charts are built with reusable components in `frontend/src/components/charts/`.
+
+### Chart Types Available
+
+1. **LineChart** - Outcome trends over time
+2. **BarChart** - Comparative metrics (complications, surgeon performance)
+3. **PieChart** - Distribution data (treatment types)
+4. **AreaChart** - Volume trends (monthly surgeries)
+
+### ChartWrapper Component
+
+All charts use the ChartWrapper component which provides:
+- Consistent styling and padding
+- Loading states
+- Empty states with helpful messages
+- Optional export functionality
+- Responsive sizing
+
+```tsx
+import { ChartWrapper } from '../components/charts'
+
+<ChartWrapper
+  title="Chart Title"
+  subtitle="Optional subtitle"
+  loading={isLoading}
+  empty={data.length === 0}
+  emptyMessage="No data available"
+  height={400}
+>
+  {/* Recharts component */}
+</ChartWrapper>
+```
+
+### Chart Styling Standards
+
+**Colors:**
+- Use consistent color palette across all charts
+- Color-code metrics based on clinical significance:
+  - Green (#10b981) - Good/low rates
+  - Yellow/Amber (#f59e0b) - Moderate/acceptable rates
+  - Red (#ef4444) - High/concerning rates
+- Use blue (#3b82f6) for neutral/volume metrics
+
+**Typography:**
+- Chart titles: `text-lg font-semibold text-gray-900`
+- Chart subtitles: `text-sm text-gray-500`
+- Axis labels: `fontSize: '12px'`
+- Tooltips: White background with border and shadow
+
+**Sizing:**
+- Default height: 300-400px
+- Use `ResponsiveContainer` from recharts
+- Set explicit height via props: `height={400}`
+
+### Using Charts
+
+**Example: Outcome Trends**
+```tsx
+import { OutcomeTrendsChart } from '../components/charts'
+
+<OutcomeTrendsChart
+  data={[
+    {
+      period: "Q1 2024",
+      complicationRate: 15.2,
+      mortality30d: 2.1,
+      mortality90d: 3.5,
+      readmissionRate: 8.3,
+      rttRate: 4.2
+    },
+    // ...more periods
+  ]}
+  loading={false}
+  height={400}
+/>
+```
+
+**Example: Complication Rates**
+```tsx
+import { ComplicationRateChart } from '../components/charts'
+
+<ComplicationRateChart
+  data={[
+    {
+      category: "Elective",
+      rate: 12.5,
+      count: 45,
+      total: 360
+    },
+    // ...more categories
+  ]}
+  loading={false}
+  height={350}
+  title="Complication Rates by Urgency"
+  subtitle="Comparison across urgency categories"
+/>
+```
+
+**Example: Surgeon Performance**
+```tsx
+import { SurgeonPerformanceChart } from '../components/charts'
+
+<SurgeonPerformanceChart
+  data={[
+    {
+      surgeon: "John Smith",
+      totalCases: 45,
+      complicationRate: 13.2,
+      mortality30d: 1.8,
+      readmissionRate: 7.5,
+      rttRate: 3.1
+    },
+    // ...more surgeons
+  ]}
+  loading={false}
+  height={400}
+  metric="complicationRate" // or "mortality30d", "readmissionRate", "rttRate"
+/>
+```
+
+### Chart Integration Patterns
+
+**Dashboard Cards with Charts:**
+```tsx
+<div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+  <MonthlyVolumeChart data={volumeData} loading={loading} height={300} />
+  <TreatmentDistributionChart data={distData} loading={loading} height={300} />
+</div>
+```
+
+**Interactive Metric Selection:**
+```tsx
+const [selectedMetric, setSelectedMetric] = useState<'complicationRate' | 'mortality30d'>('complicationRate')
+
+<Card className="p-4">
+  <div className="flex items-center justify-between mb-4">
+    <h3 className="text-lg font-semibold">Performance Comparison</h3>
+    <div className="flex gap-2">
+      <Button
+        size="small"
+        variant={selectedMetric === 'complicationRate' ? 'primary' : 'outline'}
+        onClick={() => setSelectedMetric('complicationRate')}
+      >
+        Complications
+      </Button>
+      <Button
+        size="small"
+        variant={selectedMetric === 'mortality30d' ? 'primary' : 'outline'}
+        onClick={() => setSelectedMetric('mortality30d')}
+      >
+        Mortality
+      </Button>
+    </div>
+  </div>
+</Card>
+<SurgeonPerformanceChart metric={selectedMetric} ... />
+```
+
+### Data Fetching for Charts
+
+**Pattern 1: Transform existing data**
+```tsx
+const chartData = stats.monthlyEpisodes.map(item => ({
+  month: item.month,
+  surgeries: item.count
+}))
+```
+
+**Pattern 2: Fetch from dedicated endpoint**
+```tsx
+const response = await fetch('/api/reports/outcome-trends?period=quarterly')
+const data = await response.json()
+setChartData(data.trends)
+```
+
+### Tooltips
+
+All charts should use custom tooltips:
+```tsx
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
+        <p className="font-semibold text-gray-900 mb-2">{label}</p>
+        {payload.map((entry: any, index: number) => (
+          <p key={index} className="text-sm" style={{ color: entry.color }}>
+            {entry.name}: {entry.value.toFixed(2)}%
+          </p>
+        ))}
+      </div>
+    )
+  }
+  return null
+}
+
+<Tooltip content={<CustomTooltip />} />
+```
+
+### Best Practices
+
+1. **Always provide loading states** - Charts should show loading indicator while data is being fetched
+2. **Handle empty data gracefully** - Show helpful message when no data is available
+3. **Use meaningful labels** - Axis labels, legend entries, and tooltips should be clear
+4. **Keep it simple** - Don't overwhelm users with too many metrics on one chart
+5. **Color consistency** - Use the same colors for the same metrics across all charts
+6. **Responsive design** - Charts should work on mobile, tablet, and desktop
+7. **Performance** - Avoid rendering too many data points (limit to reasonable ranges)
+
+### Available Components
+
+All chart components are exported from `frontend/src/components/charts/index.ts`:
+- `ChartWrapper`
+- `OutcomeTrendsChart`
+- `ComplicationRateChart`
+- `SurgeonPerformanceChart`
+- `TreatmentDistributionChart`
+- `MonthlyVolumeChart`
+
+---
+
+*Last updated: 2026-01-09*
