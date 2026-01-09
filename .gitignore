@@ -1,6 +1,12 @@
 # Temporary files (regenerated intermediates)
 .tmp/
 
+# Node modules and frontend build artifacts
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
 # Data files (exports and sensitive data)
 data/
 *.csv
