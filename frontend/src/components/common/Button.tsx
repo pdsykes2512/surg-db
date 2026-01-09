@@ -1,13 +1,58 @@
 import { ButtonHTMLAttributes, ReactNode } from 'react'
 
+/**
+ * Props for the Button component
+ * Extends standard HTML button attributes with custom styling and accessibility features
+ */
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  /** Visual style variant of the button */
   variant?: 'primary' | 'secondary' | 'success' | 'danger' | 'outline'
+  /** Size of the button (all sizes meet WCAG 44px minimum touch target) */
   size?: 'small' | 'medium' | 'large'
+  /** Button content (text, icons, or other elements) */
   children: ReactNode
+  /** Optional icon to display before button text */
   icon?: ReactNode
-  keyboardHint?: string // Optional keyboard shortcut hint (e.g., "⌘K" or "Ctrl+K")
+  /** Optional keyboard shortcut hint displayed on desktop (e.g., "⌘K" or "Ctrl+K") */
+  keyboardHint?: string
 }
 
+/**
+ * Button Component
+ * 
+ * Accessible, styled button component with multiple variants and sizes.
+ * Follows WCAG 2.1 Level AA accessibility standards with proper focus indicators
+ * and minimum 44×44px touch targets.
+ * 
+ * @component
+ * @example
+ * ```tsx
+ * // Primary button
+ * <Button variant="primary" onClick={handleSave}>
+ *   Save
+ * </Button>
+ * 
+ * // Button with icon and keyboard hint
+ * <Button 
+ *   variant="success" 
+ *   icon={<SaveIcon />}
+ *   keyboardHint="⌘S"
+ *   onClick={handleSave}
+ * >
+ *   Save Patient
+ * </Button>
+ * 
+ * // Danger button (destructive action)
+ * <Button variant="danger" onClick={handleDelete}>
+ *   Delete
+ * </Button>
+ * 
+ * // Disabled button
+ * <Button disabled={isLoading}>
+ *   Submit
+ * </Button>
+ * ```
+ */
 export function Button({
   variant = 'primary',
   size = 'medium',
