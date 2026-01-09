@@ -4,6 +4,11 @@ import { Card } from '../components/common/Card'
 import { Button } from '../components/common/Button'
 import { Table, TableHeader, TableBody, TableRow, TableHeadCell, TableCell } from '../components/common/Table'
 import { apiService } from '../services/api'
+import { 
+  OutcomeTrendsChart, 
+  ComplicationRateChart, 
+  SurgeonPerformanceChart 
+} from '../components/charts'
 
 interface SummaryReport {
   total_surgeries: number
@@ -113,6 +118,66 @@ export function ReportsPage() {
   const [cosdData, setCosdData] = useState<COSDReport | null>(null)
   const [cosdYear, setCosdYear] = useState<number | null>(2024)
   const [loading, setLoading] = useState(true)
+  const [chartData, setChartData] = useState<{
+    outcomeTrends: any[]
+    complicationByCategory: any[]
+    surgeonPerformance: any[]
+    loading: boolean
+  }>({
+    outcomeTrends: [],
+    complicationByCategory: [],
+    surgeonPerformance: [],
+    loading: true
+  })
+  const [selectedMetric, setSelectedMetric] = useState<'complicationRate' | 'mortality30d' | 'readmissionRate' | 'rttRate'>('complicationRate')
+
+  useEffect(() => {
+    loadReports()
+    if (activeTab === 'outcomes') {
+      loadChartData()
+    }
+  }, [activeTab])
+
+  const loadChartData = async () => {
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || '/api'
+      
+      // Fetch outcome trends and complication breakdown
+      const [trendsRes, complicationsRes] = await Promise.all([
+        fetch(`${API_URL}/reports/outcome-trends?period=quarterly&start_year=2023&end_year=2025`, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        }),
+        fetch(`${API_URL}/reports/complication-by-category`, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        })
+      ])
+
+      const trendsData = await trendsRes.json()
+      const complicationsData = await complicationsRes.json()
+
+      // Transform surgeon performance data  
+      const surgeonData = surgeonPerf
+        .filter(s => s.total_surgeries >= 10) // Only show surgeons with 10+ cases
+        .map(s => ({
+          surgeon: s._id,
+          totalCases: s.total_surgeries,
+          complicationRate: s.complication_rate,
+          mortality30d: s.mortality_30d_rate,
+          readmissionRate: s.readmission_rate,
+          rttRate: s.return_to_theatre_rate
+        }))
+
+      setChartData({
+        outcomeTrends: trendsData.trends || [],
+        complicationByCategory: complicationsData.byUrgency || [],
+        surgeonPerformance: surgeonData,
+        loading: false
+      })
+    } catch (error) {
+      console.error('Failed to load chart data:', error)
+      setChartData(prev => ({ ...prev, loading: false }))
+    }
+  }
 
   useEffect(() => {
     loadReports()
@@ -134,6 +199,9 @@ export function ReportsPage() {
         ])
         setSummary(summaryRes.data)
         setSurgeonPerf(surgeonRes.data.surgeons || [])
+        
+        // Load chart data after surgeon data is available
+        setTimeout(() => loadChartData(), 100)
       } else {
         // Use /api for relative URLs (uses Vite proxy)
         const API_URL = import.meta.env.VITE_API_URL || '/api'
@@ -620,6 +688,72 @@ export function ReportsPage() {
               </p>
             </Card>
           )}
+
+          {/* Data Visualizations */}
+          <div className="space-y-6">
+            {/* Outcome Trends Over Time */}
+            <OutcomeTrendsChart
+              data={chartData.outcomeTrends}
+              loading={chartData.loading}
+              height={400}
+            />
+
+            {/* Complication Rates by Category */}
+            <ComplicationRateChart
+              data={chartData.complicationByCategory}
+              loading={chartData.loading}
+              height={350}
+              title="Complication Rates by Surgical Urgency"
+              subtitle="Comparison of complication rates across urgency categories"
+            />
+
+            {/* Surgeon Performance Comparison */}
+            {chartData.surgeonPerformance.length > 0 && (
+              <div className="space-y-4">
+                <Card className="p-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">Surgeon Performance Comparison</h3>
+                    <div className="flex gap-2">
+                      <Button
+                        size="small"
+                        variant={selectedMetric === 'complicationRate' ? 'primary' : 'outline'}
+                        onClick={() => setSelectedMetric('complicationRate')}
+                      >
+                        Complications
+                      </Button>
+                      <Button
+                        size="small"
+                        variant={selectedMetric === 'mortality30d' ? 'primary' : 'outline'}
+                        onClick={() => setSelectedMetric('mortality30d')}
+                      >
+                        Mortality
+                      </Button>
+                      <Button
+                        size="small"
+                        variant={selectedMetric === 'readmissionRate' ? 'primary' : 'outline'}
+                        onClick={() => setSelectedMetric('readmissionRate')}
+                      >
+                        Readmissions
+                      </Button>
+                      <Button
+                        size="small"
+                        variant={selectedMetric === 'rttRate' ? 'primary' : 'outline'}
+                        onClick={() => setSelectedMetric('rttRate')}
+                      >
+                        RTT
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+                <SurgeonPerformanceChart
+                  data={chartData.surgeonPerformance}
+                  loading={chartData.loading}
+                  height={400}
+                  metric={selectedMetric}
+                />
+              </div>
+            )}
+          </div>
 
           {/* Surgeon Performance */}
           {surgeonPerf.length > 0 && (

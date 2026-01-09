@@ -5,6 +5,7 @@ import { PageHeader } from '../components/common/PageHeader'
 import { Card } from '../components/common/Card'
 import { formatDate } from '../utils/formatters'
 import api from '../services/api'
+import { MonthlyVolumeChart, TreatmentDistributionChart } from '../components/charts'
 
 export function HomePage() {
   const { user: _user } = useAuth()
@@ -19,6 +20,15 @@ export function HomePage() {
   })
   const [recentActivity, setRecentActivity] = useState<any[]>([])
   const [activityLoading, setActivityLoading] = useState(true)
+  const [chartData, setChartData] = useState<{
+    monthlyVolume: any[]
+    treatmentDistribution: any[]
+    loading: boolean
+  }>({
+    monthlyVolume: [],
+    treatmentDistribution: [],
+    loading: true
+  })
 
   // Helper to check if treatment is a surgery type
   const isSurgeryType = (treatmentType: string) => {
@@ -112,6 +122,47 @@ export function HomePage() {
     
     fetchRecentActivity()
   }, [])
+
+  // Fetch chart data
+  useEffect(() => {
+    const fetchChartData = async () => {
+      try {
+        // Transform monthly episodes data for chart
+        const monthlyVolumeData = stats.monthlyEpisodes.map(item => ({
+          month: item.month,
+          surgeries: item.count
+        })).reverse() // Reverse to show oldest to newest
+
+        // Transform treatment breakdown for pie chart
+        const treatmentDistData = stats.treatmentBreakdown.map(item => {
+          // Clean up treatment type names for display
+          let displayName = item.treatment_type
+          if (displayName === 'surgery_primary') displayName = 'Primary Surgery'
+          else if (displayName === 'surgery_rtt') displayName = 'Return to Theatre'
+          else if (displayName === 'surgery_reversal') displayName = 'Reversal Surgery'
+          else displayName = displayName.charAt(0).toUpperCase() + displayName.slice(1)
+          
+          return {
+            name: displayName,
+            value: item.count
+          }
+        })
+
+        setChartData({
+          monthlyVolume: monthlyVolumeData,
+          treatmentDistribution: treatmentDistData,
+          loading: false
+        })
+      } catch (error) {
+        console.error('Failed to prepare chart data:', error)
+        setChartData(prev => ({ ...prev, loading: false }))
+      }
+    }
+
+    if (!stats.loading) {
+      fetchChartData()
+    }
+  }, [stats])
 
   const handleActivityClick = (activity: any) => {
     // Navigate based on entity type and pass state to open appropriate modal
@@ -384,6 +435,20 @@ export function HomePage() {
             </div>
           )}
         </Card>
+      </div>
+
+      {/* Data Visualizations Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        <MonthlyVolumeChart
+          data={chartData.monthlyVolume}
+          loading={chartData.loading}
+          height={300}
+        />
+        <TreatmentDistributionChart
+          data={chartData.treatmentDistribution}
+          loading={chartData.loading}
+          height={300}
+        />
       </div>
     </div>
   )
