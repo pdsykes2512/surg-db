@@ -603,6 +603,157 @@ python3 execution/dev-tools/verify_test_data.py
 - File states it's "mirrored across CLAUDE.md, AGENTS.md, CODEX.md and GEMINI.md" - keeping actual file in root ensures all AI tools can find it
 - All documentation references properly updated to avoid broken links
 - Services continue to run without interruption - no restarts required
+## 2026-01-09 - Removed Three Chart Visualizations from Reports Page
+
+**Changed by:** AI Session (Claude Code)
+
+**Issue:** User requested removal of three chart visualizations from the Reports & Analytics page: surgery urgency breakdown pie chart, ASA grade stratification bar chart, and surgeon performance comparison bar chart.
+
+**Changes:**
+- **Removed charts:**
+  - Surgery urgency breakdown pie chart (kept the summary cards)
+  - ASA grade stratification bar chart (kept the color-coded cards and description)
+  - Surgeon performance comparison bar chart (kept the detailed performance table)
+- **Cleaned up imports:**
+  - Removed unused Recharts components: `PieChart`, `Pie`, `Radar`, `RadarChart`, `PolarGrid`, `PolarAngleAxis`, `PolarRadiusAxis`
+  - Kept only the components still in use: `LineChart`, `Line`, `BarChart`, `Bar`, `Cell`
+- **Preserved data displays:**
+  - Urgency breakdown cards remain for quick statistics
+  - ASA grade color-coded cards with risk descriptions remain
+  - Surgeon performance detailed table with all metrics remains
+
+**Files affected:**
+- [frontend/src/pages/ReportsPage.tsx](frontend/src/pages/ReportsPage.tsx) - Removed 3 chart sections and unused imports
+
+**Testing:**
+1. Navigate to Reports & Analytics page → Outcomes tab
+2. Verify yearly outcomes trends chart still displays (kept)
+3. Verify urgency breakdown shows cards only (no pie chart)
+4. Verify ASA grade shows cards only (no bar chart)
+5. Verify surgeon performance shows table only (no bar chart)
+6. Confirm no console errors or rendering issues
+7. Frontend service restarted successfully
+
+**Notes:**
+- Data visualizations retained: Yearly outcomes trends (line charts), COSD completeness (bar chart)
+- Data displays retained: Urgency cards, ASA cards, surgeon performance table
+- Removed visualizations were redundant with existing card/table displays
+- Page loads faster with fewer chart components
+- Cleaner, more focused reports page
+
+---
+
+## 2026-01-09 - Extended Yearly Outcomes Trends to 20 Years
+
+**Changed by:** AI Session (Claude Code)
+
+**Issue:** The yearly outcomes trends chart only showed 3 years of data (2023-2025). User requested the chart be extended to show 20 years of historical data for long-term trend analysis.
+
+**Changes:**
+- **Backend ([reports.py](backend/app/routes/reports.py#L82-L111)):**
+  - Replaced hardcoded year splits (2023, 2024, 2025) with dynamic calculation
+  - Now automatically includes last 20 years based on current year (e.g., 2006-2025 in 2026)
+  - Creates `treatments_by_year` dictionary dynamically for any year in range
+  - Calculates metrics for all 20 years and returns in `yearly_breakdown`
+  - Scalable solution that will automatically include new years as time progresses
+- **Frontend ([ReportsPage.tsx](frontend/src/pages/ReportsPage.tsx#L559-L620)):**
+  - Filters out years with zero surgeries for cleaner display
+  - Sorts years chronologically (ascending order)
+  - Dynamically calculates date range for chart title (e.g., "Outcomes Trends (2010-2025)")
+  - Added angled x-axis labels (-45°) to accommodate more year labels without overlap
+  - Increased x-axis height to 70px to fit angled labels
+  - Added visible dots (radius 3) on line charts for easier data point identification
+  - Chart automatically adjusts to show only years with actual data
+
+**Files affected:**
+- [backend/app/routes/reports.py](backend/app/routes/reports.py#L82-L138) - Dynamic 20-year calculation
+- [frontend/src/pages/ReportsPage.tsx](frontend/src/pages/ReportsPage.tsx#L559-L620) - Chart rendering improvements
+
+**Testing:**
+1. Navigate to Reports & Analytics page → Outcomes tab
+2. Verify yearly trends chart shows full historical range (e.g., "Outcomes Trends (2010-2025)")
+3. Check that x-axis labels are angled and readable
+4. Confirm data points are visible as dots on the lines
+5. Hover over data points to verify tooltip values
+6. Verify years with no data are excluded from display
+7. Both services restarted successfully with no errors
+
+**Notes:**
+- Chart now dynamically adapts to available data range
+- Will automatically include new years as data is added
+- Empty years (no surgeries) are filtered out to prevent cluttered display with zero values
+- 20-year span provides sufficient historical context for long-term outcome trend analysis
+- Angled labels and visible dots improve readability when displaying many years
+- Backend automatically recalculates range each time endpoint is called
+- Future-proof: No need to manually update code each year
+
+---
+
+## 2026-01-09 - Interactive Data Visualization Charts Added
+
+**Changed by:** AI Session (Claude Code)
+
+**Issue:** The Reports & Analytics page displayed data in tables and cards, but lacked interactive chart visualizations for trend analysis and comparative insights. The TODO.md listed "Data visualization with charts (Chart.js/D3)" as a future enhancement that needed to be implemented.
+
+**Changes:**
+- Added comprehensive chart visualizations to ReportsPage.tsx using Recharts library (already installed v2.15.0)
+- **Yearly Outcomes Trends**: Dual line charts showing:
+  - Complications, readmissions, and RTT rates over time (2023-2025)
+  - Mortality rates (30-day, 90-day) and ICU escalation over time
+  - Color-coded lines for easy metric distinction
+- **Surgery Urgency Breakdown**:
+  - Pie chart showing distribution of elective/urgent/emergency cases
+  - Interactive with percentage labels and tooltips
+  - Green/amber/red color scheme matching urgency level
+- **ASA Grade Stratification**:
+  - Color-coded bar chart showing case distribution across ASA I-V
+  - Each bar color-matched to risk level (green→red)
+  - Retains existing summary cards below chart
+- **Surgeon Performance Comparison**:
+  - Multi-metric bar chart comparing surgeons on key outcomes
+  - Shows complication rate, readmission rate, RTT rate, 30-day mortality
+  - Angled x-axis labels for readability with many surgeons
+  - Complements existing detailed performance table
+- **COSD Completeness**:
+  - Bar chart showing data completeness by COSD category
+  - Color-coded bars: green (≥90%), amber (70-89%), orange (50-69%), red (<50%)
+  - Domain set to 0-100% for consistent scale
+- All charts are:
+  - Fully responsive using ResponsiveContainer
+  - Interactive with hover tooltips showing formatted values
+  - Include legends for multi-series charts
+  - Grid lines for easier value reading
+  - Proper axis labels with units
+
+**Files affected:**
+- [frontend/src/pages/ReportsPage.tsx](frontend/src/pages/ReportsPage.tsx) - Added Recharts imports and 5 chart sections
+- [TODO.md](TODO.md#L274-L280) - Marked data visualization feature as complete with details
+
+**Testing:**
+1. Navigate to Reports & Analytics page
+2. **Outcomes Tab:**
+   - Verify yearly trends charts show 2023-2025 data with correct colors
+   - Check urgency pie chart displays with percentages
+   - Confirm ASA bar chart shows color-coded grades
+   - Test surgeon performance chart compares all surgeons
+3. **Data Quality Tab:**
+   - Verify COSD completeness bar chart shows all categories color-coded
+4. Hover over chart elements to verify tooltips display formatted values
+5. Test on different screen sizes to verify responsive behavior
+6. Frontend service restarted successfully with no compilation errors
+
+**Notes:**
+- Used **Recharts** instead of Chart.js or D3 (already installed and React-friendly)
+- Recharts dependencies automatically optimized by Vite on first load
+- Charts maintain existing color scheme from STYLE_GUIDE.md:
+  - Outcomes: Lower is better (green <15%, amber 15-25%, red >25% for complications)
+  - Data quality: Higher is better (green ≥90%, amber 70-89%, red <50%)
+- All charts follow responsive design patterns from STYLE_GUIDE.md
+- Chart heights set to 300-400px for optimal viewing without excessive scrolling
+- Line charts use strokeWidth={2} for better visibility
+- Angled x-axis labels (-45°) prevent overlap when many data points
+- Existing tables and cards retained for detailed data access
+- Future enhancement: Could add chart export functionality (PNG/SVG)
 
 ---
 

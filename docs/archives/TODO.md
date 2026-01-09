@@ -271,7 +271,13 @@
   - [ ] Update RECENT_CHANGES.md with surveillance feature documentation
 - [ ] Multi-language support
 - [ ] Advanced search with filters
-- [ ] Data visualization with charts (Chart.js/D3)
+- ✅ **Data visualization with charts (Recharts)** (Complete - 2026-01-09)
+  - ✅ Yearly outcomes trends line charts (complications, mortality, ICU escalation)
+  - ✅ Surgery urgency breakdown pie chart (elective/urgent/emergency)
+  - ✅ ASA grade stratification bar chart (color-coded by risk level)
+  - ✅ Surgeon performance comparison bar chart (multi-metric)
+  - ✅ COSD completeness bar chart by category (color-coded)
+  - ✅ All charts responsive with interactive tooltips and legends
 - [ ] Real-time collaboration features
 - ✅ Audit trail for all data changes (comprehensive audit logging implemented)
 - [ ] Version control for episode records

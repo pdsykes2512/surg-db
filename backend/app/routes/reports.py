@@ -79,10 +79,12 @@ async def get_summary_report() -> Dict[str, Any]:
             "median_length_of_stay_days": round(median_los, 2)
         }
     
-    # Split treatments by year
-    treatments_2023 = []
-    treatments_2024 = []
-    treatments_2025 = []
+    # Split treatments by year (last 20 years)
+    current_year = datetime.utcnow().year
+    start_year = current_year - 19  # 20 years of data (e.g., 2006-2025)
+
+    # Create a dictionary to hold treatments by year
+    treatments_by_year = {year: [] for year in range(start_year, current_year + 1)}
 
     for t in all_treatments:
         treatment_date = t.get('treatment_date')
@@ -94,22 +96,19 @@ async def get_summary_report() -> Dict[str, Any]:
                 else:
                     dt = treatment_date
 
-                if dt.year == 2023:
-                    treatments_2023.append(t)
-                elif dt.year == 2024:
-                    treatments_2024.append(t)
-                elif dt.year == 2025:
-                    treatments_2025.append(t)
+                # Add treatment to the appropriate year if within our 20-year range
+                if start_year <= dt.year <= current_year:
+                    treatments_by_year[dt.year].append(t)
             except:
                 pass
-    
+
     # Calculate overall metrics
     overall_metrics = calculate_metrics(all_treatments)
-    
-    # Calculate yearly metrics
-    metrics_2023 = calculate_metrics(treatments_2023)
-    metrics_2024 = calculate_metrics(treatments_2024)
-    metrics_2025 = calculate_metrics(treatments_2025)
+
+    # Calculate yearly metrics for all years
+    yearly_breakdown = {}
+    for year in range(start_year, current_year + 1):
+        yearly_breakdown[str(year)] = calculate_metrics(treatments_by_year[year])
     
     # Urgency breakdown - using nested field
     urgency_breakdown = {}
@@ -133,11 +132,7 @@ async def get_summary_report() -> Dict[str, Any]:
         **overall_metrics,
         "urgency_breakdown": urgency_breakdown,
         "asa_breakdown": asa_breakdown,
-        "yearly_breakdown": {
-            "2023": metrics_2023,
-            "2024": metrics_2024,
-            "2025": metrics_2025
-        },
+        "yearly_breakdown": yearly_breakdown,
         "filter_applied": "Only primary surgical treatments (surgery_primary) with valid OPCS-4 codes",
         "generated_at": datetime.utcnow().isoformat()
     }

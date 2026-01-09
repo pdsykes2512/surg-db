@@ -4,6 +4,10 @@ import { Card } from '../components/common/Card'
 import { Button } from '../components/common/Button'
 import { Table, TableHeader, TableBody, TableRow, TableHeadCell, TableCell } from '../components/common/Table'
 import { apiService } from '../services/api'
+import {
+  LineChart, Line, BarChart, Bar, Cell,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+} from 'recharts'
 
 interface SummaryReport {
   total_surgeries: number
@@ -551,6 +555,69 @@ export function ReportsPage() {
             </Card>
           </div>
 
+          {/* Yearly Outcomes Trends Chart */}
+          {summary.yearly_breakdown && Object.keys(summary.yearly_breakdown).length > 0 && (() => {
+            // Filter out years with no surgeries and sort chronologically
+            const yearlyData = Object.entries(summary.yearly_breakdown)
+              .filter(([_, data]) => data.total_surgeries > 0)
+              .sort(([yearA], [yearB]) => parseInt(yearA) - parseInt(yearB))
+
+            const years = yearlyData.map(([year]) => year)
+            const startYear = years[0]
+            const endYear = years[years.length - 1]
+
+            return (
+              <Card className="p-6">
+                <h3 className="text-lg font-semibold mb-4">Outcomes Trends ({startYear}-{endYear})</h3>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Complications & Readmissions */}
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-700 mb-3">Complications & Readmissions</h4>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <LineChart data={yearlyData.map(([year, data]) => ({
+                        year,
+                        'Complication Rate': data.complication_rate,
+                        'Readmission Rate': data.readmission_rate,
+                        'RTT Rate': data.return_to_theatre_rate
+                      }))}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="year" angle={-45} textAnchor="end" height={70} />
+                        <YAxis label={{ value: 'Rate (%)', angle: -90, position: 'insideLeft' }} />
+                        <Tooltip formatter={(value: any) => `${Number(value).toFixed(1)}%`} />
+                        <Legend />
+                        <Line type="monotone" dataKey="Complication Rate" stroke="#f59e0b" strokeWidth={2} dot={{ r: 3 }} />
+                        <Line type="monotone" dataKey="Readmission Rate" stroke="#ef4444" strokeWidth={2} dot={{ r: 3 }} />
+                        <Line type="monotone" dataKey="RTT Rate" stroke="#8b5cf6" strokeWidth={2} dot={{ r: 3 }} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  {/* Mortality Rates */}
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-700 mb-3">Mortality Rates</h4>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <LineChart data={yearlyData.map(([year, data]) => ({
+                        year,
+                        '30-Day Mortality': data.mortality_30d_rate,
+                        '90-Day Mortality': data.mortality_90d_rate,
+                        'ICU Escalation': data.escalation_rate
+                      }))}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="year" angle={-45} textAnchor="end" height={70} />
+                        <YAxis label={{ value: 'Rate (%)', angle: -90, position: 'insideLeft' }} />
+                        <Tooltip formatter={(value: any) => `${Number(value).toFixed(1)}%`} />
+                        <Legend />
+                        <Line type="monotone" dataKey="30-Day Mortality" stroke="#dc2626" strokeWidth={2} dot={{ r: 3 }} />
+                        <Line type="monotone" dataKey="90-Day Mortality" stroke="#991b1b" strokeWidth={2} dot={{ r: 3 }} />
+                        <Line type="monotone" dataKey="ICU Escalation" stroke="#3b82f6" strokeWidth={2} dot={{ r: 3 }} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </Card>
+            )
+          })()}
+
           {/* Urgency Breakdown */}
           {summary.urgency_breakdown && Object.keys(summary.urgency_breakdown).length > 0 && (
             <Card className="p-6">
@@ -791,6 +858,38 @@ export function ReportsPage() {
               {/* COSD Category Breakdown */}
               <div className="space-y-4 mb-6">
                 <h4 className="text-md font-semibold text-gray-700">COSD Categories</h4>
+
+                {/* COSD Completeness Bar Chart */}
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={cosdData.categories.map(cat => ({
+                    name: cat.category,
+                    'Completeness': cat.avg_completeness,
+                    'Fields': cat.field_count
+                  }))}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
+                    <YAxis label={{ value: 'Completeness (%)', angle: -90, position: 'insideLeft' }} domain={[0, 100]} />
+                    <Tooltip
+                      formatter={(value: any, name: string) => {
+                        if (name === 'Completeness') return [`${Number(value).toFixed(1)}%`, name]
+                        return [value, 'Field Count']
+                      }}
+                    />
+                    <Legend />
+                    <Bar dataKey="Completeness" name="Completeness (%)">
+                      {cosdData.categories.map((cat, index) => {
+                        const getBarColor = (completeness: number) => {
+                          if (completeness >= 90) return '#10b981'
+                          if (completeness >= 70) return '#f59e0b'
+                          if (completeness >= 50) return '#fb923c'
+                          return '#ef4444'
+                        }
+                        return <Cell key={`cell-${index}`} fill={getBarColor(cat.avg_completeness)} />
+                      })}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {cosdData.categories.map((category) => (
                     <div key={category.category} className={`p-3 rounded-lg border-2 ${getCompletenessCardColor(category.avg_completeness)}`}>
