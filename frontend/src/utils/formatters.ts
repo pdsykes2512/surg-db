@@ -355,12 +355,12 @@ export const formatClinicalTNM = (
   const tFormatted = formatTNMComponent(t)
   const nFormatted = formatTNMComponent(n)
   const mFormatted = formatTNMComponent(m)
-  
+
   // Only show if at least one component is present
   if (tFormatted === '-' && nFormatted === '-' && mFormatted === '-') {
     return '-'
   }
-  
+
   return `T${tFormatted} N${nFormatted} M${mFormatted}`
 }
 

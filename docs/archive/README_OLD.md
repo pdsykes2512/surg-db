@@ -82,4 +82,4 @@ When errors occur:
 4. Update the directive with learnings
 5. System is now more robust
 
-For more details, see [AGENTS.md](AGENTS.md).
+For more details, see [AGENTS.md](../../AGENTS.md).

@@ -159,7 +159,7 @@ export interface Treatment {
   surgeon?: string  // Flattened from team.primary_surgeon_text
   team?: Team
   procedure_name?: string
-  opcs_code?: string
+  opcs4_code?: string
   intent?: TreatmentIntent
   urgency?: Urgency
   approach?: Approach

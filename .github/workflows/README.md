@@ -28,7 +28,7 @@ git commit -m "fix: fix bug"           # PATCH bump
 git commit -m "feat!: breaking change" # MAJOR bump
 ```
 
-See [VERSIONING.md](../../VERSIONING.md) for complete documentation.
+See [VERSIONING.md](../../docs/development/VERSIONING.md) for complete documentation.
 
 ## Workflow Permissions
 

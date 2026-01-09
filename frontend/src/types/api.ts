@@ -138,7 +138,7 @@ export interface TreatmentCreateRequest {
   discharge_date?: string
   team?: Treatment['team']
   procedure_name?: string
-  opcs_code?: string
+  opcs4_code?: string
   intent?: Treatment['intent']
   urgency?: Treatment['urgency']
   approach?: Treatment['approach']
@@ -164,7 +164,7 @@ export interface TreatmentUpdateRequest {
   discharge_date?: string
   team?: Treatment['team']
   procedure_name?: string
-  opcs_code?: string
+  opcs4_code?: string
   intent?: Treatment['intent']
   urgency?: Treatment['urgency']
   approach?: Treatment['approach']

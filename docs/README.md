@@ -58,14 +58,26 @@ Historical documentation and deprecated content
 
 ---
 
+### [`development/`](development/)
+Development and architecture documentation
+- [DATABASE_SCHEMA.md](development/DATABASE_SCHEMA.md) - Complete database schema reference
+- [STYLE_GUIDE.md](development/STYLE_GUIDE.md) - UI/UX design patterns
+- [VERSIONING.md](development/VERSIONING.md) - Versioning guide
+- [AI_DEVELOPMENT_NOTE.md](development/AI_DEVELOPMENT_NOTE.md) - AI development notes
+
+### [`archives/`](archives/)
+Historical documentation and status tracking
+- [TODO.md](archives/TODO.md) - Development roadmap
+- [ORGANIZATION_PLAN.md](archives/ORGANIZATION_PLAN.md) - Organization planning
+- [SURGERY_RELATIONSHIPS_IMPLEMENTATION_STATUS.md](archives/SURGERY_RELATIONSHIPS_IMPLEMENTATION_STATUS.md) - Implementation status
+
 ## 📋 Root-Level Documentation
 
-Some key documentation remains in the project root for quick access:
-- **README.md** - Main project overview
-- **TODO.md** - Development roadmap
-- **RECENT_CHANGES.md** - Session-by-session change log
-- **STYLE_GUIDE.md** - UI/UX design patterns
-- **AGENTS.md** - AI agent operating instructions
+Critical files remain in the project root for quick access and AI agent compatibility:
+- **[README.md](../README.md)** - Main project overview
+- **[AGENTS.md](../AGENTS.md)** - AI agent operating instructions (3-layer architecture, self-annealing)
+- **[CLAUDE.md](../CLAUDE.md)** - Symlink to AGENTS.md for Claude AI compatibility
+- **[RECENT_CHANGES.md](../RECENT_CHANGES.md)** - Session-by-session change log (critical for AI sessions)
 
 ---
 

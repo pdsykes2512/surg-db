@@ -10,6 +10,7 @@ from ..database import get_database
 from ..models.user import User
 from ..auth import get_current_user, require_admin
 from ..utils.encryption import decrypt_document
+from ..utils.date_formatters import format_date_for_cosd as format_date
 
 router = APIRouter(prefix="/api/admin/exports", tags=["Admin - Exports"])
 
@@ -19,22 +20,6 @@ def prettify_xml(elem: ET.Element) -> str:
     rough_string = ET.tostring(elem, encoding='unicode')
     reparsed = minidom.parseString(rough_string)
     return reparsed.toprettyxml(indent="  ")
-
-
-def format_date(date_value) -> str:
-    """Format datetime/date to YYYY-MM-DD for COSD."""
-    if not date_value:
-        return ""
-    if isinstance(date_value, str):
-        # Try to parse if it's already a string
-        try:
-            dt = datetime.fromisoformat(date_value.replace('Z', '+00:00'))
-            return dt.strftime('%Y-%m-%d')
-        except:
-            return date_value
-    if isinstance(date_value, datetime):
-        return date_value.strftime('%Y-%m-%d')
-    return str(date_value)
 
 
 def create_patient_xml(patient: dict, episode: dict) -> ET.Element:
@@ -535,8 +520,8 @@ async def check_data_completeness(
     }
     
     for episode in episodes:
-        # Fetch patient using record_number (patient_id field stores record_number, not ObjectId)
-        patient = await db.patients.find_one({"record_number": episode["patient_id"]})
+        # Fetch patient using patient_id (not ObjectId)
+        patient = await db.patients.find_one({"patient_id": episode["patient_id"]})
         if not patient:
             continue
 
@@ -671,7 +656,7 @@ async def validate_nboca_submission(
         
         # Fetch related data using episode_id (not _id)
         # Only include treatments with valid OPCS-4 codes
-        patient = await db.patients.find_one({"record_number": patient_id})
+        patient = await db.patients.find_one({"patient_id": patient_id})
         tumours_cursor = db.tumours.find({"episode_id": episode_id})
         tumours = await tumours_cursor.to_list(length=None)
         treatments_cursor = db.treatments.find({

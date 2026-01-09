@@ -1,33 +1,27 @@
 """
 Patient API routes
 """
-from fastapi import APIRouter, HTTPException, status, Depends
-from typing import List, Optional
-from datetime import datetime
-from bson import ObjectId
+# Standard library
+import logging
 import re
+from datetime import datetime
+from typing import List, Optional
 
-from ..models.patient import Patient, PatientCreate, PatientUpdate
-from ..database import get_patients_collection, get_episodes_collection
-from ..utils.encryption import encrypt_document, decrypt_document, create_searchable_query, generate_search_hash
+# Third-party
+from bson import ObjectId
+from fastapi import APIRouter, HTTPException, status, Depends
+
+# Local application
 from ..auth import get_current_user, require_data_entry_or_higher, require_admin
+from ..database import get_patients_collection, get_episodes_collection
+from ..models.patient import Patient, PatientCreate, PatientUpdate
+from ..utils.encryption import encrypt_document, decrypt_document, create_searchable_query, generate_search_hash
+from ..utils.search_helpers import sanitize_search_input
+
+logger = logging.getLogger(__name__)
 
 
 router = APIRouter(prefix="/api/patients", tags=["patients"])
-
-
-def sanitize_search_input(search: str) -> str:
-    """
-    Sanitize search input to prevent NoSQL injection via regex
-
-    Args:
-        search: Raw search string from user
-
-    Returns:
-        Escaped search string safe for regex use
-    """
-    # Remove spaces and escape regex special characters
-    return re.escape(search.replace(" ", ""))
 
 
 @router.post("/", response_model=Patient, status_code=status.HTTP_201_CREATED)
@@ -36,34 +30,43 @@ async def create_patient(
     current_user: dict = Depends(require_data_entry_or_higher)
 ):
     """Create a new patient (requires data_entry role or higher)"""
-    collection = await get_patients_collection()
+    try:
+        collection = await get_patients_collection()
 
-    # Check if record_number already exists
-    existing = await collection.find_one({"record_number": patient.record_number})
-    if existing:
+        # Check if MRN already exists
+        existing = await collection.find_one({"mrn": patient.mrn})
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Patient with MRN {patient.mrn} already exists"
+            )
+
+        # Insert patient with encrypted sensitive fields
+        patient_dict = patient.model_dump()
+        patient_dict["created_at"] = datetime.utcnow()
+        patient_dict["updated_at"] = datetime.utcnow()
+        patient_dict["created_by"] = current_user["username"]
+        patient_dict["updated_by"] = current_user["username"]
+
+        # Encrypt sensitive fields before storing
+        encrypted_patient = encrypt_document(patient_dict)
+
+        result = await collection.insert_one(encrypted_patient)
+
+        # Retrieve and return created patient (decrypted for response)
+        created_patient = await collection.find_one({"_id": result.inserted_id})
+        created_patient["_id"] = str(created_patient["_id"])
+        # Decrypt before returning
+        decrypted_patient = decrypt_document(created_patient)
+        return Patient(**decrypted_patient)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating patient: {str(e)}", exc_info=True)
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Patient with record number {patient.record_number} already exists"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create patient: {str(e)}"
         )
-
-    # Insert patient with encrypted sensitive fields
-    patient_dict = patient.model_dump()
-    patient_dict["created_at"] = datetime.utcnow()
-    patient_dict["updated_at"] = datetime.utcnow()
-    patient_dict["created_by"] = current_user["username"]
-    patient_dict["updated_by"] = current_user["username"]
-
-    # Encrypt sensitive fields before storing
-    encrypted_patient = encrypt_document(patient_dict)
-
-    result = await collection.insert_one(encrypted_patient)
-
-    # Retrieve and return created patient (decrypted for response)
-    created_patient = await collection.find_one({"_id": result.inserted_id})
-    created_patient["_id"] = str(created_patient["_id"])
-    # Decrypt before returning
-    decrypted_patient = decrypt_document(created_patient)
-    return Patient(**decrypted_patient)
 
 
 @router.get("/count")
@@ -137,7 +140,7 @@ async def list_patients(
         )
         if is_mrn_pattern:
             search_encrypted_fields = True
-            print(f"Searching encrypted fields (MRN/NHS): {clean_search}")
+            logger.debug(f"Searching encrypted fields (MRN/NHS): {clean_search}")
 
     # Build query with search filter if provided
     query = {}
@@ -148,14 +151,14 @@ async def list_patients(
             nhs_query = create_searchable_query('nhs_number', clean_search)
             mrn_query = create_searchable_query('mrn', clean_search)
             query = {"$or": [nhs_query, mrn_query]}
-            print(f"Search encrypted (hash-based): {clean_search} -> {query}")
+            logger.debug(f"Search encrypted (hash-based): {clean_search} -> {query}")
         else:
             # Sanitize search input to prevent NoSQL injection
             safe_search = sanitize_search_input(search)
             search_pattern = {"$regex": safe_search, "$options": "i"}
             # Only search non-encrypted fields (patient_id)
             query = {"patient_id": search_pattern}
-            print(f"Search non-encrypted: {search} -> query: {query}")
+            logger.debug(f"Search non-encrypted: {search} -> query: {query}")
 
     # Use aggregation to join with episodes and get most recent referral date
     pipeline = [
@@ -249,36 +252,45 @@ async def update_patient(
     current_user: dict = Depends(require_data_entry_or_higher)
 ):
     """Update a patient (requires data_entry role or higher)"""
-    collection = await get_patients_collection()
+    try:
+        collection = await get_patients_collection()
 
-    # Check if patient exists
-    existing = await collection.find_one({"patient_id": patient_id})
-    if not existing:
+        # Check if patient exists
+        existing = await collection.find_one({"patient_id": patient_id})
+        if not existing:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Patient {patient_id} not found"
+            )
+
+        # Update only provided fields
+        update_data = patient_update.model_dump(exclude_unset=True)
+        if update_data:
+            update_data["updated_at"] = datetime.utcnow()
+            update_data["updated_by"] = current_user["username"]
+
+            # Encrypt sensitive fields before updating
+            encrypted_update = encrypt_document(update_data)
+
+            await collection.update_one(
+                {"patient_id": patient_id},
+                {"$set": encrypted_update}
+            )
+
+        # Return updated patient (decrypted)
+        updated_patient = await collection.find_one({"patient_id": patient_id})
+        updated_patient["_id"] = str(updated_patient["_id"])
+        # Decrypt before returning
+        decrypted_patient = decrypt_document(updated_patient)
+        return Patient(**decrypted_patient)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating patient {patient_id}: {str(e)}", exc_info=True)
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Patient {patient_id} not found"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update patient: {str(e)}"
         )
-
-    # Update only provided fields
-    update_data = patient_update.model_dump(exclude_unset=True)
-    if update_data:
-        update_data["updated_at"] = datetime.utcnow()
-        update_data["updated_by"] = current_user["username"]
-
-        # Encrypt sensitive fields before updating
-        encrypted_update = encrypt_document(update_data)
-
-        await collection.update_one(
-            {"patient_id": patient_id},
-            {"$set": encrypted_update}
-        )
-
-    # Return updated patient (decrypted)
-    updated_patient = await collection.find_one({"patient_id": patient_id})
-    updated_patient["_id"] = str(updated_patient["_id"])
-    # Decrypt before returning
-    decrypted_patient = decrypt_document(updated_patient)
-    return Patient(**decrypted_patient)
 
 
 @router.delete("/{patient_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -287,14 +299,23 @@ async def delete_patient(
     current_user: dict = Depends(require_admin)
 ):
     """Delete a patient (requires admin role)"""
-    collection = await get_patients_collection()
+    try:
+        collection = await get_patients_collection()
 
-    result = await collection.delete_one({"patient_id": patient_id})
+        result = await collection.delete_one({"patient_id": patient_id})
 
-    if result.deleted_count == 0:
+        if result.deleted_count == 0:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Patient {patient_id} not found"
+            )
+
+        return None
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting patient {patient_id}: {str(e)}", exc_info=True)
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Patient {patient_id} not found"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete patient: {str(e)}"
         )
-
-    return None
