@@ -57,13 +57,14 @@ This file tracks significant changes made to the IMPACT application (formerly su
 - Git commit completed successfully (commit a591b1a3)
 
 **Notes:**
-- Root directory reduced from **21 files to 9 files** (excluding hidden files)
-- Remaining root files: .env, .env.backup, .env.example, .gitignore, README.md, RECENT_CHANGES.md, VERSION, impact.code-workspace, package-lock.json
+- Root directory reduced from **21 files to 10 files** (excluding hidden files)
+- Remaining root files: .env, .env.backup, .env.example, .gitignore, README.md, RECENT_CHANGES.md, VERSION, CLAUDE.md (symlink), impact.code-workspace, package-lock.json
 - Documentation is now organized into logical subdirectories:
   - `docs/development/` - Development and architecture docs
   - `docs/archives/` - Historical and status tracking docs
   - `docs/operations/` - User and deployment guides (already existed)
-- CLAUDE.md/AGENTS.md instructions remain accessible at docs/development/AGENTS.md
+- **CLAUDE.md symlink kept in root** for AI agent automatic loading (points to docs/development/AGENTS.md)
+- Actual documentation file lives at docs/development/AGENTS.md (mirrored as CLAUDE.md, CODEX.md, GEMINI.md per instructions)
 - All symlinks and references properly updated to avoid broken links
 - Services continue to run without interruption - no restarts required
 
