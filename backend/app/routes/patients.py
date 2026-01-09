@@ -1,5 +1,31 @@
 """
-Patient API routes
+Patient API Routes
+
+This module provides RESTful API endpoints for managing patient records in the IMPACT system.
+All patient data is encrypted at rest using AES-256 encryption to comply with UK GDPR Article 32
+and NHS Caldicott Principles.
+
+Key Features:
+    - Field-level encryption for sensitive patient identifiers (NHS number, MRN, DOB)
+    - Hash-based searchable encryption for fast lookups without decryption
+    - Role-based access control (data_entry, admin)
+    - Comprehensive audit logging for all operations
+    - Pagination support for large datasets
+
+Endpoints:
+    POST   /api/patients/         - Create new patient
+    GET    /api/patients/         - List all patients with search
+    GET    /api/patients/count    - Count patients
+    GET    /api/patients/{id}     - Get single patient
+    PUT    /api/patients/{id}     - Update patient
+    DELETE /api/patients/{id}     - Delete patient (admin only)
+
+Security:
+    - All endpoints require authentication via JWT token
+    - Create/Update/Delete require data_entry role or higher
+    - Delete requires admin role
+    - Sensitive fields encrypted before storage
+    - MRN uniqueness enforced at database level
 """
 # Standard library
 import logging
@@ -29,7 +55,42 @@ async def create_patient(
     patient: PatientCreate,
     current_user: dict = Depends(require_data_entry_or_higher)
 ):
-    """Create a new patient (requires data_entry role or higher)"""
+    """Create a new patient record with encrypted sensitive fields.
+    
+    Creates a new patient in the database with automatic encryption of sensitive identifiers
+    (NHS number, MRN, DOB, postcode). Generates searchable hashes for encrypted fields to
+    enable fast lookups without decryption.
+    
+    Args:
+        patient: PatientCreate model containing patient demographics and medical history
+        current_user: Authenticated user context (requires data_entry role or higher)
+    
+    Returns:
+        Patient: Created patient record with decrypted fields for response
+    
+    Raises:
+        HTTPException(400): If MRN already exists (duplicate patient)
+        HTTPException(500): If database operation fails
+    
+    Security:
+        - Requires data_entry role or higher
+        - Encrypts NHS number, MRN, DOB, and postcode using AES-256
+        - Generates searchable hashes for MRN and NHS number
+        - Records created_by and created_at for audit trail
+    
+    Example:
+        POST /api/patients/
+        {
+            "patient_id": "A1B2C3",
+            "mrn": "12345678",
+            "nhs_number": "1234567890",
+            "demographics": {
+                "date_of_birth": "1975-03-15",
+                "gender": "male",
+                "postcode": "SW1A 1AA"
+            }
+        }
+    """
     try:
         collection = await get_patients_collection()
 
@@ -74,7 +135,29 @@ async def count_patients(
     search: Optional[str] = None,
     current_user: dict = Depends(get_current_user)
 ):
-    """Get total count of patients with optional search filter (requires authentication)"""
+    """Get total count of patients matching optional search criteria.
+    
+    Counts patients with optional search filtering. Automatically detects whether search
+    term is an encrypted field (MRN/NHS number) or non-encrypted field (patient_id) and
+    uses appropriate lookup strategy.
+    
+    Args:
+        search: Optional search term (MRN, NHS number, or patient_id)
+        current_user: Authenticated user context (requires any authenticated role)
+    
+    Returns:
+        dict: {"count": int} - Total number of matching patients
+    
+    Search Logic:
+        - MRN patterns: 8+ digits, IW+6digits, or C+6digits+2alphanumeric
+        - NHS number: 10 digits
+        - Encrypted field search uses O(log n) hash-based indexed lookup
+        - Non-encrypted search uses O(n) regex pattern matching
+    
+    Example:
+        GET /api/patients/count?search=12345678
+        Response: {"count": 1}
+    """
     collection = await get_patients_collection()
 
     # Check if search looks like MRN or NHS number (encrypted fields)
@@ -122,7 +205,37 @@ async def list_patients(
     search: Optional[str] = None,
     current_user: dict = Depends(get_current_user)
 ):
-    """List all patients with pagination and optional search, sorted by most recent episode referral date (requires authentication)"""
+    """List patients with pagination, search, and sorting by most recent episode.
+    
+    Returns paginated list of patients sorted by their most recent episode referral date.
+    Supports searching by MRN, NHS number, or patient_id with automatic field detection
+    and optimized query strategy (hash-based for encrypted fields, regex for others).
+    
+    Args:
+        skip: Number of records to skip for pagination (default: 0)
+        limit: Maximum number of records to return (default: 100, max: 100)
+        search: Optional search term (MRN, NHS number, or patient_id)
+        current_user: Authenticated user context (requires any authenticated role)
+    
+    Returns:
+        List[Patient]: List of patients with decrypted fields, sorted by most recent episode
+    
+    Query Optimization:
+        - Uses MongoDB aggregation pipeline for efficient joins
+        - Encrypted field search: O(log n) via hash indexes
+        - Non-encrypted search: O(n) via regex
+        - Sorting by most recent referral date calculated in database
+        - Pagination applied at database level for efficiency
+    
+    Search Patterns:
+        - MRN: 8+ digits, IW######, or C######XX
+        - NHS Number: 10 digits
+        - Patient ID: Any alphanumeric string
+    
+    Example:
+        GET /api/patients/?skip=0&limit=50&search=12345678
+        Response: [Patient, Patient, ...]
+    """
     collection = await get_patients_collection()
     episodes_collection = await get_episodes_collection()
 
@@ -229,7 +342,21 @@ async def get_patient(
     patient_id: str,
     current_user: dict = Depends(get_current_user)
 ):
-    """Get a specific patient by patient_id (requires authentication)"""
+    """Retrieve a single patient by patient_id.
+    
+    Args:
+        patient_id: Unique patient identifier (6-character alphanumeric hash)
+        current_user: Authenticated user context (requires any authenticated role)
+    
+    Returns:
+        Patient: Patient record with all decrypted fields
+    
+    Raises:
+        HTTPException(404): If patient not found
+    
+    Example:
+        GET /api/patients/A1B2C3
+    """
     collection = await get_patients_collection()
 
     patient = await collection.find_one({"patient_id": patient_id})
@@ -251,7 +378,37 @@ async def update_patient(
     patient_update: PatientUpdate,
     current_user: dict = Depends(require_data_entry_or_higher)
 ):
-    """Update a patient (requires data_entry role or higher)"""
+    """Update an existing patient record with encrypted sensitive fields.
+    
+    Updates only the fields provided in the request body. Automatically encrypts any
+    sensitive fields (NHS number, MRN, DOB) and updates searchable hashes for fast lookups.
+    
+    Args:
+        patient_id: Unique patient identifier (6-character alphanumeric hash)
+        patient_update: PatientUpdate model with fields to update (all optional)
+        current_user: Authenticated user context (requires data_entry role or higher)
+    
+    Returns:
+        Patient: Updated patient record with all decrypted fields
+    
+    Raises:
+        HTTPException(404): If patient not found
+        HTTPException(500): If database operation fails
+    
+    Security:
+        - Requires data_entry role or higher
+        - Re-encrypts modified sensitive fields with AES-256
+        - Updates searchable hashes for modified MRN/NHS number
+        - Records updated_by and updated_at for audit trail
+    
+    Example:
+        PUT /api/patients/A1B2C3
+        {
+            "demographics": {
+                "postcode": "SW1A 2AA"
+            }
+        }
+    """
     try:
         collection = await get_patients_collection()
 
@@ -298,7 +455,36 @@ async def delete_patient(
     patient_id: str,
     current_user: dict = Depends(require_admin)
 ):
-    """Delete a patient (requires admin role)"""
+    """Delete a patient record permanently from the database.
+    
+    Permanently removes a patient record. This operation cannot be undone.
+    Use with caution as it may violate data retention policies if patient has
+    linked episodes or treatments.
+    
+    Args:
+        patient_id: Unique patient identifier (6-character alphanumeric hash)
+        current_user: Authenticated user context (requires admin role)
+    
+    Returns:
+        None (HTTP 204 No Content on success)
+    
+    Raises:
+        HTTPException(404): If patient not found
+        HTTPException(403): If user lacks admin role
+        HTTPException(500): If database operation fails
+    
+    Security:
+        - Requires admin role (highest privilege level)
+        - Consider checking for linked episodes before deletion
+        - Audit log should record deletion for compliance
+    
+    Warning:
+        This operation may violate NHS Records Management Code (20-year retention).
+        Consider soft-deletion (marking as deleted) instead for clinical records.
+    
+    Example:
+        DELETE /api/patients/A1B2C3
+    """
     try:
         collection = await get_patients_collection()
 
