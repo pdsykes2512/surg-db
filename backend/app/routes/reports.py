@@ -590,3 +590,184 @@ async def get_cosd_completeness(year: Optional[int] = Query(None, description="Y
         "filter_applied": "Only treatments with valid OPCS-4 codes",
         "generated_at": datetime.utcnow().isoformat()
     }
+
+
+@router.get("/outcome-trends")
+async def get_outcome_trends(
+    period: str = Query("quarterly", description="Time period: monthly, quarterly, yearly"),
+    start_year: int = Query(2023, description="Start year"),
+    end_year: int = Query(2025, description="End year")
+) -> Dict[str, Any]:
+    """
+    Get time-series data for surgical outcome trends
+    Returns complication rates, mortality, readmissions, and RTT rates over time
+    """
+    db = Database.get_database()
+    treatments_collection = db.treatments
+    
+    # Get all surgical treatments
+    all_treatments = await treatments_collection.find({
+        "treatment_type": "surgery_primary",
+        "opcs4_code": {"$exists": True, "$ne": ""}
+    }).to_list(length=None)
+    
+    # Group treatments by period
+    from collections import defaultdict
+    period_data = defaultdict(list)
+    
+    for treatment in all_treatments:
+        treatment_date = treatment.get('treatment_date')
+        if not treatment_date:
+            continue
+        
+        try:
+            if isinstance(treatment_date, str):
+                dt = datetime.fromisoformat(treatment_date.replace('Z', '+00:00'))
+            else:
+                dt = treatment_date
+            
+            # Filter by year range
+            if dt.year < start_year or dt.year > end_year:
+                continue
+            
+            # Create period key
+            if period == "monthly":
+                period_key = dt.strftime("%Y-%m")
+                period_label = dt.strftime("%b %Y")
+            elif period == "quarterly":
+                quarter = (dt.month - 1) // 3 + 1
+                period_key = f"{dt.year}-Q{quarter}"
+                period_label = f"Q{quarter} {dt.year}"
+            else:  # yearly
+                period_key = str(dt.year)
+                period_label = str(dt.year)
+            
+            period_data[period_key].append({
+                'label': period_label,
+                'treatment': treatment
+            })
+        except:
+            continue
+    
+    # Calculate metrics for each period
+    trends = []
+    for period_key in sorted(period_data.keys()):
+        treatments = [item['treatment'] for item in period_data[period_key]]
+        period_label = period_data[period_key][0]['label']
+        total = len(treatments)
+        
+        if total == 0:
+            continue
+        
+        # Calculate rates
+        complications = sum(1 for t in treatments if t.get('postoperative_events', {}).get('complications'))
+        mortality_30d = sum(1 for t in treatments if t.get('outcomes', {}).get('mortality_30day') == True)
+        mortality_90d = sum(1 for t in treatments if t.get('outcomes', {}).get('mortality_90day') == True)
+        readmissions = sum(1 for t in treatments if t.get('outcomes', {}).get('readmission_30day') == 'yes')
+        rtt = sum(1 for t in treatments if t.get('outcomes', {}).get('return_to_theatre') == 'yes')
+        
+        trends.append({
+            "period": period_label,
+            "totalCases": total,
+            "complicationRate": round((complications / total * 100), 2),
+            "mortality30d": round((mortality_30d / total * 100), 2),
+            "mortality90d": round((mortality_90d / total * 100), 2),
+            "readmissionRate": round((readmissions / total * 100), 2),
+            "rttRate": round((rtt / total * 100), 2)
+        })
+    
+    return {
+        "period": period,
+        "trends": trends,
+        "start_year": start_year,
+        "end_year": end_year,
+        "generated_at": datetime.utcnow().isoformat()
+    }
+
+
+@router.get("/complication-by-category")
+async def get_complication_by_category() -> Dict[str, Any]:
+    """
+    Get complication rates broken down by surgical category
+    (urgency, complexity, approach, etc.)
+    """
+    db = Database.get_database()
+    treatments_collection = db.treatments
+    
+    # Get all surgical treatments
+    all_treatments = await treatments_collection.find({
+        "treatment_type": "surgery_primary",
+        "opcs4_code": {"$exists": True, "$ne": ""}
+    }).to_list(length=None)
+    
+    # Group by different categories
+    categories = {
+        "urgency": {},
+        "complexity": {},
+        "approach": {}
+    }
+    
+    for treatment in all_treatments:
+        urgency = treatment.get('classification', {}).get('urgency', 'Unknown')
+        complexity = treatment.get('classification', {}).get('complexity', 'Unknown')
+        approach = treatment.get('classification', {}).get('approach', 'Unknown')
+        has_complication = treatment.get('postoperative_events', {}).get('complications', False)
+        
+        # Update urgency stats
+        if urgency not in categories['urgency']:
+            categories['urgency'][urgency] = {'total': 0, 'complications': 0}
+        categories['urgency'][urgency]['total'] += 1
+        if has_complication:
+            categories['urgency'][urgency]['complications'] += 1
+        
+        # Update complexity stats
+        if complexity not in categories['complexity']:
+            categories['complexity'][complexity] = {'total': 0, 'complications': 0}
+        categories['complexity'][complexity]['total'] += 1
+        if has_complication:
+            categories['complexity'][complexity]['complications'] += 1
+        
+        # Update approach stats
+        if approach not in categories['approach']:
+            categories['approach'][approach] = {'total': 0, 'complications': 0}
+        categories['approach'][approach]['total'] += 1
+        if has_complication:
+            categories['approach'][approach]['complications'] += 1
+    
+    # Convert to lists with rates
+    urgency_data = [
+        {
+            "category": key,
+            "rate": round((val['complications'] / val['total'] * 100) if val['total'] > 0 else 0, 2),
+            "count": val['complications'],
+            "total": val['total']
+        }
+        for key, val in categories['urgency'].items()
+    ]
+    
+    complexity_data = [
+        {
+            "category": key,
+            "rate": round((val['complications'] / val['total'] * 100) if val['total'] > 0 else 0, 2),
+            "count": val['complications'],
+            "total": val['total']
+        }
+        for key, val in categories['complexity'].items()
+    ]
+    
+    approach_data = [
+        {
+            "category": key,
+            "rate": round((val['complications'] / val['total'] * 100) if val['total'] > 0 else 0, 2),
+            "count": val['complications'],
+            "total": val['total']
+        }
+        for key, val in categories['approach'].items()
+    ]
+    
+    return {
+        "byUrgency": urgency_data,
+        "byComplexity": complexity_data,
+        "byApproach": approach_data,
+        "generated_at": datetime.utcnow().isoformat()
+    }
