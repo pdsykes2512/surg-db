@@ -46,6 +46,14 @@ class PerioperativeTimeline(BaseModel):
     @field_validator('admission_date', 'surgery_date', 'discharge_date', mode='before')
     @classmethod
     def parse_dates(cls, v):
+        """Parse date strings to standardized format.
+        
+        Args:
+            v: Date string or datetime object
+        
+        Returns:
+            datetime or str: Parsed date in standardized format
+        """
         return parse_date_string(v)
     
     @field_validator('induction_time', 'knife_to_skin_time', 'surgery_end_time', mode='before')

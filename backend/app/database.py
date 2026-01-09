@@ -35,6 +35,24 @@ class Database:
 
         # Helper function to create index with error handling
         async def create_index_safe(collection, *args, **kwargs):
+            """Create MongoDB index with comprehensive error handling.
+            
+            Attempts to create an index and gracefully handles common errors like
+            duplicate keys, conflicting options, and existing indexes.
+            
+            Args:
+                collection: Motor collection object
+                *args: Positional arguments for create_index() (field names, compound keys)
+                **kwargs: Keyword arguments for create_index() (unique, name, partialFilterExpression)
+            
+            Returns:
+                bool: True if index created successfully, False if error occurred
+            
+            Logs:
+                - INFO: Index already exists (no action needed)
+                - WARNING: Data quality issues preventing unique index
+                - ERROR: Unexpected index creation failures
+            """
             index_name = kwargs.get('name', 'unnamed')
             try:
                 await collection.create_index(*args, **kwargs)

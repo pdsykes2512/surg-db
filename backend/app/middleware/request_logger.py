@@ -36,6 +36,22 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
     """
     
     async def dispatch(self, request: Request, call_next):  # type: ignore
+        """Process HTTP request with logging and timing.
+        
+        Middleware dispatcher that logs all HTTP requests with method, path,
+        IP address, user agent, response status, and processing time.
+        
+        Args:
+            request: FastAPI Request object
+            call_next: Next middleware/route handler in chain
+        
+        Returns:
+            Response: HTTP response from route handler
+        
+        Logs:
+            INFO: All requests with timing (< 1 second)
+            WARNING: Slow requests (>= 1 second)
+        """
         # Start timer
         start_time = time.time()
         

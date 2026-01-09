@@ -15,6 +15,20 @@ class PyObjectId(str):
         from pydantic_core import core_schema
         
         def validate(value):
+            """Validate and convert MongoDB ObjectId to string.
+            
+            Accepts ObjectId instances or valid ObjectId strings and ensures
+            the output is always a string representation of the ObjectId.
+            
+            Args:
+                value: ObjectId instance, valid ObjectId string, or invalid value
+            
+            Returns:
+                str: String representation of the ObjectId
+            
+            Raises:
+                ValueError: If value is not a valid ObjectId or correct type
+            """
             if isinstance(value, ObjectId):
                 return str(value)
             if isinstance(value, str):
