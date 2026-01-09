@@ -15,6 +15,60 @@ This file tracks significant changes made to the IMPACT application (formerly su
 
 ---
 
+## 2026-01-09 - Root Directory Reorganization
+
+**Changed by:** AI Session (Claude Code)
+
+**Issue:** Root directory was cluttered with 21 documentation files, making it difficult to navigate and find relevant information. Documentation lacked clear organization and structure.
+
+**Changes:**
+- Created `docs/development/` subdirectory for development-related documentation
+- Created `docs/archives/` subdirectory for historical/status tracking documents
+- Moved 10 documentation files from root to organized subdirectories:
+  - **To docs/development/**: AGENTS.md, AI_DEVELOPMENT_NOTE.md, DATABASE_SCHEMA.md, STYLE_GUIDE.md, VERSIONING.md
+  - **To docs/archives/**: TODO.md, ORGANIZATION_PLAN.md, SURGERY_RELATIONSHIPS_IMPLEMENTATION_STATUS.md
+- Moved `get-docker.sh` to `scripts/` directory
+- Updated CLAUDE.md symlink to point to new location (docs/development/AGENTS.md)
+- Updated all documentation references in:
+  - README.md (updated paths to DATABASE_SCHEMA.md and STYLE_GUIDE.md)
+  - RECENT_CHANGES.md (updated VERSIONING.md references)
+  - .github/workflows/README.md (updated VERSIONING.md path)
+  - docs/README.md (added new development/ and archives/ sections)
+  - docs/archive/README_OLD.md (updated AGENTS.md references)
+
+**Files affected:**
+- Moved: AGENTS.md → docs/development/AGENTS.md
+- Moved: AI_DEVELOPMENT_NOTE.md → docs/development/AI_DEVELOPMENT_NOTE.md
+- Moved: DATABASE_SCHEMA.md → docs/development/DATABASE_SCHEMA.md
+- Moved: STYLE_GUIDE.md → docs/development/STYLE_GUIDE.md
+- Moved: VERSIONING.md → docs/development/VERSIONING.md
+- Moved: TODO.md → docs/archives/TODO.md
+- Moved: ORGANIZATION_PLAN.md → docs/archives/ORGANIZATION_PLAN.md (deleted from git)
+- Moved: SURGERY_RELATIONSHIPS_IMPLEMENTATION_STATUS.md → docs/archives/SURGERY_RELATIONSHIPS_IMPLEMENTATION_STATUS.md
+- Moved: get-docker.sh → scripts/get-docker.sh
+- Updated: CLAUDE.md (now symlink in docs/)
+- Modified: README.md, RECENT_CHANGES.md, .github/workflows/README.md, docs/README.md, docs/archive/README_OLD.md
+
+**Testing:**
+- Verified both systemd services still running (impact-backend, impact-frontend)
+- Backend service: active and running (PID 5895, 24h uptime)
+- Frontend service: active and running (PID 5709, 24h uptime)
+- All documentation links updated and verified
+- Git commit completed successfully (commit a591b1a3)
+
+**Notes:**
+- Root directory reduced from **21 files to 9 files** (excluding hidden files)
+- Remaining root files: .env, .env.backup, .env.example, .gitignore, README.md, RECENT_CHANGES.md, VERSION, impact.code-workspace, package-lock.json
+- Documentation is now organized into logical subdirectories:
+  - `docs/development/` - Development and architecture docs
+  - `docs/archives/` - Historical and status tracking docs
+  - `docs/operations/` - User and deployment guides (already existed)
+- CLAUDE.md/AGENTS.md instructions remain accessible at docs/development/AGENTS.md
+- All symlinks and references properly updated to avoid broken links
+- Services continue to run without interruption - no restarts required
+
+---
+
 ## 2026-01-07 - Comprehensive System Documentation Created
 
 **Changed by:** AI Session (Claude Code)
