@@ -1,1 +1,1 @@
-docs/development/AGENTS.md
+AGENTS.md

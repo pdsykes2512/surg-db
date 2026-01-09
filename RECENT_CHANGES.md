@@ -24,20 +24,21 @@ This file tracks significant changes made to the IMPACT application (formerly su
 **Changes:**
 - Created `docs/development/` subdirectory for development-related documentation
 - Created `docs/archives/` subdirectory for historical/status tracking documents
-- Moved 10 documentation files from root to organized subdirectories:
-  - **To docs/development/**: AGENTS.md, AI_DEVELOPMENT_NOTE.md, DATABASE_SCHEMA.md, STYLE_GUIDE.md, VERSIONING.md
+- Moved 9 documentation files from root to organized subdirectories:
+  - **To docs/development/**: AI_DEVELOPMENT_NOTE.md, DATABASE_SCHEMA.md, STYLE_GUIDE.md, VERSIONING.md
   - **To docs/archives/**: TODO.md, ORGANIZATION_PLAN.md, SURGERY_RELATIONSHIPS_IMPLEMENTATION_STATUS.md
+- **Kept AGENTS.md in root** for multi-AI compatibility (Claude, Codex, Gemini all look for agent instructions)
 - Moved `get-docker.sh` to `scripts/` directory
-- Updated CLAUDE.md symlink to point to new location (docs/development/AGENTS.md)
+- Updated CLAUDE.md symlink to point to AGENTS.md in root (for Claude AI compatibility)
 - Updated all documentation references in:
-  - README.md (updated paths to DATABASE_SCHEMA.md and STYLE_GUIDE.md)
+  - README.md (added AGENTS.md to Core Documentation, updated other paths)
   - RECENT_CHANGES.md (updated VERSIONING.md references)
   - .github/workflows/README.md (updated VERSIONING.md path)
-  - docs/README.md (added new development/ and archives/ sections)
+  - docs/README.md (updated to reflect AGENTS.md in root, added new development/ and archives/ sections)
   - docs/archive/README_OLD.md (updated AGENTS.md references)
 
 **Files affected:**
-- Moved: AGENTS.md → docs/development/AGENTS.md
+- **Kept in root**: AGENTS.md (for multi-AI compatibility)
 - Moved: AI_DEVELOPMENT_NOTE.md → docs/development/AI_DEVELOPMENT_NOTE.md
 - Moved: DATABASE_SCHEMA.md → docs/development/DATABASE_SCHEMA.md
 - Moved: STYLE_GUIDE.md → docs/development/STYLE_GUIDE.md
@@ -46,7 +47,7 @@ This file tracks significant changes made to the IMPACT application (formerly su
 - Moved: ORGANIZATION_PLAN.md → docs/archives/ORGANIZATION_PLAN.md (deleted from git)
 - Moved: SURGERY_RELATIONSHIPS_IMPLEMENTATION_STATUS.md → docs/archives/SURGERY_RELATIONSHIPS_IMPLEMENTATION_STATUS.md
 - Moved: get-docker.sh → scripts/get-docker.sh
-- Updated: CLAUDE.md (now symlink in docs/)
+- Updated: CLAUDE.md (symlink in root → AGENTS.md)
 - Modified: README.md, RECENT_CHANGES.md, .github/workflows/README.md, docs/README.md, docs/archive/README_OLD.md
 
 **Testing:**
@@ -57,15 +58,16 @@ This file tracks significant changes made to the IMPACT application (formerly su
 - Git commit completed successfully (commit a591b1a3)
 
 **Notes:**
-- Root directory reduced from **21 files to 10 files** (excluding hidden files)
-- Remaining root files: .env, .env.backup, .env.example, .gitignore, README.md, RECENT_CHANGES.md, VERSION, CLAUDE.md (symlink), impact.code-workspace, package-lock.json
+- Root directory reduced from **21 files to 11 files** (excluding hidden files)
+- Remaining root files: .env, .env.backup, .env.example, .gitignore, README.md, AGENTS.md, CLAUDE.md (symlink), RECENT_CHANGES.md, VERSION, impact.code-workspace, package-lock.json
 - Documentation is now organized into logical subdirectories:
-  - `docs/development/` - Development and architecture docs
-  - `docs/archives/` - Historical and status tracking docs
+  - `docs/development/` - Development and architecture docs (DATABASE_SCHEMA, STYLE_GUIDE, VERSIONING, AI notes)
+  - `docs/archives/` - Historical and status tracking docs (TODO, status reports)
   - `docs/operations/` - User and deployment guides (already existed)
-- **CLAUDE.md symlink kept in root** for AI agent automatic loading (points to docs/development/AGENTS.md)
-- Actual documentation file lives at docs/development/AGENTS.md (mirrored as CLAUDE.md, CODEX.md, GEMINI.md per instructions)
-- All symlinks and references properly updated to avoid broken links
+- **AGENTS.md kept in root** for multi-AI compatibility (Claude, Codex, Gemini all look for this file)
+- **CLAUDE.md symlink in root** points to AGENTS.md for Claude-specific compatibility
+- File states it's "mirrored across CLAUDE.md, AGENTS.md, CODEX.md and GEMINI.md" - keeping actual file in root ensures all AI tools can find it
+- All documentation references properly updated to avoid broken links
 - Services continue to run without interruption - no restarts required
 
 ---

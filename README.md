@@ -155,6 +155,7 @@ npm run dev
 ## 📚 Documentation
 
 ### Core Documentation
+- [AGENTS.md](AGENTS.md) - **AI agent operating instructions** (3-layer architecture, self-annealing, critical for AI sessions)
 - [DATABASE_SCHEMA.md](docs/development/DATABASE_SCHEMA.md) - **Complete database schema reference** (9 collections, field specs, NBOCA/COSD mappings)
 - [RECENT_CHANGES.md](RECENT_CHANGES.md) - Recent changes and update history
 - [STYLE_GUIDE.md](docs/development/STYLE_GUIDE.md) - UI/UX design patterns and component standards
