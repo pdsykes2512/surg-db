@@ -27,6 +27,28 @@ async def get_summary_report() -> Dict[str, Any]:
     
     # Helper function to calculate metrics for a list of treatments
     def calculate_metrics(treatments):
+        """Calculate outcome metrics from treatment records.
+        
+        Computes key surgical outcome metrics including complication rates,
+        mortality, readmissions, and length of stay statistics.
+        
+        Args:
+            treatments: List of treatment dictionaries with outcomes data
+        
+        Returns:
+            dict: Metrics dictionary with keys:
+                - total_surgeries: int, count of treatments
+                - complication_rate: float, percentage with complications
+                - readmission_rate: float, percentage readmitted within 30 days
+                - mortality_30d_rate: float, percentage died within 30 days
+                - mortality_90d_rate: float, percentage died within 90 days
+                - return_to_theatre_rate: float, percentage requiring RTT
+                - escalation_rate: float, percentage requiring ICU
+                - median_length_of_stay_days: float, median LOS
+        
+        Note:
+            Returns zeros for all metrics if treatments list is empty.
+        """
         if not treatments:
             return {
                 "total_surgeries": 0,

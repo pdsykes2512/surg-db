@@ -19,6 +19,17 @@ class PyObjectId(ObjectId):
 
     @classmethod
     def validate(cls, v):
+        """Validate ObjectId string format.
+        
+        Args:
+            v: ObjectId string to validate
+        
+        Returns:
+            ObjectId: Valid MongoDB ObjectId instance
+        
+        Raises:
+            ValueError: If string is not a valid ObjectId format
+        """
         if not ObjectId.is_valid(v):
             raise ValueError("Invalid ObjectId")
         return ObjectId(v)
@@ -92,6 +103,14 @@ class EpisodeBase(BaseModel):
     @field_validator('referral_date', 'first_seen_date', 'mdt_discussion_date', mode='before')
     @classmethod
     def parse_dates(cls, v):
+        """Parse date strings to standardized format.
+        
+        Args:
+            v: Date string or datetime object
+        
+        Returns:
+            datetime or str: Parsed date in standardized format
+        """
         return parse_date_string(v)
 
 

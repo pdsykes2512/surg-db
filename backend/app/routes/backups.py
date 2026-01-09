@@ -326,6 +326,15 @@ async def cleanup_old_backups(
     
     # Run cleanup in background
     async def run_cleanup():
+        """Execute backup cleanup script asynchronously.
+        
+        Runs the cleanup_old_backups.py script in a subprocess to enforce
+        backup retention policies without blocking the API response.
+        
+        Prints:
+            stdout from cleanup script on success
+            stderr from cleanup script on failure
+        """
         try:
             result = subprocess.run(
                 [sys.executable, str(CLEANUP_SCRIPT)],
