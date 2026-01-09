@@ -30,13 +30,13 @@ Deterministic Python scripts that handle:
 
 ```
 .
-├── AGENTS.md              # Core architecture documentation
-├── directives/            # SOPs and task instructions
-├── execution/             # Python scripts (deterministic tools)
-├── .tmp/                  # Temporary files (not committed)
-├── .env                   # Environment variables (not committed)
-├── credentials.json       # Google OAuth (not committed)
-└── token.json            # Google OAuth token (not committed)
+├── docs/development/AGENTS.md  # Core architecture documentation
+├── directives/                 # SOPs and task instructions
+├── execution/                  # Python scripts (deterministic tools)
+├── .tmp/                       # Temporary files (not committed)
+├── .env                        # Environment variables (not committed)
+├── credentials.json            # Google OAuth (not committed)
+└── token.json                 # Google OAuth token (not committed)
 ```
 
 ## Setup
@@ -82,4 +82,4 @@ When errors occur:
 4. Update the directive with learnings
 5. System is now more robust
 
-For more details, see [AGENTS.md](AGENTS.md).
+For more details, see [AGENTS.md](../development/AGENTS.md).

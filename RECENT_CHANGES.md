@@ -548,7 +548,7 @@ This file tracks significant changes made to the IMPACT application (formerly su
 - ✅ Auto-bumps version on every push to main based on commit types
 - ✅ Auto-creates git tags and GitHub releases
 - ✅ Created comprehensive documentation:
-  - [VERSIONING.md](VERSIONING.md) - User-friendly versioning guide
+  - [VERSIONING.md](docs/development/VERSIONING.md) - User-friendly versioning guide
   - [execution/directives/version_management.md](execution/directives/version_management.md) - Technical directive
 
 **Behavior:**
@@ -592,7 +592,7 @@ When developers push commits to main:
 - Developers should now use conventional commits (feat:, fix:, etc.)
 - No manual version editing needed - fully automated
 - GitHub Actions creates releases with auto-generated changelogs
-- See [VERSIONING.md](VERSIONING.md) for complete usage guide
+- See [VERSIONING.md](docs/development/VERSIONING.md) for complete usage guide
 
 ---
 

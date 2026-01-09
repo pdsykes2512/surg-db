@@ -155,9 +155,9 @@ npm run dev
 ## 📚 Documentation
 
 ### Core Documentation
-- [DATABASE_SCHEMA.md](DATABASE_SCHEMA.md) - **Complete database schema reference** (9 collections, field specs, NBOCA/COSD mappings)
+- [DATABASE_SCHEMA.md](docs/development/DATABASE_SCHEMA.md) - **Complete database schema reference** (9 collections, field specs, NBOCA/COSD mappings)
 - [RECENT_CHANGES.md](RECENT_CHANGES.md) - Recent changes and update history
-- [STYLE_GUIDE.md](STYLE_GUIDE.md) - UI/UX design patterns and component standards
+- [STYLE_GUIDE.md](docs/development/STYLE_GUIDE.md) - UI/UX design patterns and component standards
 
 ### Setup & Deployment
 - [Quick Start](docs/setup/QUICK_START.md) - Get started in 5 minutes
