@@ -2,20 +2,33 @@
 New Episode API routes for condition-based care (cancer, IBD, benign)
 Replaces surgery-centric episodes with flexible condition-specific episodes
 """
-from fastapi import APIRouter, HTTPException, status, Query, Depends, Request
-from typing import List, Optional
+# Standard library
+import logging
 from datetime import datetime
-from bson import ObjectId
+from typing import List, Optional
 
-from ..models.episode import (
-    Episode, EpisodeCreate, EpisodeUpdate,
-    ConditionType, CancerType
-)
-from ..database import get_episodes_collection, get_patients_collection, get_treatments_collection, get_tumours_collection, get_clinicians_collection, get_investigations_collection, get_audit_logs_collection
-from ..utils.audit import log_action
-from ..utils.mortality import enrich_treatment_with_mortality
-from ..utils.encryption import decrypt_field
+# Third-party
+from bson import ObjectId
+from fastapi import APIRouter, HTTPException, status, Query, Depends, Request
+
+# Local application
 from ..auth import get_current_user
+from ..database import (
+    get_episodes_collection,
+    get_patients_collection,
+    get_treatments_collection,
+    get_tumours_collection,
+    get_clinicians_collection,
+    get_investigations_collection,
+    get_audit_logs_collection
+)
+from ..models.episode import Episode, EpisodeCreate, EpisodeUpdate, ConditionType, CancerType
+from ..utils.audit import log_action
+from ..utils.clinician_helpers import build_clinician_maps
+from ..utils.encryption import decrypt_field
+from ..utils.mortality import enrich_treatment_with_mortality
+
+logger = logging.getLogger(__name__)
 
 
 router = APIRouter(prefix="/api/episodes", tags=["episodes"])
@@ -255,7 +268,7 @@ async def create_episode(
         audit_collection = await get_audit_logs_collection()
         
         # Verify patient exists
-        patient = await patients_collection.find_one({"record_number": episode.patient_id})
+        patient = await patients_collection.find_one({"patient_id": episode.patient_id})
         if not patient:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -344,8 +357,7 @@ async def create_episode(
         raise
     except Exception as e:
         import traceback
-        print(f"Error creating episode: {str(e)}")
-        print(traceback.format_exc())
+        logger.error(f"Error creating episode: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create episode: {str(e)}"
@@ -491,19 +503,7 @@ async def get_treatment_by_id(treatment_id: str):
     treatment["_id"] = str(treatment["_id"])
 
     # Build clinician map and surname map for name resolution
-    clinician_map = {}
-    surname_map = {}
-    clinicians = await clinicians_collection.find({}).to_list(length=None)
-    for clinician in clinicians:
-        full_name = f"{clinician.get('first_name', '')} {clinician.get('surname', '')}".strip()
-        if not full_name:
-            full_name = clinician.get('name', str(clinician['_id']))
-        clinician_map[str(clinician['_id'])] = full_name
-
-        # Also map by surname (case-insensitive) for text matching
-        surname = clinician.get('surname', '').strip()
-        if surname:
-            surname_map[surname.upper()] = full_name
+    clinician_map, surname_map = await build_clinician_maps(clinicians_collection)
 
     # Flatten nested structure for frontend compatibility
     flattened_treatment = flatten_treatment_for_frontend(treatment, clinician_map, surname_map)
@@ -711,25 +711,13 @@ async def get_episode(episode_id: str):
     investigations = await investigations_cursor.to_list(length=None)
     
     # Build a map of all clinicians for efficient lookup
-    all_clinicians = await clinicians_collection.find({}).to_list(length=None)
-    clinician_map = {}
-    surname_map = {}  # For matching text surnames like "SENAPATI"
-    for clinician in all_clinicians:
-        full_name = f"{clinician.get('first_name', '')} {clinician.get('surname', '')}".strip()
-        if not full_name:
-            full_name = clinician.get('name', str(clinician['_id']))
+    clinician_map, surname_map = await build_clinician_maps(clinicians_collection)
 
-        # Map by _id string
-        clinician_map[str(clinician["_id"])] = full_name
-        # Also map by full name (for cases where name is already stored)
+    # Also map by full name (for cases where name is already stored)
+    for full_name in list(clinician_map.values()):
         if full_name:
             clinician_map[full_name] = full_name
 
-        # Also map by surname (case-insensitive) for text matching
-        surname = clinician.get('surname', '').strip()
-        if surname:
-            surname_map[surname.upper()] = full_name
-    
     # Convert ObjectIds to strings
     episode["_id"] = str(episode["_id"])
 
@@ -831,8 +819,7 @@ async def update_episode(
         raise
     except Exception as e:
         import traceback
-        print(f"Error updating episode: {str(e)}")
-        print(traceback.format_exc())
+        logger.error(f"Error updating episode: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update episode: {str(e)}"
@@ -933,19 +920,7 @@ async def add_treatment_to_episode(
 
             # Build clinician map and surname map for name resolution
             clinicians_collection = await get_clinicians_collection()
-            all_clinicians = await clinicians_collection.find({}).to_list(length=None)
-            clinician_map = {}
-            surname_map = {}
-            for clinician in all_clinicians:
-                full_name = f"{clinician.get('first_name', '')} {clinician.get('surname', '')}".strip()
-                if not full_name:
-                    full_name = clinician.get('name', str(clinician['_id']))
-                clinician_map[str(clinician['_id'])] = full_name
-
-                # Also map by surname (case-insensitive) for text matching
-                surname = clinician.get('surname', '').strip()
-                if surname:
-                    surname_map[surname.upper()] = full_name
+            clinician_map, surname_map = await build_clinician_maps(clinicians_collection)
 
             # Flatten for frontend compatibility
             created_treatment = flatten_treatment_for_frontend(created_treatment, clinician_map, surname_map)
@@ -972,8 +947,7 @@ async def add_treatment_to_episode(
         raise
     except Exception as e:
         import traceback
-        print(f"Error adding treatment: {str(e)}")
-        print(traceback.format_exc())
+        logger.error(f"Error adding treatment: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to add treatment: {str(e)}"
@@ -1040,19 +1014,7 @@ async def update_treatment_in_episode(
 
             # Build clinician map and surname map for name resolution
             clinicians_collection = await get_clinicians_collection()
-            all_clinicians = await clinicians_collection.find({}).to_list(length=None)
-            clinician_map = {}
-            surname_map = {}
-            for clinician in all_clinicians:
-                full_name = f"{clinician.get('first_name', '')} {clinician.get('surname', '')}".strip()
-                if not full_name:
-                    full_name = clinician.get('name', str(clinician['_id']))
-                clinician_map[str(clinician['_id'])] = full_name
-
-                # Also map by surname (case-insensitive) for text matching
-                surname = clinician.get('surname', '').strip()
-                if surname:
-                    surname_map[surname.upper()] = full_name
+            clinician_map, surname_map = await build_clinician_maps(clinicians_collection)
 
             # Flatten for frontend compatibility
             updated_treatment = flatten_treatment_for_frontend(updated_treatment, clinician_map, surname_map)
@@ -1078,8 +1040,7 @@ async def update_treatment_in_episode(
         raise
     except Exception as e:
         import traceback
-        print(f"Error updating treatment: {str(e)}")
-        print(traceback.format_exc())
+        logger.error(f"Error updating treatment: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update treatment: {str(e)}"
@@ -1259,8 +1220,7 @@ async def add_tumour_to_episode(
         raise
     except Exception as e:
         import traceback
-        print(f"Error adding tumour: {str(e)}")
-        print(traceback.format_exc())
+        logger.error(f"Error adding tumour: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to add tumour: {str(e)}"
@@ -1346,8 +1306,7 @@ async def update_tumour_in_episode(
         raise
     except Exception as e:
         import traceback
-        print(f"Error updating tumour: {str(e)}")
-        print(traceback.format_exc())
+        logger.error(f"Error updating tumour: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update tumour: {str(e)}"
@@ -1419,8 +1378,7 @@ async def delete_tumour_from_episode(
         raise
     except Exception as e:
         import traceback
-        print(f"Error deleting tumour: {str(e)}")
-        print(traceback.format_exc())
+        logger.error(f"Error deleting tumour: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete tumour: {str(e)}"
@@ -1491,8 +1449,7 @@ async def delete_treatment_from_episode(
         raise
     except Exception as e:
         import traceback
-        print(f"Error deleting treatment: {str(e)}")
-        print(traceback.format_exc())
+        logger.error(f"Error deleting treatment: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete treatment: {str(e)}"

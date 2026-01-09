@@ -3,28 +3,20 @@ Surgery treatment endpoints with relationship management
 Handles surgery_primary, surgery_rtt, and surgery_reversal creation, deletion, and linking
 """
 from fastapi import APIRouter, HTTPException, Depends, status
-from pymongo import MongoClient
+from motor.motor_asyncio import AsyncIOMotorDatabase
 from typing import List, Dict, Any
 from datetime import datetime
-import os
-from dotenv import load_dotenv
 
+from ..database import get_database
 from ..models.treatment import SurgeryTreatment, TreatmentType, RelatedSurgery
 from ..models.surgery import ReturnToTheatre
-
-
-# Load environment
-load_dotenv('/etc/impact/secrets.env')
-MONGODB_URI = os.getenv('MONGODB_URI')
-client = MongoClient(MONGODB_URI)
-db = client['impact']
 
 router = APIRouter(prefix="/api/treatments", tags=["treatments-surgery"])
 
 
 # Helper functions
 
-def validate_surgery_relationships(surgery_data: Dict[str, Any]) -> None:
+async def validate_surgery_relationships(surgery_data: Dict[str, Any], db: AsyncIOMotorDatabase) -> None:
     """
     Validate surgery relationship rules
     Raises HTTPException if validation fails
@@ -64,7 +56,7 @@ def validate_surgery_relationships(surgery_data: Dict[str, Any]) -> None:
 
     # If parent_surgery_id provided, validate parent exists and is surgery_primary
     if parent_surgery_id:
-        parent = db.treatments.find_one({'treatment_id': parent_surgery_id})
+        parent = await db['treatments'].find_one({'treatment_id': parent_surgery_id})
         if not parent:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -89,10 +81,10 @@ def validate_surgery_relationships(surgery_data: Dict[str, Any]) -> None:
                 )
 
 
-def update_parent_surgery_for_rtt(parent_id: str, rtt_surgery: Dict[str, Any]) -> None:
+async def update_parent_surgery_for_rtt(parent_id: str, rtt_surgery: Dict[str, Any], db: AsyncIOMotorDatabase) -> None:
     """Update parent surgery when RTT surgery is created"""
     # Add to related_surgery_ids array
-    db.treatments.update_one(
+    await db['treatments'].update_one(
         {'treatment_id': parent_id},
         {
             '$push': {
@@ -106,9 +98,9 @@ def update_parent_surgery_for_rtt(parent_id: str, rtt_surgery: Dict[str, Any]) -
     )
 
     # Update return_to_theatre flags (only if this is the first RTT)
-    parent = db.treatments.find_one({'treatment_id': parent_id})
+    parent = await db['treatments'].find_one({'treatment_id': parent_id})
     if not parent.get('postoperative_events', {}).get('return_to_theatre', {}).get('occurred'):
-        db.treatments.update_one(
+        await db['treatments'].update_one(
             {'treatment_id': parent_id},
             {
                 '$set': {
@@ -122,10 +114,10 @@ def update_parent_surgery_for_rtt(parent_id: str, rtt_surgery: Dict[str, Any]) -
         )
 
 
-def update_parent_surgery_for_reversal(parent_id: str, reversal_surgery: Dict[str, Any]) -> None:
+async def update_parent_surgery_for_reversal(parent_id: str, reversal_surgery: Dict[str, Any], db: AsyncIOMotorDatabase) -> None:
     """Update parent surgery when reversal surgery is created"""
     # Add to related_surgery_ids array
-    db.treatments.update_one(
+    await db['treatments'].update_one(
         {'treatment_id': parent_id},
         {
             '$push': {
@@ -139,7 +131,7 @@ def update_parent_surgery_for_reversal(parent_id: str, reversal_surgery: Dict[st
     )
 
     # Update stoma closure date and reversal link
-    db.treatments.update_one(
+    await db['treatments'].update_one(
         {'treatment_id': parent_id},
         {
             '$set': {
@@ -150,12 +142,12 @@ def update_parent_surgery_for_reversal(parent_id: str, reversal_surgery: Dict[st
     )
 
 
-def reset_parent_surgery_flags(parent_id: str, deleted_type: str) -> None:
+async def reset_parent_surgery_flags(parent_id: str, deleted_type: str, db: AsyncIOMotorDatabase) -> None:
     """
     Reset parent surgery flags when RTT/reversal is deleted
     Only resets if no other related surgeries of that type exist
     """
-    parent = db.treatments.find_one({'treatment_id': parent_id})
+    parent = await db['treatments'].find_one({'treatment_id': parent_id})
     if not parent:
         return
 
@@ -166,7 +158,7 @@ def reset_parent_surgery_flags(parent_id: str, deleted_type: str) -> None:
         other_rtts = [r for r in related_surgeries if r.get('treatment_type') == 'surgery_rtt']
         if len(other_rtts) == 0:
             # Reset RTT flags
-            db.treatments.update_one(
+            await db['treatments'].update_one(
                 {'treatment_id': parent_id},
                 {
                     '$set': {
@@ -184,7 +176,7 @@ def reset_parent_surgery_flags(parent_id: str, deleted_type: str) -> None:
         other_reversals = [r for r in related_surgeries if r.get('treatment_type') == 'surgery_reversal']
         if len(other_reversals) == 0:
             # Reset stoma closure fields
-            db.treatments.update_one(
+            await db['treatments'].update_one(
                 {'treatment_id': parent_id},
                 {
                     '$set': {
@@ -198,7 +190,10 @@ def reset_parent_surgery_flags(parent_id: str, deleted_type: str) -> None:
 # Endpoints
 
 @router.post("/surgery", status_code=status.HTTP_201_CREATED)
-async def create_surgery(surgery: SurgeryTreatment):
+async def create_surgery(
+    surgery: SurgeryTreatment,
+    db: AsyncIOMotorDatabase = Depends(get_database)
+):
     """
     Create a surgery treatment (primary, RTT, or reversal)
 
@@ -216,10 +211,10 @@ async def create_surgery(surgery: SurgeryTreatment):
     surgery_dict = surgery.model_dump(exclude_none=True)
 
     # Validate relationships
-    validate_surgery_relationships(surgery_dict)
+    await validate_surgery_relationships(surgery_dict, db)
 
     # Check if treatment_id already exists
-    existing = db.treatments.find_one({'treatment_id': surgery_dict['treatment_id']})
+    existing = await db['treatments'].find_one({'treatment_id': surgery_dict['treatment_id']})
     if existing:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -227,18 +222,18 @@ async def create_surgery(surgery: SurgeryTreatment):
         )
 
     # Insert surgery
-    result = db.treatments.insert_one(surgery_dict)
+    result = await db['treatments'].insert_one(surgery_dict)
 
     # Update parent surgery if this is RTT or reversal
     parent_id = surgery_dict.get('parent_surgery_id')
     if parent_id:
         if surgery_dict['treatment_type'] == 'surgery_rtt':
-            update_parent_surgery_for_rtt(parent_id, surgery_dict)
+            await update_parent_surgery_for_rtt(parent_id, surgery_dict, db)
         elif surgery_dict['treatment_type'] == 'surgery_reversal':
-            update_parent_surgery_for_reversal(parent_id, surgery_dict)
+            await update_parent_surgery_for_reversal(parent_id, surgery_dict, db)
 
     # Fetch and return created surgery
-    created = db.treatments.find_one({'_id': result.inserted_id})
+    created = await db['treatments'].find_one({'_id': result.inserted_id})
     created['_id'] = str(created['_id'])
 
     return {
@@ -250,7 +245,10 @@ async def create_surgery(surgery: SurgeryTreatment):
 
 
 @router.delete("/{treatment_id}", status_code=status.HTTP_200_OK)
-async def delete_surgery(treatment_id: str):
+async def delete_surgery(
+    treatment_id: str,
+    db: AsyncIOMotorDatabase = Depends(get_database)
+):
     """
     Delete a surgery treatment
 
@@ -263,7 +261,7 @@ async def delete_surgery(treatment_id: str):
     - Returns error - user must delete related surgeries first
     """
     # Find the surgery
-    surgery = db.treatments.find_one({'treatment_id': treatment_id})
+    surgery = await db['treatments'].find_one({'treatment_id': treatment_id})
     if not surgery:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -285,7 +283,7 @@ async def delete_surgery(treatment_id: str):
     parent_id = surgery.get('parent_surgery_id')
     if parent_id:
         # Remove from parent's related_surgery_ids
-        db.treatments.update_one(
+        await db['treatments'].update_one(
             {'treatment_id': parent_id},
             {
                 '$pull': {
@@ -295,10 +293,10 @@ async def delete_surgery(treatment_id: str):
         )
 
         # Reset parent flags if needed
-        reset_parent_surgery_flags(parent_id, treatment_type)
+        await reset_parent_surgery_flags(parent_id, treatment_type, db)
 
     # Delete the surgery
-    result = db.treatments.delete_one({'treatment_id': treatment_id})
+    result = await db['treatments'].delete_one({'treatment_id': treatment_id})
 
     return {
         "message": "Surgery deleted successfully",
@@ -308,7 +306,10 @@ async def delete_surgery(treatment_id: str):
 
 
 @router.get("/{treatment_id}/related-surgeries", status_code=status.HTTP_200_OK)
-async def get_related_surgeries(treatment_id: str):
+async def get_related_surgeries(
+    treatment_id: str,
+    db: AsyncIOMotorDatabase = Depends(get_database)
+):
     """
     Get all RTT and reversal surgeries linked to a primary surgery
 
@@ -316,7 +317,7 @@ async def get_related_surgeries(treatment_id: str):
     - Array of related surgeries grouped by type
     """
     # Find the primary surgery
-    surgery = db.treatments.find_one({'treatment_id': treatment_id})
+    surgery = await db['treatments'].find_one({'treatment_id': treatment_id})
     if not surgery:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -341,7 +342,7 @@ async def get_related_surgeries(treatment_id: str):
         }
 
     # Fetch all related surgeries
-    related_surgeries = list(db.treatments.find({'treatment_id': {'$in': related_ids}}))
+    related_surgeries = await db['treatments'].find({'treatment_id': {'$in': related_ids}}).to_list(length=None)
 
     # Convert ObjectId to string
     for rs in related_surgeries:

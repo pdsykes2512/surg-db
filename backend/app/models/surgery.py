@@ -23,7 +23,7 @@ class Procedure(BaseModel):
     additional_procedures: List[str] = Field(default_factory=list)
     cpt_codes: List[str] = Field(default_factory=list)
     icd10_codes: List[str] = Field(default_factory=list)
-    opcs_codes: List[str] = Field(default_factory=list)
+    opcs4_codes: List[str] = Field(default_factory=list)
     approach: str = Field(..., description="open/laparoscopic/robotic/converted")
     robotic_surgery: bool = Field(False, description="Whether robotic assistance was used")
     conversion_to_open: bool = Field(False, description="Whether laparoscopic procedure was converted to open")
