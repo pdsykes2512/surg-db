@@ -4,6 +4,7 @@ import { Button } from '../common/Button'
 import { DateInputTypeable } from '../common/DateInputTypeable'
 import { SearchableSelect } from '../common/SearchableSelect'
 import { calculateStage, formatStage, getStageColor } from '../../utils/cancerStaging'
+import { generateTumourId } from '../../utils/idGenerators'
 
 interface TumourModalProps {
   episodeId: string
@@ -11,16 +12,6 @@ interface TumourModalProps {
   onCancel: () => void
   mode?: 'create' | 'edit'
   initialData?: any
-}
-
-const generateTumourId = (nhsNumber: string, count: number) => {
-  // Clean NHS number (remove spaces)
-  const cleanNHS = nhsNumber.replace(/\s/g, '')
-  
-  // Format count as 2-digit number
-  const incrementalNum = String(count + 1).padStart(2, '0')
-  
-  return `TUM-${cleanNHS}-${incrementalNum}`
 }
 
 const TUMOUR_TYPES = [
@@ -116,7 +107,7 @@ const CRM_STATUS = [
 ]
 
 export function TumourModal({ episodeId, onSubmit, onCancel, mode = 'create', initialData }: TumourModalProps) {
-  const [patientNhsNumber, setPatientNhsNumber] = useState<string>('')
+  const [patientId, setPatientId] = useState<string>('')
   const [tumourCount, setTumourCount] = useState<number>(0)
 
   // Keyboard shortcuts: Escape to close, Cmd/Ctrl+Enter to submit
@@ -129,36 +120,27 @@ export function TumourModal({ episodeId, onSubmit, onCancel, mode = 'create', in
     isOpen: true
   })
 
-  // Fetch episode to get patient NHS number
+  // Fetch episode to get patient ID and tumour count
   useEffect(() => {
     const fetchEpisodeData = async () => {
       try {
-        // Fetch episode to get patient_id
+        // Fetch episode to get patient_id and existing tumours
         // Use /api for relative URLs (uses Vite proxy)
         const API_URL = import.meta.env.VITE_API_URL || '/api'
         const episodeResponse = await fetch(`${API_URL}/episodes/${episodeId}`, {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         })
         const episodeData = await episodeResponse.json()
-        
-        // Fetch patient to get NHS number
-        const patientResponse = await fetch(`${API_URL}/patients/${episodeData.patient_id}`, {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-        })
-        const patientData = await patientResponse.json()
-        setPatientNhsNumber(patientData.nhs_number)
-        
-        // Fetch existing tumours for this episode to get count
-        const tumoursResponse = await fetch(`${API_URL}/tumours/?episode_id=${episodeId}`, {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-        })
-        const tumours = await tumoursResponse.json()
+        setPatientId(episodeData.patient_id)
+
+        // Count existing tumours from episode data
+        const tumours = episodeData.tumours || []
         setTumourCount(Array.isArray(tumours) ? tumours.length : 0)
       } catch (error) {
         console.error('Failed to fetch episode data:', error)
       }
     }
-    
+
     if (mode === 'create') {
       fetchEpisodeData()
     }
@@ -217,13 +199,13 @@ export function TumourModal({ episodeId, onSubmit, onCancel, mode = 'create', in
 
   const [activeTab, setActiveTab] = useState<'basic' | 'staging' | 'pathology' | 'molecular'>('basic')
 
-  // Generate tumour ID when NHS number is available
+  // Generate tumour ID when patient ID is available
   useEffect(() => {
-    if (patientNhsNumber && mode === 'create' && !formData.tumour_id) {
-      const newTumourId = generateTumourId(patientNhsNumber, tumourCount)
+    if (patientId && mode === 'create' && !formData.tumour_id) {
+      const newTumourId = generateTumourId(patientId, tumourCount)
       setFormData((prev: any) => ({ ...prev, tumour_id: newTumourId }))
     }
-  }, [patientNhsNumber, tumourCount, mode])
+  }, [patientId, tumourCount, mode])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()

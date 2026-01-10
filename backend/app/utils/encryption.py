@@ -375,8 +375,8 @@ def generate_search_hash(field_name: str, value: Any) -> Optional[str]:
     if value is None or value == '':
         return None
 
-    # Normalize and hash
-    normalized = str(value).strip().lower()
+    # Normalize and hash (remove all spaces for consistent hashing)
+    normalized = str(value).replace(" ", "").strip().lower()
     hash_digest = hashlib.sha256(normalized.encode('utf-8')).hexdigest()
 
     return hash_digest

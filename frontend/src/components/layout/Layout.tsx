@@ -16,8 +16,11 @@ export function Layout({ children }: LayoutProps) {
 
   useEffect(() => {
     // Fetch version from backend API to verify sync
-    const API_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:8000'
-    axios.get(`${API_URL}/`)
+    // When using Vite proxy (VITE_API_URL=/api), access root endpoint through proxy
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
+    const rootUrl = API_URL === '/api' ? '/' : API_URL.replace('/api', '')
+
+    axios.get(rootUrl)
       .then(response => {
         if (response.data?.version) {
           // Use backend version if available and different

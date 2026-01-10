@@ -1337,13 +1337,13 @@ async def delete_tumour_from_episode(
         # Get tumour info before deletion
         existing_tumour = await tumours_collection.find_one({
             "tumour_id": tumour_id,
-            "episode_id": str(episode["_id"])
+            "episode_id": episode_id
         })
-        
+
         # Delete tumour from separate collection
         result = await tumours_collection.delete_one({
             "tumour_id": tumour_id,
-            "episode_id": str(episode["_id"])
+            "episode_id": episode_id
         })
         
         if result.deleted_count == 0:

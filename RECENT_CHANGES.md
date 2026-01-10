@@ -15,6 +15,313 @@ This file tracks significant changes made to the IMPACT application (formerly su
 
 ---
 
+## 2026-01-10 - Fixed Tumour ID Generation, Patient Search Focus, Console Warnings, and NHS Number Search
+
+**Changed by:** AI Session (Claude Code)
+
+**Issues Fixed:**
+
+### 1. Tumour ID Generation (Wrong Format)
+**Issue:** Tumour IDs were being generated using NHS numbers instead of patient IDs, resulting in incorrect format (e.g., `TUM-1234567890-01` instead of `TUM-A1B2C3-01`)
+
+**Root Cause:** `TumourModal.tsx` had a local `generateTumourId` function that used NHS number instead of the centralized function from `idGenerators.ts`
+
+**Solution:**
+1. Removed local `generateTumourId` function from TumourModal
+2. Imported correct `generateTumourId` from `utils/idGenerators`
+3. Changed state variable from `patientNhsNumber` to `patientId`
+4. Updated fetch logic to store `patient_id` directly from episode data (removed unnecessary patient fetch)
+5. Updated tumour ID generation effect to use `patientId`
+
+**Files affected:**
+- [frontend/src/components/modals/TumourModal.tsx](frontend/src/components/modals/TumourModal.tsx) - Lines 1-7 (import), 110 (state), 124-150 (fetch), 205-211 (generation)
+
+**Testing:**
+1. Open an episode and click "Add Tumour"
+2. Verify tumour ID is generated in format `TUM-{6-char-patient-id}-{count}` (e.g., `TUM-A1B2C3-01`)
+3. Should NOT use NHS number (10 digits)
+
+### 2. Tumour Delete Function (404 Error)
+**Issue:** Deleting tumours returned 404 error, couldn't find tumours to delete
+
+**Root Cause:** Delete endpoint was matching `episode_id` against MongoDB ObjectId (`str(episode["_id"])`) instead of the episode's string ID field (like "E-4AB9A9-01")
+
+**Solution:** Changed query to use `episode_id` string field instead of ObjectId conversion
+
+**Files affected:**
+- [backend/app/routes/episodes.py](backend/app/routes/episodes.py) - Lines 1340, 1346 (delete_tumour_from_episode function)
+
+### 3. TumourModal 404 Error on Load
+**Issue:** Opening "Add Tumour" modal triggered 404 error trying to fetch `/api/tumours/?episode_id=...`
+
+**Root Cause:** Code was trying to fetch from non-existent `/api/tumours/` endpoint
+
+**Solution:** Changed to get tumour count from episode data (which already contains tumours array) instead of making separate API call
+
+**Files affected:**
+- [frontend/src/components/modals/TumourModal.tsx](frontend/src/components/modals/TumourModal.tsx) - Lines 136-138 (fetch logic)
+
+### 4. Console Errors and Warnings
+**Issue:** React console showing `ERR_CONNECTION_REFUSED` and React Router v7 deprecation warnings
+
+**Root Causes:**
+1. Layout.tsx trying to hit `http://localhost:8000/` directly instead of using Vite proxy
+2. React Router missing v7 future flags
+
+**Solution:**
+1. Fixed Layout.tsx root URL construction to use `/` when `VITE_API_URL=/api` (proxy mode)
+2. Added React Router future flags `v7_startTransition` and `v7_relativeSplatPath` to Router config
+
+**Files affected:**
+- [frontend/src/components/layout/Layout.tsx](frontend/src/components/layout/Layout.tsx) - Line 21 (root URL construction)
+- [frontend/src/App.tsx](frontend/src/App.tsx) - Lines 102-105 (future flags)
+
+**Notes:**
+- All ID generation should use functions from `utils/idGenerators.ts`
+- Patient ID format: 6-character hash (e.g., "A1B2C3")
+- Tumour ID format: `TUM-{patient_id}-{count}` (e.g., "TUM-A1B2C3-01")
+- Console warnings now silenced except harmless browser Permissions-Policy notices
+
+---
+
+## 2026-01-10 - Fixed Patient Search Focus Loss and NHS Number Search
+
+**Changed by:** AI Session (Claude Code)
+
+**Issue:**
+1. **Focus loss during search**: When typing in patient search field, the input would lose focus after each character as the search results updated from the server
+2. **Missed keystrokes during search**: When the loading spinner appeared, keypresses would be missed
+3. **NHS number search not working**: Searching by NHS number (with or without spaces) would not return results due to hash normalization mismatch
+
+**Root Causes:**
+1. **Focus loss**: `SearchableSelect` component had `options` in the `useEffect` dependency array. When server returned new search results, `options` changed, triggering the effect which called `setSearchTerm()`, causing the input to re-render and lose focus.
+
+2. **Missed keystrokes**: Input field had `disabled={loading}` prop, which disabled the input when search started, causing keypresses to be ignored until search completed.
+
+3. **NHS number search**: Hash normalization was inconsistent between storage and search:
+   - **Storage**: `generate_search_hash()` used `.strip().lower()` (keeps internal spaces)
+   - **Search**: Patient route used `.replace(" ", "").lower()` (removes all spaces)
+   - Result: Hash of "123 456 7890" at storage ≠ Hash of "1234567890" at search
+
+**Solution:**
+1. **Focus loss**: Completely rewrote `PatientSearch` component to use a simple `<input>` field with direct state management (like PatientsPage), instead of the problematic `SearchableSelect` component. The new implementation:
+   - Uses separate `isSearching` state to control display mode vs search mode (line 36)
+   - Search fetch only runs when `isSearching` is true (line 66)
+   - Conditionally renders either selected patient display OR search input based on `isSearching` state
+   - Display mode doesn't change when search results update, preventing mode switching that caused focus loss
+   - Shows dropdown results with createPortal for proper positioning
+
+2. **Missed keystrokes**:
+   - Removed `disabled={loading}` prop from input field (line 175)
+   - Added focus restoration effect that refocuses input if it loses focus during loading (lines 91-95)
+   - Input now stays enabled and accepts keypresses even while search is in progress
+
+3. **NHS number search**: Updated `generate_search_hash()` in [encryption.py:379](backend/app/utils/encryption.py#L379) to remove all spaces before hashing: `.replace(" ", "").strip().lower()`. This matches the search query normalization.
+
+**Files affected:**
+- [frontend/src/components/search/PatientSearch.tsx](frontend/src/components/search/PatientSearch.tsx) - Complete rewrite with simple input and dropdown
+- [backend/app/utils/encryption.py](backend/app/utils/encryption.py) - Line 379: Added space removal to hash normalization
+- [backend/migrations/rehash_patient_searchable_fields.py](backend/migrations/rehash_patient_searchable_fields.py) - Created and executed migration
+
+**Testing:**
+1. **Focus and keystroke fix**:
+   - Open episode creation modal
+   - Start typing in patient search field rapidly (e.g., "1234567890")
+   - Verify input maintains focus as you type multiple characters
+   - Verify all keystrokes are captured, even when loading spinner appears
+   - Search results should update without interrupting typing
+   - No missed characters or focus loss
+
+2. **NHS number search** (ALL patients - migration completed):
+   - Search for any existing patient by NHS number (with or without spaces)
+   - Search for "1234567890" (without spaces) - should find the patient
+   - Search for "123 456 7890" (with spaces) - should find the patient
+   - Search for "123" (partial) - should find the patient
+   - Works for all 7,972 existing patients + any new patients
+
+**Notes:**
+- ✅ **MIGRATION COMPLETED**: All 7,972 existing patient hashes have been updated with the new normalization
+- Migration script successfully processed all patients with 0 errors in ~2 minutes
+- Both new and existing patients can now be searched by NHS number (with or without spaces)
+- Backend service was restarted to pick up the new hash generation code
+- Migration can be re-run safely if needed (idempotent)
+
+---
+
+## 2026-01-09 - Fixed Pre-Selected Patient Episode Creation (422 Validation Error)
+
+**Changed by:** AI Session (Claude Code)
+
+**Issue:**
+When creating a cancer episode with a pre-selected patient (navigating from patient page), the form would fail with a 422 validation error reporting missing required fields (`condition_type`, `created_by`, `last_modified_by`, etc.) and `cancer_data` as empty object `{}` instead of `null`.
+
+**Root Cause:**
+In `EpisodesPage.tsx` line 701, when a patient was pre-selected, the modal was initialized with `initialData={{ patient_id: patientId }}`. This caused `CancerEpisodeForm` to treat it as edit mode data, triggering the `initialData` code path which:
+1. Only returned the fields present in `initialData` (just `patient_id`)
+2. Set `cancer_data: initialData.cancer_data || {}` which became `{}` instead of `null`
+3. Missing all default required fields like `condition_type`, `created_by`, `episode_status`, etc.
+
+**Solution:**
+Added new `initialPatientId` prop to `CancerEpisodeForm` to handle pre-selected patients separately from edit mode:
+1. Added `initialPatientId?: string` to `CancerEpisodeFormProps` interface
+2. Changed default form state to use `patient_id: initialPatientId || ''` (line 66)
+3. Updated `EpisodesPage.tsx` to pass `initialPatientId={patientId}` instead of including it in `initialData`
+
+This ensures pre-selected patients get full default form state initialization (including `cancer_data: null` and all required fields) with only the `patient_id` pre-filled.
+
+**Files affected:**
+- [frontend/src/components/forms/CancerEpisodeForm.tsx](frontend/src/components/forms/CancerEpisodeForm.tsx) - Added `initialPatientId` prop, line 18, 25, 66
+- [frontend/src/pages/EpisodesPage.tsx](frontend/src/pages/EpisodesPage.tsx) - Changed modal props, lines 701-702
+
+**Testing:**
+1. Navigate to Episodes page from a patient's detail page (patient pre-selected)
+2. Fill in all required fields for cancer episode
+3. Submit form
+4. Episode should be created successfully without 422 validation errors
+5. Verify `cancer_data` is sent as `null` (not `{}`)
+6. Verify all required fields are present in request payload
+
+**Notes:**
+- Also removed excessive debug console logging from PatientSearch, CancerEpisodeForm, and EpisodesPage
+- The `initialData` prop should ONLY be used for actual edit mode, not for pre-selecting patients
+- When pre-selecting a patient, always use `initialPatientId` to maintain proper form initialization
+
+---
+
+## 2026-01-09 - Fixed Patient Search Encryption, Episode ID Generation, and API URL Issues
+
+**Changed by:** AI Session (Claude Code)
+
+**Issue:**
+1. **Patient search not working**: PatientSearch was doing client-side filtering on encrypted MRN/NHS fields, so searches failed
+2. **Episode ID not generating for pre-selected patients**: When navigating from patient page, episode ID wouldn't auto-generate
+3. **Episode creation failing with 404**: API URL construction error causing POST to wrong endpoint
+4. **Episode ID display missing**: No visual feedback showing the auto-generated episode ID
+
+**Changes:**
+
+### Patient Search - Server-Side with Hash-Based Lookup
+1. Converted PatientSearch from client-side filtering to server-side search
+2. Added `onSearchChange` prop to SearchableSelect component
+3. Implemented debounced search (300ms) to avoid excessive API calls
+4. Added support for pre-selected patient_id (fetches patient data on mount)
+5. Automatically triggers onChange with patient data when value prop is set
+6. Backend uses hash-based indexed search on `mrn_hash` and `nhs_number_hash` fields (O(log n) performance)
+
+### Episode ID Visual Display
+7. Added blue info box in CancerEpisodeForm Step 1 showing auto-generated Episode ID
+8. Added console logging for debugging episode ID generation
+9. Added fallback ID generation if API call fails
+
+### API URL Fix
+10. Fixed EpisodesPage API URL construction to use `/api` prefix correctly
+
+**Files affected:**
+- [frontend/src/components/search/PatientSearch.tsx](frontend/src/components/search/PatientSearch.tsx) - Complete rewrite for server-side search
+- [frontend/src/components/common/SearchableSelect.tsx](frontend/src/components/common/SearchableSelect.tsx) - Added onSearchChange prop
+- [frontend/src/components/forms/CancerEpisodeForm.tsx](frontend/src/components/forms/CancerEpisodeForm.tsx) - Added Episode ID display, console logging, fallback generation
+- [frontend/src/pages/EpisodesPage.tsx](frontend/src/pages/EpisodesPage.tsx) - Fixed API URL construction (line 278)
+
+**Testing:**
+
+Patient Search:
+1. Navigate to Episodes page, click "+ Cancer Episode"
+2. Type an MRN or NHS number in the patient field
+3. Search results should appear as you type (server-side search)
+4. Console shows: `[PatientSearch] Searching for: <your search>`
+
+Episode ID Generation (New Episode):
+1. Select a patient from search
+2. Blue box should appear showing "Episode ID (Auto-generated): E-XXXXXX-01"
+3. Console shows episode generation logs
+
+Episode ID Generation (Pre-Selected Patient):
+1. Go to Patients page, click on a patient
+2. Click "+ Cancer Episode"
+3. Patient should already be selected
+4. Episode ID should auto-generate immediately
+5. Console shows: `[PatientSearch] Fetching initial patient by ID:`
+
+Episode Creation:
+1. Fill out all required fields in the form
+2. Click "Create Episode"
+3. Should POST to `/api/episodes/` successfully (no 404 error)
+
+**Notes:**
+- **CRITICAL**: PatientSearch now uses server-side search with hash-based encrypted field lookup
+- MRN and NHS Number fields are encrypted (`ENC:...`) but searchable via `_hash` fields
+- Backend search handles MRN, NHS number, and patient_id patterns automatically
+- Debouncing prevents API spam (waits 300ms after user stops typing)
+- Pre-selected patients trigger onChange automatically to populate episode ID
+- Episode ID format: `E-{PATIENT_ID}-{COUNT}` (e.g., `E-A1B2C3-01`)
+- Frontend service was restarted successfully
+
+---
+
+## 2026-01-09 - Fixed Episode ID Generator, Patient Creation, SearchableSelect, and Removed Code Duplication
+
+**Changed by:** AI Session (Claude Code)
+
+**Issue:**
+1. Episode ID format was using `EPI-` prefix instead of the correct `E-` format
+2. Patient creation modal was failing due to:
+   - Using local random hex generator instead of proper `generatePatientId()` utility
+   - API endpoint missing trailing slash causing 307 redirect and CORS preflight failure
+3. **Code duplication**: CancerEpisodeForm had duplicate `generateEpisodeId()` function that conflicted with the utility function
+4. **SearchableSelect bug**: Surgery Performed field in CancerEpisodeForm was reverting to blank when typing instead of selecting from dropdown
+
+**Changes:**
+
+### Episode ID Generator Fix
+1. Updated `generateEpisodeId()` function in idGenerators.ts to use `E-` prefix instead of `EPI-`
+2. **Removed duplicate** local `generateEpisodeId()` function from CancerEpisodeForm.tsx
+3. **Imported** `generateEpisodeId` from idGenerators utility into CancerEpisodeForm.tsx
+4. **Updated usage** to pass `patientId` (6-character hash) instead of `nhs_number` (10-digit NHS number)
+5. Updated JSDoc comments to reflect correct format
+
+### Patient Creation Fix
+6. Imported `generatePatientId` from idGenerators utility in PatientModal.tsx
+7. Removed local random hex generator function
+8. Fixed API endpoint to use `/patients/` (with trailing slash) instead of `/patients`
+
+### SearchableSelect Fix
+9. Fixed onBlur handler in SearchableSelect component to match typed text against option labels AND values (case-insensitive)
+10. Now accepts typed values if they exactly match an option (e.g., typing "yes", "Yes", or "YES" all work)
+11. Resets to previous value if typed text doesn't match any option (prevents invalid values)
+
+**Files affected:**
+- [frontend/src/utils/idGenerators.ts](frontend/src/utils/idGenerators.ts) - Line 41
+- [frontend/src/components/forms/CancerEpisodeForm.tsx](frontend/src/components/forms/CancerEpisodeForm.tsx) - Lines 12, 20-26 (removed), 294-306 (updated)
+- [frontend/src/components/modals/PatientModal.tsx](frontend/src/components/modals/PatientModal.tsx) - Lines 7, 62-64
+- [frontend/src/pages/PatientsPage.tsx](frontend/src/pages/PatientsPage.tsx) - Line 181
+- [frontend/src/components/common/SearchableSelect.tsx](frontend/src/components/common/SearchableSelect.tsx) - Lines 144-177 (updated onBlur)
+
+**Testing:**
+
+Episode ID:
+1. Navigate to Episodes page
+2. Click "+ Cancer Episode" button
+3. Select a patient
+4. Verify the Episode ID field shows format `E-{PATIENT_ID}-01` (e.g., `E-A1B2C3-01`) where PATIENT_ID is the 6-character patient hash
+
+Patient Creation:
+1. Navigate to Patients page
+2. Click "+ Add Patient" button
+3. Fill in required fields (MRN or NHS Number, DOB, Gender)
+4. Click "Create Patient"
+5. Verify patient is created successfully without 307 redirect errors
+6. Verify patient_id uses proper 6-character alphanumeric hash format
+
+**Notes:**
+- **IMPORTANT**: Episode ID format is now `E-{PATIENT_ID}-{COUNT}` using the 6-character patient hash (e.g., `E-A1B2C3-01`), NOT NHS number
+- This maintains consistency across all ID generators (treatments, tumours, investigations all use patient_id)
+- Patient ID now uses proper timestamp-based hash from idGenerators utility
+- Removed ~7 lines of duplicate code from CancerEpisodeForm.tsx
+- API trailing slash issue was causing CORS preflight (OPTIONS) requests to fail with 400 Bad Request
+- Frontend service was restarted and changes were hot-reloaded successfully
+
+---
+
 ## 2026-01-09 - Comprehensive Code Review and Refactoring for Consistency and Efficiency
 
 **Changed by:** AI Session (Claude Code)

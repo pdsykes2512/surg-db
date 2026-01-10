@@ -272,10 +272,8 @@ export function EpisodesPage() {
 
   const handleCreate = async (data: any) => {
     try {
-      console.log('Creating cancer episode with data:', data)
-
-      // Use empty string for relative URLs when VITE_API_URL is /api (uses Vite proxy)
-      const API_URL = import.meta.env.VITE_API_URL === '/api' ? '' : (import.meta.env.VITE_API_URL || 'http://localhost:8000/api')
+      // Use /api for relative URLs when VITE_API_URL is /api (uses Vite proxy)
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
       const response = await fetch(`${API_URL}/episodes/`, {
         method: 'POST',
         headers: {
@@ -287,22 +285,21 @@ export function EpisodesPage() {
 
       if (!response.ok) {
         const error = await response.json()
-        console.error('Server error:', error)
-        
+
         // Handle different error formats
         let errorMessage = 'Failed to create cancer episode'
-        
+
         if (typeof error.detail === 'string') {
           errorMessage = error.detail
         } else if (Array.isArray(error.detail)) {
           // Pydantic validation errors
-          errorMessage = error.detail.map((err: any) => 
+          errorMessage = error.detail.map((err: any) =>
             `${err.loc?.join('.') || 'Field'}: ${err.msg}`
           ).join('\n')
         } else if (error.detail && typeof error.detail === 'object') {
           errorMessage = JSON.stringify(error.detail, null, 2)
         }
-        
+
         throw new Error(errorMessage)
       }
 
@@ -313,13 +310,15 @@ export function EpisodesPage() {
     } catch (error: any) {
       console.error('Failed to create cancer episode:', error)
       const errorMessage = error.message || 'Failed to create cancer episode'
-      
+
+      // DON'T close the modal on error - keep form data intact
       // For multi-line errors, show an alert instead of toast
       if (errorMessage.includes('\n')) {
         alert(`Failed to create cancer episode:\n\n${errorMessage}`)
       } else {
         showToast(errorMessage, 'error')
       }
+      // Don't reset anything - let user fix the error and retry
     }
   }
 
@@ -688,7 +687,8 @@ export function EpisodesPage() {
             setEditingEpisode(null)
           }}
           mode={editingEpisode ? 'edit' : 'create'}
-          initialData={editingEpisode || (patientId ? { patient_id: patientId } : undefined)}
+          initialData={editingEpisode}
+          initialPatientId={patientId}
         />
       )}
 

@@ -9,26 +9,20 @@ import { NHSProviderSelect } from '../search/NHSProviderSelect'
 import { TumourModal } from '../modals/TumourModal'
 import { AddTreatmentModal } from '../modals/AddTreatmentModal'
 import { formatCancerType, formatAnatomicalSite, formatNHSNumber } from '../../utils/formatters'
+import { generateEpisodeId } from '../../utils/idGenerators'
 
 interface CancerEpisodeFormProps {
   onSubmit: (data: any) => void
   onCancel: () => void
   initialData?: any
+  initialPatientId?: string
   mode?: 'create' | 'edit'
-}
-
-// Generate unique episode ID based on NHS Number and count
-const generateEpisodeId = (nhsNumber: string, count: number) => {
-  if (!nhsNumber) return ''
-  const cleanNHS = nhsNumber.replace(/\s/g, '')
-  const incrementalNum = (count + 1).toString().padStart(2, '0')
-  return `EPI-${cleanNHS}-${incrementalNum}`
 }
 
 // NHS Trust ODS Codes - NBOCA requirement (CR1410, CR1450)
 // NHS Trust options imported from centralized utils
 
-export function CancerEpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }: CancerEpisodeFormProps) {
+export function CancerEpisodeForm({ onSubmit, onCancel, initialData, initialPatientId, mode = 'create' }: CancerEpisodeFormProps) {
   const [currentStep, setCurrentStep] = useState(1)
   const [addTumourNow, setAddTumourNow] = useState(false)
   const [addTreatmentNow, setAddTreatmentNow] = useState(false)
@@ -69,7 +63,7 @@ export function CancerEpisodeForm({ onSubmit, onCancel, initialData, mode = 'cre
     
     return {
       episode_id: '',
-      patient_id: '',
+      patient_id: initialPatientId || '',
       condition_type: 'cancer',
       cancer_type: '',
       referral_date: new Date().toISOString().split('T')[0],
@@ -298,7 +292,7 @@ export function CancerEpisodeForm({ onSubmit, onCancel, initialData, mode = 'cre
                   }
 
                   // Generate episode ID when patient is selected
-                  if (patientData?.nhs_number && mode === 'create') {
+                  if (patientId && mode === 'create') {
                     try {
                       // Fetch existing episodes for this patient to get count
                       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
@@ -310,10 +304,13 @@ export function CancerEpisodeForm({ onSubmit, onCancel, initialData, mode = 'cre
                       const episodes = await response.json()
                       const episodeCount = Array.isArray(episodes) ? episodes.length : 0
 
-                      const newEpisodeId = generateEpisodeId(patientData.nhs_number, episodeCount)
+                      const newEpisodeId = generateEpisodeId(patientId, episodeCount)
                       updateFormData('episode_id', newEpisodeId)
                     } catch (error) {
                       console.error('Failed to generate episode ID:', error)
+                      // Generate a fallback ID even if fetch fails
+                      const fallbackId = generateEpisodeId(patientId, 0)
+                      updateFormData('episode_id', fallbackId)
                     }
                   }
                 }}
@@ -354,6 +351,21 @@ export function CancerEpisodeForm({ onSubmit, onCancel, initialData, mode = 'cre
                 </>
               )}
             </div>
+
+            {/* Display Episode ID after patient selection */}
+            {formData.patient_id && formData.episode_id && (
+              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <label className="block text-sm font-medium text-blue-900 mb-1">
+                  Episode ID (Auto-generated)
+                </label>
+                <div className="text-lg font-mono font-bold text-blue-700">
+                  {formData.episode_id}
+                </div>
+                <p className="text-xs text-blue-600 mt-1">
+                  This ID will be used to track this cancer episode
+                </p>
+              </div>
+            )}
           </div>
         )}
       </div>
