@@ -5,6 +5,7 @@ import { DateInputTypeable } from '../common/DateInputTypeable'
 import { SurgeonSearch } from '../search/SurgeonSearch'
 import { SearchableSelect } from '../common/SearchableSelect'
 import { NHSProviderSelect } from '../search/NHSProviderSelect'
+import { generateTreatmentId, getTreatmentPrefix } from '../../utils/idGenerators'
 
 interface AddTreatmentModalProps {
   episodeId: string
@@ -15,25 +16,6 @@ interface AddTreatmentModalProps {
   surgeryType?: 'primary' | 'rtt' | 'reversal'
   parentSurgeryId?: string
   parentSurgeryData?: any
-}
-
-const generateTreatmentId = (type: string, patientId: string, count: number) => {
-  // Format count as 2-digit number
-  const incrementalNum = String(count + 1).padStart(2, '0')
-
-  // Map treatment type to prefix
-  const prefixMap: Record<string, string> = {
-    'surgery': 'SUR',
-    'surgery_primary': 'SUR',
-    'surgery_rtt': 'SUR',
-    'surgery_reversal': 'SUR',
-    'chemotherapy': 'ONC',
-    'radiotherapy': 'DXT',
-    'immunotherapy': 'IMM'
-  }
-
-  const prefix = prefixMap[type] || 'TRE'
-  return `${prefix}-${patientId}-${incrementalNum}`
 }
 
 // OPCS-4 Procedure codes - common colorectal and general surgery procedures
@@ -178,7 +160,8 @@ export function AddTreatmentModal({
 
         // Generate treatment ID immediately after getting the count
         console.log('Generating treatment ID with:', { treatmentType, patientId: episodeData.patient_id, treatmentCount: count })
-        const newTreatmentId = generateTreatmentId(treatmentType, episodeData.patient_id, count)
+        const prefix = getTreatmentPrefix(treatmentType)
+        const newTreatmentId = generateTreatmentId(prefix, episodeData.patient_id, count)
         console.log('Generated treatment ID:', newTreatmentId)
         setFormData((prev: any) => ({ ...prev, treatment_id: newTreatmentId }))
       } catch (error) {
@@ -386,7 +369,8 @@ export function AddTreatmentModal({
 
     // Regenerate treatment ID with new type prefix if patient_id is available
     if (patientId && mode === 'create') {
-      updatedFormData.treatment_id = generateTreatmentId(type, patientId, treatmentCount)
+      const prefix = getTreatmentPrefix(type)
+      updatedFormData.treatment_id = generateTreatmentId(prefix, patientId, treatmentCount)
     }
     
     setFormData(updatedFormData)

@@ -3,6 +3,7 @@ import { useModalShortcuts } from '../../hooks/useModalShortcuts'
 import { Button } from '../common/Button'
 import { DateInputTypeable } from '../common/DateInputTypeable'
 import { SurgeonSearch } from '../search/SurgeonSearch'
+import { generateFollowUpId } from '../../utils/idGenerators'
 
 interface FollowUpModalProps {
   episodeId: string
@@ -11,12 +12,6 @@ interface FollowUpModalProps {
   onCancel: () => void
   mode?: 'create' | 'edit'
   initialData?: any
-}
-
-const generateFollowUpId = (patientId: string, count: number) => {
-  const cleanPatientId = patientId.replace(/[^a-zA-Z0-9]/g, '')
-  const incrementalNum = String(count + 1).padStart(2, '0')
-  return `FU-${cleanPatientId}-${incrementalNum}`
 }
 
 const FOLLOW_UP_TYPES = [

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useModalShortcuts } from '../../hooks/useModalShortcuts'
 import { Button } from '../common/Button'
 import { DateInputTypeable } from '../common/DateInputTypeable'
+import { generateInvestigationId, getInvestigationPrefix } from '../../utils/idGenerators'
 
 interface InvestigationModalProps {
   episodeId: string
@@ -11,13 +12,6 @@ interface InvestigationModalProps {
   mode?: 'create' | 'edit'
   initialData?: any
   existingInvestigations?: any[]
-}
-
-const generateInvestigationId = (patientId: string, type: string, count: number) => {
-  const cleanPatientId = patientId.replace(/[^a-zA-Z0-9]/g, '')
-  const typePrefix = type === 'imaging' ? 'IMG' : type === 'endoscopy' ? 'END' : 'LAB'
-  const incrementalNum = String(count + 1).padStart(2, '0')
-  return `${typePrefix}-${cleanPatientId}-${incrementalNum}`
 }
 
 const INVESTIGATION_TYPES = [
@@ -125,8 +119,8 @@ export function InvestigationModal({ episodeId, patientId, onSubmit, onCancel, m
     
     const investigation = {
       ...formData,
-      investigation_id: mode === 'create' 
-        ? generateInvestigationId(patientId, formData.type, sameTypeCount)
+      investigation_id: mode === 'create'
+        ? generateInvestigationId(patientId, sameTypeCount, getInvestigationPrefix(formData.type))
         : formData.investigation_id,
       patient_id: patientId,
       episode_id: episodeId

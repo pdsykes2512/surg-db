@@ -4,19 +4,13 @@ import { DateInputTypeable } from '../common/DateInputTypeable'
 import { formatNHSNumber } from '../../utils/formatters'
 import { procedureToICD10, procedureToOPCS, standardProcedures } from '../../data/procedures'
 import { commonDiagnoses } from '../../data/diagnoses'
+import { generateTreatmentId } from '../../utils/idGenerators'
 
 interface EpisodeFormProps {
   onSubmit: (data: any) => void
   onCancel: () => void
   initialData?: any
   mode?: 'create' | 'edit'
-}
-
-// Generate unique surgery ID with hash-like format
-const generateSurgeryId = () => {
-  const timestamp = Date.now().toString(36)
-  const randomStr = Math.random().toString(36).substring(2, 8)
-  return `SUR-${timestamp}-${randomStr}`.toUpperCase()
 }
 
 export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }: EpisodeFormProps) {
@@ -206,13 +200,34 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
     }
   })
 
-  // Auto-generate surgery ID when creating new episode
+  // Auto-generate surgery ID when creating new episode and patient_id is available
   useEffect(() => {
-    if (mode === 'create') {
-      // Always generate a new ID when in create mode
-      updateSimpleField('surgery_id', generateSurgeryId())
+    const fetchAndGenerateId = async () => {
+      if (mode === 'create' && formData.patient_id) {
+        try {
+          const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
+          const response = await fetch(`${API_URL}/episodes/?patient_id=${formData.patient_id}`, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          })
+          if (response.ok) {
+            const episodes = await response.json()
+            // Count surgery episodes for this patient
+            const surgeryCount = episodes.filter((ep: any) => ep.surgery_id?.startsWith('SUR-')).length
+            const newId = generateTreatmentId('SUR', formData.patient_id, surgeryCount)
+            updateSimpleField('surgery_id', newId)
+          }
+        } catch (error) {
+          console.error('Error fetching episodes for ID generation:', error)
+          // Fallback: use count 0 if fetch fails
+          const newId = generateTreatmentId('SUR', formData.patient_id, 0)
+          updateSimpleField('surgery_id', newId)
+        }
+      }
     }
-  }, [mode])
+    fetchAndGenerateId()
+  }, [mode, formData.patient_id])
 
   const updateField = (section: string, field: string, value: any) => {
     setFormData((prev: any) => {

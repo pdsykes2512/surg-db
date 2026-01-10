@@ -74,15 +74,78 @@ export function generateTumourId(patientId: string, tumourCount: number): string
 
 /**
  * Generate an investigation ID for a patient
- * Format: INV-{patientId}-{count} (e.g., "INV-A1B2C3-01")
+ * Format: {prefix}-{patientId}-{count} (e.g., "INV-A1B2C3-01")
  *
  * @param {string} patientId - The patient's unique ID
  * @param {number} investigationCount - Current count of investigations for this patient
+ * @param {string} prefix - Optional investigation type prefix (defaults to "INV")
+ *                          Common prefixes: "IMG" (imaging), "END" (endoscopy), "LAB" (laboratory)
  * @returns {string} Investigation ID
  * @example
  * const investigationId = generateInvestigationId("A1B2C3", 0)
  * // Returns: "INV-A1B2C3-01"
+ * const imagingId = generateInvestigationId("A1B2C3", 0, "IMG")
+ * // Returns: "IMG-A1B2C3-01"
  */
-export function generateInvestigationId(patientId: string, investigationCount: number): string {
-  return `INV-${patientId}-${String(investigationCount + 1).padStart(2, '0')}`
+export function generateInvestigationId(patientId: string, investigationCount: number, prefix: string = 'INV'): string {
+  const cleanPatientId = patientId.replace(/[^a-zA-Z0-9]/g, '')
+  return `${prefix}-${cleanPatientId}-${String(investigationCount + 1).padStart(2, '0')}`
+}
+
+/**
+ * Generate a follow-up ID for a patient
+ * Format: FU-{patientId}-{count} (e.g., "FU-A1B2C3-01")
+ *
+ * @param {string} patientId - The patient's unique ID
+ * @param {number} followUpCount - Current count of follow-ups for this patient
+ * @returns {string} Follow-up ID
+ * @example
+ * const followUpId = generateFollowUpId("A1B2C3", 0)
+ * // Returns: "FU-A1B2C3-01"
+ */
+export function generateFollowUpId(patientId: string, followUpCount: number): string {
+  const cleanPatientId = patientId.replace(/[^a-zA-Z0-9]/g, '')
+  return `FU-${cleanPatientId}-${String(followUpCount + 1).padStart(2, '0')}`
+}
+
+/**
+ * Get the prefix for a treatment type
+ * Maps treatment types to their standard prefixes
+ *
+ * @param {string} type - Treatment type (e.g., "surgery", "chemotherapy", "radiotherapy")
+ * @returns {string} Treatment prefix (e.g., "SUR", "ONC", "DXT")
+ * @example
+ * const prefix = getTreatmentPrefix("surgery")
+ * // Returns: "SUR"
+ */
+export function getTreatmentPrefix(type: string): string {
+  const prefixMap: Record<string, string> = {
+    'surgery': 'SUR',
+    'surgery_primary': 'SUR',
+    'surgery_rtt': 'SUR',
+    'surgery_reversal': 'SUR',
+    'chemotherapy': 'ONC',
+    'radiotherapy': 'DXT',
+    'immunotherapy': 'IMM'
+  }
+  return prefixMap[type] || 'TRE'
+}
+
+/**
+ * Get the prefix for an investigation type
+ * Maps investigation types to their standard prefixes
+ *
+ * @param {string} type - Investigation type (e.g., "imaging", "endoscopy", "laboratory")
+ * @returns {string} Investigation prefix (e.g., "IMG", "END", "LAB")
+ * @example
+ * const prefix = getInvestigationPrefix("imaging")
+ * // Returns: "IMG"
+ */
+export function getInvestigationPrefix(type: string): string {
+  const prefixMap: Record<string, string> = {
+    'imaging': 'IMG',
+    'endoscopy': 'END',
+    'laboratory': 'LAB'
+  }
+  return prefixMap[type] || 'INV'
 }
