@@ -69,5 +69,4 @@ Thumbs.db
 .wget-hsts
 get-docker.sh
 .git-credentials
-.gitignore
 .bash_history
