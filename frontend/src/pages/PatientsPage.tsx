@@ -178,7 +178,7 @@ export function PatientsPage() {
         setSuccess('Patient updated successfully');
       } else {
         // Create new patient
-        await api.post('/patients', data);
+        await api.post('/patients/', data);
         setSuccess('Patient created successfully');
       }
       setShowModal(false);

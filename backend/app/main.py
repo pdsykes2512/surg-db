@@ -76,6 +76,16 @@ async def root():
     }
 
 
+@app.get("/debug/config")
+async def debug_config():
+    """Debug endpoint to check configuration"""
+    return {
+        "mongodb_db_name": settings.mongodb_db_name,
+        "mongodb_system_db_name": settings.mongodb_system_db_name,
+        "api_version": settings.api_version
+    }
+
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""

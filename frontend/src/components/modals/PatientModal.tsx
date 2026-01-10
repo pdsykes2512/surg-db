@@ -4,6 +4,7 @@ import { Button } from '../common/Button'
 import { DateInputTypeable } from '../common/DateInputTypeable'
 import { useModalShortcuts } from '../../hooks/useModalShortcuts'
 import { formatNHSNumber } from '../../utils/formatters'
+import { generatePatientId } from '../../utils/idGenerators'
 
 interface Patient {
   _id: string;
@@ -59,11 +60,6 @@ interface PatientModalProps {
 }
 
 export function PatientModal({ patient, onClose, onSubmit, onDelete, loading = false }: PatientModalProps) {
-  // Generate a 6-character hex patient ID for new patients
-  const generatePatientId = () => {
-    return Math.random().toString(16).substring(2, 8).toUpperCase();
-  };
-
   const [formData, setFormData] = useState<PatientFormData>({
     patient_id: patient ? patient.patient_id : generatePatientId(),
     mrn: '',

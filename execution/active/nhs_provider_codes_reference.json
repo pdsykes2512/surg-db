@@ -2441,8 +2441,656 @@
       "type": "primary care network",
       "verified": true,
       "last_verified": "2026-01-05"
+    },
+    "693S0": {
+      "name": "poole general hospital laboratory",
+      "type": "pathology lab",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "8CV43": {
+      "name": "pook's hill nh",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "8ER53": {
+      "name": "poole imaging services",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "8EL73": {
+      "name": "pooler a (chiropractor)",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "8G409": {
+      "name": "poole david j (therapist)",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "AMY07": {
+      "name": "poole road medical centre",
+      "type": "independent sector h/c provider site",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "ANAM": {
+      "name": "poor servants of the mother of god",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "AYVF": {
+      "name": "poole home care limited",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "C1V2": {
+      "name": "pooltown care limited",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "E6S5V": {
+      "name": "poole road medical centre",
+      "type": "branch surgery",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "EE104191": {
+      "name": "pool hayes primary school",
+      "type": "school",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "EE108000": {
+      "name": "pool-in-wharfedale church of england voluntary controlled primary school",
+      "type": "school",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "EE119332": {
+      "name": "pool house community primary school",
+      "type": "school",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "EE136614": {
+      "name": "pool academy",
+      "type": "school",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "EE136850": {
+      "name": "poole grammar school",
+      "type": "school",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "EE142594": {
+      "name": "pool hayes academy",
+      "type": "school",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "EE148427": {
+      "name": "poolsbrook primary academy",
+      "type": "school",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "FCX61": {
+      "name": "poonian pharmacy",
+      "type": "pharmacy",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "FJW26": {
+      "name": "pool pharmacy",
+      "type": "pharmacy",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "FM668": {
+      "name": "poole bay pharmacy",
+      "type": "pharmacy",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "FQD12": {
+      "name": "pool pharmacy",
+      "type": "pharmacy",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "G9D3C": {
+      "name": "poole centre",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "J4J8B": {
+      "name": "poole ferry port - north lounge passenger terminal - covid local vaccination service",
+      "type": "branch surgery",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "J81064": {
+      "name": "poole town surgery",
+      "type": "prescribing cost centre",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "M84002": {
+      "name": "pool medical centre",
+      "type": "prescribing cost centre",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "NGLAE": {
+      "name": "pool health centre",
+      "type": "independent sector h/c provider site",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "NT728": {
+      "name": "poole general hospital",
+      "type": "independent sector h/c provider site",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "NV508": {
+      "name": "poole",
+      "type": "independent sector h/c provider site",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "P0FF": {
+      "name": "poolearth torquay ltd",
+      "type": "pharmacy headquarter",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "P17T": {
+      "name": "poonian js pharmacy",
+      "type": "pharmacy headquarter",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "P2T5": {
+      "name": "poole bay pharmacy ltd",
+      "type": "pharmacy headquarter",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "P767": {
+      "name": "poolearth ltd",
+      "type": "pharmacy headquarter",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "R0D14": {
+      "name": "poole hospital bcsc",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "R0D01": {
+      "name": "poole hospital",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "RBD45": {
+      "name": "poole hospital",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "RBD49": {
+      "name": "poole dialysis unit",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "RD3": {
+      "name": "poole hospital nhs foundation trust",
+      "type": "nhs trust",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "RD300": {
+      "name": "poole general hospital",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "RD304": {
+      "name": "poole general hospital nhs trust hq",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "RD321": {
+      "name": "poole hospital bcsc",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "REFWJ": {
+      "name": "pool health centre",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "RDY62": {
+      "name": "poole community health clinic",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "RDYED": {
+      "name": "poole nhs healthcare centre",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "RDYJ5": {
+      "name": "poole custody centre",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "RDZ16": {
+      "name": "poole hospital",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "RHM22": {
+      "name": "poole hospital peripheral clinic",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "RJC1U": {
+      "name": "pool medical centre",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "RJC65": {
+      "name": "pool bank street clinic",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "RTH80": {
+      "name": "poole hospital outpatients",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "RTHFA": {
+      "name": "poole dialysis unit",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "012": {
+      "name": "isle of anglesey ua",
+      "type": "local authority",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "5C464": {
+      "name": "island health centre",
+      "type": "primary care trust site",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "706AA": {
+      "name": "islington social services directorate",
+      "type": "local authority site",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "803": {
+      "name": "isle of wight council",
+      "type": "local authority",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "8CD43": {
+      "name": "islingword road",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "8G557": {
+      "name": "island court nh",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "8GA48": {
+      "name": "islam michele gabriele (therapist)",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "8JE99": {
+      "name": "isle of wight youth trust",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "8K606": {
+      "name": "islestone ltd",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "8KF89": {
+      "name": "isla care ltd",
+      "type": "non-nhs organisation",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "93CAF": {
+      "name": "islington office",
+      "type": "clinical commissioning group site",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "A22R": {
+      "name": "island healthcare limited",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "A9R4W": {
+      "name": "islington c1 & 2 core team",
+      "type": "care trust site",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "AD909": {
+      "name": "isleworth centre",
+      "type": "independent sector h/c provider site",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "AGX6": {
+      "name": "isle of anglesey county council adults and children's services",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "ALD210": {
+      "name": "island medical centre",
+      "type": "prescribing cost centre",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "AN0P": {
+      "name": "island care limited",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "AP7V": {
+      "name": "isle care (axholme) ltd",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "C0A5": {
+      "name": "isle of wight homecare ltd",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "C1AQ": {
+      "name": "island court care home limited",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "C353": {
+      "name": "isle of wight quality care limited",
+      "type": "social care provider",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "C7F7J": {
+      "name": "island cdc",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "DCH01": {
+      "name": "islington i:hub - city road",
+      "type": "independent sector h/c provider site",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "DCH02": {
+      "name": "islington i:hub - andover medical centre",
+      "type": "independent sector h/c provider site",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "DCH03": {
+      "name": "islington i:hub - islington central medical centre",
+      "type": "independent sector h/c provider site",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "DCH04": {
+      "name": "islington i:hub - ritchie street health centre",
+      "type": "independent sector h/c provider site",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "DCH05": {
+      "name": "islington i:hub - highbury grange medical practice",
+      "type": "independent sector h/c provider site",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "DY00A": {
+      "name": "islington mental health service",
+      "type": "independent sector h/c provider site",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "E85098": {
+      "name": "islip manor medical centre",
+      "type": "prescribing cost centre",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "EE101574": {
+      "name": "islamia primary school",
+      "type": "school",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "EE101575": {
+      "name": "islamia school for girls'",
+      "type": "school",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "EE101943": {
+      "name": "islip manor high school",
+      "type": "school",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "EE102492": {
+      "name": "isleworth town primary school",
+      "type": "school",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "EE110791": {
+      "name": "isleham church of england primary school",
+      "type": "school",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "EE132749": {
+      "name": "islamiyah school",
+      "type": "school",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "EE133453": {
+      "name": "islamic tarbiyyah preparatory school",
+      "type": "school",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "EE134084": {
+      "name": "islamic shakhsiyah foundation",
+      "type": "school",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "EE134085": {
+      "name": "islamic shakhsiyah foundation",
+      "type": "school",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "EE137940": {
+      "name": "isleworth and syon school for boys",
+      "type": "school",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "EE140483": {
+      "name": "isle of ely primary school",
+      "type": "school",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "F5E8M": {
+      "name": "islip medical practice",
+      "type": "independent sector h/c provider site",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "F83010": {
+      "name": "islington central medical centre",
+      "type": "prescribing cost centre",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "F84710": {
+      "name": "island health",
+      "type": "prescribing cost centre",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "FK840": {
+      "name": "island pharmacy",
+      "type": "pharmacy",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "FL840": {
+      "name": "island pharmacy",
+      "type": "pharmacy",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "FW634": {
+      "name": "isles of scilly pharmacy",
+      "type": "pharmacy",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "FWQ48": {
+      "name": "islington pharma limited",
+      "type": "pharmacy",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "G6S4P": {
+      "name": "islip medical practice - covid local vaccination service 2",
+      "type": "branch surgery",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "G9W6Z": {
+      "name": "isle of wight artificial eye service",
+      "type": "independent sector h/c provider site",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "J82085": {
+      "name": "island city practice",
+      "type": "prescribing cost centre",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "R1F": {
+      "name": "isle of wight nhs trust",
+      "type": "nhs trust",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "R1FHQ": {
+      "name": "isle of wight nhs - hq",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "RHM13": {
+      "name": "isle of wight peripheral clinic",
+      "type": "nhs trust site",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "V14837": {
+      "name": "isle of wight orthodontics",
+      "type": "general dental practice",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "VN4GJ": {
+      "name": "isle of wight supported living",
+      "type": "social care site",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "VNE7A": {
+      "name": "isle of wight council, sea street offices, county hall",
+      "type": "social care site",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "Y03833": {
+      "name": "isle of wight nhs trust nmp",
+      "type": "other prescribing cost centre",
+      "verified": true,
+      "last_verified": "2026-01-09"
+    },
+    "Y08677": {
+      "name": "isle of wight continence service",
+      "type": "prescribing cost centre",
+      "verified": true,
+      "last_verified": "2026-01-09"
     }
   },
   "reference_note": "NHS Provider (Trust) Codes verified from ODS API - https://directory.spineservices.nhs.uk/STU3/",
-  "last_updated": "2026-01-05 11:28:58"
+  "last_updated": "2026-01-09 23:39:52"
 }

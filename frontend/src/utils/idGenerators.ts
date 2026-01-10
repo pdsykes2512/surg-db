@@ -28,17 +28,17 @@ export function generatePatientId(): string {
 
 /**
  * Generate an episode ID for a patient
- * Format: EPI-{patientId}-{count} (e.g., "EPI-A1B2C3-01")
+ * Format: E-{patientId}-{count} (e.g., "E-A1B2C3-01")
  *
  * @param {string} patientId - The patient's unique ID
  * @param {number} episodeCount - Current count of episodes for this patient
  * @returns {string} Episode ID
  * @example
  * const episodeId = generateEpisodeId("A1B2C3", 0)
- * // Returns: "EPI-A1B2C3-01"
+ * // Returns: "E-A1B2C3-01"
  */
 export function generateEpisodeId(patientId: string, episodeCount: number): string {
-  return `EPI-${patientId}-${String(episodeCount + 1).padStart(2, '0')}`
+  return `E-${patientId}-${String(episodeCount + 1).padStart(2, '0')}`
 }
 
 /**

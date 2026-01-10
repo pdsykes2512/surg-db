@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom'
 interface SearchableSelectProps<T> {
   value: string
   onChange: (value: string) => void
+  onSearchChange?: (search: string) => void
   options: T[]
   getOptionValue: (option: T) => string
   getOptionLabel: (option: T) => string
@@ -23,6 +24,7 @@ interface SearchableSelectProps<T> {
 export function SearchableSelect<T>({
   value,
   onChange,
+  onSearchChange,
   options,
   getOptionValue,
   getOptionLabel,
@@ -89,7 +91,7 @@ export function SearchableSelect<T>({
         setSearchTerm('')
       }
     }
-  }, [value, options, getOptionValue, getOptionLabel, isEditing])
+  }, [value, getOptionValue, getOptionLabel, isEditing])
 
   // Default filter function
   const defaultFilter = (option: T, search: string) => {
@@ -136,6 +138,10 @@ export function SearchableSelect<T>({
             setSearchTerm(newValue)
             setShowDropdown(true)
             setIsEditing(true)
+            // Notify parent of search term change (for server-side search)
+            if (onSearchChange) {
+              onSearchChange(newValue)
+            }
           }}
           onFocus={() => {
             setShowDropdown(true)
@@ -145,9 +151,21 @@ export function SearchableSelect<T>({
             setTimeout(() => {
               setShowDropdown(false)
               setIsEditing(false)
-              // If user has typed free text, accept it as the value
-              if (searchTerm && searchTerm.trim() !== '') {
-                onChange(searchTerm.trim())
+
+              // Check if the typed text exactly matches an option's label or value
+              const trimmedSearch = searchTerm.trim()
+              const matchingOption = options.find(opt =>
+                getOptionLabel(opt).toLowerCase() === trimmedSearch.toLowerCase() ||
+                getOptionValue(opt).toLowerCase() === trimmedSearch.toLowerCase()
+              )
+
+              if (matchingOption) {
+                // Accept the matched option's value
+                const matchedValue = getOptionValue(matchingOption)
+                if (matchedValue !== value) {
+                  onChange(matchedValue)
+                }
+                setSearchTerm(getOptionLabel(matchingOption))
               } else if (value) {
                 // Reset searchTerm to show selected value label when blurred
                 const selectedOption = options.find(opt => getOptionValue(opt) === value)
@@ -158,6 +176,7 @@ export function SearchableSelect<T>({
                   setSearchTerm(value)
                 }
               } else {
+                // No match and no previous value - clear the field
                 setSearchTerm('')
               }
             }, 200)
