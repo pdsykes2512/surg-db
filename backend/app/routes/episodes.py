@@ -366,7 +366,7 @@ async def create_episode(
 
 @router.get("/count")
 async def count_episodes(
-    search: Optional[str] = Query(None, description="Search by episode ID, MRN, cancer type, or clinician"),
+    search: Optional[str] = Query(None, description="Search by episode ID, MRN, NHS number, cancer type, or clinician"),
     patient_id: Optional[str] = Query(None, description="Filter by patient MRN"),
     condition_type: Optional[ConditionType] = Query(None, description="Filter by condition type"),
     cancer_type: Optional[CancerType] = Query(None, description="Filter by cancer type"),
@@ -375,25 +375,65 @@ async def count_episodes(
     start_date: Optional[str] = Query(None, description="Filter episodes after this date (YYYY-MM-DD)"),
     end_date: Optional[str] = Query(None, description="Filter episodes before this date (YYYY-MM-DD)")
 ):
-    """Get total count of episodes with optional filters"""
+    """
+    Get total count of episodes with optional filters.
+
+    Search supports MRN, NHS number, episode ID, cancer type, and clinician name.
+    """
+    from ..utils.encryption import create_searchable_query
+    from ..utils.search_helpers import sanitize_search_input
+
     collection = await get_episodes_collection()
     patients_collection = await get_patients_collection()
 
     # Build query filters (same logic as list_episodes)
     query = {}
 
-    # Search filter
+    # Search filter - supports MRN and NHS number
     if search:
-        search_pattern = {"$regex": search.replace(" ", ""), "$options": "i"}
+        # Check if search looks like MRN or NHS number (encrypted fields)
+        search_encrypted_fields = False
+        clean_search = search.replace(" ", "").upper()
 
-        # Find patients matching the MRN search
-        matching_patients = await patients_collection.find(
-            {"mrn": search_pattern},
-            {"patient_id": 1}
-        ).to_list(length=None)
-        matching_patient_ids = [p["patient_id"] for p in matching_patients]
+        # MRN patterns: 8+ digits, IW+6digits, or C+6digits+2alphanumeric
+        # NHS number: 10 digits
+        is_mrn_or_nhs_pattern = (
+            (clean_search.isdigit() and len(clean_search) >= 8) or
+            (clean_search.startswith('IW') and len(clean_search) == 8 and clean_search[2:].isdigit()) or
+            (clean_search.startswith('C') and len(clean_search) == 9 and clean_search[1:7].isdigit() and clean_search[7:9].isalnum())
+        )
+
+        if is_mrn_or_nhs_pattern:
+            search_encrypted_fields = True
+
+        matching_patient_ids = []
+
+        if search_encrypted_fields:
+            # Use hash-based lookup for encrypted fields
+            clean_search_lower = search.replace(" ", "").lower()
+            nhs_query = create_searchable_query('nhs_number', clean_search_lower)
+            mrn_query = create_searchable_query('mrn', clean_search_lower)
+
+            matching_patients = await patients_collection.find(
+                {"$or": [nhs_query, mrn_query]},
+                {"patient_id": 1}
+            ).to_list(length=None)
+            matching_patient_ids = [p["patient_id"] for p in matching_patients]
+        else:
+            # For non-encrypted searches, use regex pattern
+            safe_search = sanitize_search_input(search)
+            search_pattern = {"$regex": safe_search, "$options": "i"}
+
+            matching_patients = await patients_collection.find(
+                {"mrn": search_pattern},
+                {"patient_id": 1}
+            ).to_list(length=100)
+            matching_patient_ids = [p["patient_id"] for p in matching_patients]
 
         # Build OR query
+        safe_search = sanitize_search_input(search)
+        search_pattern = {"$regex": safe_search, "$options": "i"}
+
         or_conditions = [
             {"episode_id": search_pattern},
             {"cancer_type": search_pattern},
@@ -458,24 +498,170 @@ async def get_treatment_breakdown():
     }
 
 
+@router.get("/dashboard-stats")
+async def get_dashboard_stats():
+    """
+    Get optimized dashboard statistics using database aggregation.
+
+    Returns:
+        - totalPatients: Total count of patients
+        - totalEpisodes: Total count of episodes
+        - treatmentBreakdown: Count by treatment type
+        - monthlyEpisodes: Surgery counts for last 4 months
+        - yearToDateEpisodes: Surgery count for current year
+
+    Performance: Uses MongoDB aggregation pipeline for efficient computation
+    """
+    from ..database import get_treatments_collection
+    patients_collection = await get_patients_collection()
+    episodes_collection = await get_episodes_collection()
+    treatments_collection = await get_treatments_collection()
+
+    # Get counts in parallel
+    total_patients = await patients_collection.count_documents({})
+    total_episodes = await episodes_collection.count_documents({})
+
+    # Get treatment breakdown using aggregation
+    treatment_breakdown_pipeline = [
+        {
+            "$group": {
+                "_id": "$treatment_type",
+                "count": {"$sum": 1}
+            }
+        }
+    ]
+
+    treatment_breakdown = []
+    async for doc in treatments_collection.aggregate(treatment_breakdown_pipeline):
+        treatment_breakdown.append({
+            "treatment_type": doc["_id"] or "unspecified",
+            "count": doc["count"]
+        })
+
+    # Calculate monthly surgery counts for last 4 months using aggregation
+    now = datetime.utcnow()
+    surgery_types = ['surgery', 'surgery_primary', 'surgery_rtt', 'surgery_reversal']
+
+    # Build monthly buckets
+    monthly_episodes = []
+    for i in range(4):
+        # Calculate month boundaries
+        if i == 0:
+            # Current month
+            month_start = datetime(now.year, now.month, 1)
+            month_end = now
+        else:
+            # Previous months
+            target_month = now.month - i
+            target_year = now.year
+            if target_month <= 0:
+                target_month += 12
+                target_year -= 1
+
+            month_start = datetime(target_year, target_month, 1)
+            # Get last day of month
+            if target_month == 12:
+                month_end = datetime(target_year + 1, 1, 1)
+            else:
+                month_end = datetime(target_year, target_month + 1, 1)
+
+        # Count surgeries in this month using aggregation
+        count_pipeline = [
+            {
+                "$match": {
+                    "treatment_type": {"$in": surgery_types},
+                    "treatment_date": {
+                        "$gte": month_start.isoformat(),
+                        "$lt": month_end.isoformat()
+                    }
+                }
+            },
+            {
+                "$count": "total"
+            }
+        ]
+
+        count_result = await treatments_collection.aggregate(count_pipeline).to_list(length=1)
+        count = count_result[0]["total"] if count_result else 0
+
+        # Format month name
+        month_name = month_start.strftime("%b")
+        monthly_episodes.append({"month": month_name, "count": count})
+
+    # Calculate year-to-date surgeries using aggregation
+    year_start = datetime(now.year, 1, 1)
+    ytd_pipeline = [
+        {
+            "$match": {
+                "treatment_type": {"$in": surgery_types},
+                "treatment_date": {
+                    "$gte": year_start.isoformat(),
+                    "$lte": now.isoformat()
+                }
+            }
+        },
+        {
+            "$count": "total"
+        }
+    ]
+
+    ytd_result = await treatments_collection.aggregate(ytd_pipeline).to_list(length=1)
+    year_to_date_episodes = ytd_result[0]["total"] if ytd_result else 0
+
+    return {
+        "totalPatients": total_patients,
+        "totalEpisodes": total_episodes,
+        "treatmentBreakdown": treatment_breakdown,
+        "monthlyEpisodes": monthly_episodes,
+        "yearToDateEpisodes": year_to_date_episodes,
+        "loading": False
+    }
+
+
 @router.get("/treatments")
 async def get_all_treatments(
     patient_id: Optional[str] = Query(None, description="Filter by patient ID"),
-    episode_id: Optional[str] = Query(None, description="Filter by episode ID")
+    episode_id: Optional[str] = Query(None, description="Filter by episode ID"),
+    search: Optional[str] = Query(None, description="Search by treatment ID, procedure name, or surgeon"),
+    skip: int = Query(0, ge=0, description="Number of records to skip for pagination"),
+    limit: int = Query(100, ge=1, le=1000, description="Maximum number of records to return")
 ):
-    """Get all treatments with optional filtering by patient or episode"""
+    """
+    Get treatments with pagination, filtering, and search.
+
+    Search queries the entire database first, then applies pagination to results.
+    This ensures search works across all records, not just the current page.
+    """
     from ..database import get_treatments_collection
     treatments_collection = await get_treatments_collection()
 
     # Build query based on filters
     query = {}
+
+    # Filter by patient_id or episode_id
     if patient_id:
         query["patient_id"] = patient_id
     if episode_id:
         query["episode_id"] = episode_id
 
-    # Fetch treatments
-    treatments = await treatments_collection.find(query).to_list(length=None)
+    # Search across multiple fields (searches entire database)
+    if search:
+        search_pattern = {"$regex": search, "$options": "i"}
+        search_conditions = [
+            {"treatment_id": search_pattern},
+            {"procedure.primary_procedure": search_pattern},
+            {"team.primary_surgeon_text": search_pattern},
+            {"treatment_type": search_pattern}
+        ]
+
+        # Combine with existing filters using $and
+        if query:
+            query = {"$and": [query, {"$or": search_conditions}]}
+        else:
+            query = {"$or": search_conditions}
+
+    # Fetch treatments with pagination (applied AFTER filtering/search)
+    treatments = await treatments_collection.find(query).skip(skip).limit(limit).to_list(length=limit)
 
     # Convert ObjectId to string
     for treatment in treatments:
@@ -555,7 +741,7 @@ async def get_investigation_by_id(investigation_id: str):
 async def list_episodes(
     skip: int = 0,
     limit: int = 100,
-    search: Optional[str] = Query(None, description="Search by episode ID, MRN, cancer type, or clinician"),
+    search: Optional[str] = Query(None, description="Search by episode ID, MRN, NHS number, cancer type, or clinician"),
     patient_id: Optional[str] = Query(None, description="Filter by patient MRN"),
     condition_type: Optional[ConditionType] = Query(None, description="Filter by condition type"),
     cancer_type: Optional[CancerType] = Query(None, description="Filter by cancer type"),
@@ -565,35 +751,85 @@ async def list_episodes(
     end_date: Optional[str] = Query(None, description="Filter episodes before this date (YYYY-MM-DD)"),
     sort_by: Optional[str] = Query("referral_date", description="Field to sort by (referral_date or last_modified_at)")
 ):
-    """List all episodes with pagination and filters"""
+    """
+    List all episodes with pagination and filters.
+
+    Search supports:
+    - Episode ID
+    - MRN (Medical Record Number) - encrypted field with hash-based search
+    - NHS Number (10 digits) - encrypted field with hash-based search
+    - Cancer type
+    - Lead clinician name
+    """
+    from ..utils.encryption import create_searchable_query
+    from ..utils.search_helpers import sanitize_search_input
+
     collection = await get_episodes_collection()
     patients_collection = await get_patients_collection()
 
     # Build query filters
     query = {}
-    
-    # Search filter - search across multiple fields including MRN
+
+    # Search filter - search across multiple fields including MRN and NHS number
     if search:
-        search_pattern = {"$regex": search.replace(" ", ""), "$options": "i"}
-        
-        # First, find patients matching the MRN search
-        matching_patients = await patients_collection.find(
-            {"mrn": search_pattern},
-            {"patient_id": 1}
-        ).to_list(length=None)
-        matching_patient_ids = [p["patient_id"] for p in matching_patients]
-        
-        # Build OR query including patient_id matches from MRN search
+        # Check if search looks like MRN or NHS number (encrypted fields)
+        search_encrypted_fields = False
+        clean_search = search.replace(" ", "").upper()
+
+        # MRN patterns: 8+ digits, IW+6digits, or C+6digits+2alphanumeric
+        # NHS number: 10 digits
+        is_mrn_or_nhs_pattern = (
+            (clean_search.isdigit() and len(clean_search) >= 8) or  # 8+ digits (MRN or NHS)
+            (clean_search.startswith('IW') and len(clean_search) == 8 and clean_search[2:].isdigit()) or  # IW+6digits
+            (clean_search.startswith('C') and len(clean_search) == 9 and clean_search[1:7].isdigit() and clean_search[7:9].isalnum())  # C+6digits+2alphanumeric
+        )
+
+        if is_mrn_or_nhs_pattern:
+            search_encrypted_fields = True
+            logger.debug(f"Episode search: Searching encrypted fields (MRN/NHS): {clean_search}")
+
+        matching_patient_ids = []
+
+        if search_encrypted_fields:
+            # Use hash-based lookup for encrypted fields (O(log n) indexed search)
+            clean_search_lower = search.replace(" ", "").lower()
+            nhs_query = create_searchable_query('nhs_number', clean_search_lower)
+            mrn_query = create_searchable_query('mrn', clean_search_lower)
+
+            # Search for patients by MRN or NHS number using hash indexes
+            matching_patients = await patients_collection.find(
+                {"$or": [nhs_query, mrn_query]},
+                {"patient_id": 1}
+            ).to_list(length=None)
+            matching_patient_ids = [p["patient_id"] for p in matching_patients]
+
+            logger.debug(f"Episode search: Found {len(matching_patient_ids)} patients matching MRN/NHS")
+        else:
+            # For non-encrypted searches, use regex pattern on MRN (backward compatibility)
+            # This is less efficient but works for partial matches
+            safe_search = sanitize_search_input(search)
+            search_pattern = {"$regex": safe_search, "$options": "i"}
+
+            matching_patients = await patients_collection.find(
+                {"mrn": search_pattern},
+                {"patient_id": 1}
+            ).to_list(length=100)  # Limit to 100 to prevent performance issues
+            matching_patient_ids = [p["patient_id"] for p in matching_patients]
+
+        # Build OR query including patient_id matches from MRN/NHS search
+        safe_search = sanitize_search_input(search)
+        search_pattern = {"$regex": safe_search, "$options": "i"}
+
         or_conditions = [
             {"episode_id": search_pattern},
             {"cancer_type": search_pattern},
             {"lead_clinician": search_pattern}
         ]
-        
-        # Add patient_id matches from MRN search
+
+        # Add patient_id matches from MRN/NHS search
         if matching_patient_ids:
             or_conditions.append({"patient_id": {"$in": matching_patient_ids}})
-        
+
         query["$or"] = or_conditions
 
     # Other filters
@@ -624,14 +860,31 @@ async def list_episodes(
     sort_field = "last_modified_at" if sort_by == "last_modified_at" else "referral_date"
     cursor = collection.find(query).sort(sort_field, -1).skip(skip).limit(limit)
     episodes = await cursor.to_list(length=limit)
-    
+
+    # Bulk fetch patient MRNs (fix N+1 query problem)
+    # OLD: Made N separate queries (one per episode)
+    # NEW: Make 1 query to fetch all patients at once
+    patient_ids = [ep["patient_id"] for ep in episodes if ep.get("patient_id")]
+    if patient_ids:
+        # Fetch all patients in a single query
+        patients_cursor = patients_collection.find(
+            {"patient_id": {"$in": patient_ids}},
+            {"patient_id": 1, "mrn": 1}  # Only fetch needed fields
+        )
+        patients = await patients_cursor.to_list(length=len(patient_ids))
+
+        # Build lookup map for O(1) access
+        patient_map = {p["patient_id"]: p for p in patients}
+    else:
+        patient_map = {}
+
     # Convert ObjectIds to strings and add patient MRN
     for episode in episodes:
         episode["_id"] = str(episode["_id"])
 
-        # Fetch patient MRN and decrypt
+        # Get patient MRN from pre-fetched map
         if "patient_id" in episode:
-            patient = await patients_collection.find_one({"patient_id": episode["patient_id"]})
+            patient = patient_map.get(episode["patient_id"])
             if patient:
                 mrn = patient.get("mrn", None)
                 # Decrypt MRN if it's encrypted
@@ -639,6 +892,8 @@ async def list_episodes(
                     episode["patient_mrn"] = decrypt_field("mrn", mrn)
                 else:
                     episode["patient_mrn"] = None
+            else:
+                episode["patient_mrn"] = None
 
         # lead_clinician is already stored as a name in the database - no conversion needed
 

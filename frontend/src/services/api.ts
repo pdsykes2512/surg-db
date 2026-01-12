@@ -106,7 +106,7 @@ export const apiService = {
     /** Get outcome trends over specified number of days */
     trends: (days?: number) => api.get('/reports/trends', { params: { days } }),
     /** Get surgeon performance comparison metrics */
-    surgeonPerformance: () => api.get('/reports/surgeon-performance'),
+    surgeonPerformance: (specialty?: string) => api.get('/reports/surgeon-performance', { params: { specialty } }),
   },
 }
 

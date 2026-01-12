@@ -161,16 +161,30 @@ async def get_summary_report() -> Dict[str, Any]:
 
 
 @router.get("/surgeon-performance")
-async def get_surgeon_performance() -> Dict[str, Any]:
+async def get_surgeon_performance(specialty: Optional[str] = Query(None, description="Filter by subspecialty: colorectal, urology, breast, upper_gi, gynae_onc, other")) -> Dict[str, Any]:
     """Get surgeon-specific performance metrics stratified by episode lead clinician"""
     db = Database.get_database()
     db_system = Database.get_system_database()
     treatments_collection = db.treatments
     episodes_collection = db.episodes
     clinicians_collection = db_system.clinicians
-    
-    # Get all current clinicians (active surgeons)
-    clinicians = await clinicians_collection.find({"clinical_role": "surgeon"}).to_list(length=None)
+
+    # Mapping between subspecialties and cancer types
+    specialty_to_cancer_types = {
+        "colorectal": ["bowel"],
+        "urology": ["kidney", "prostate"],
+        "breast": ["breast_primary", "breast_metastatic"],
+        "upper_gi": ["oesophageal"],
+        "gynae_onc": ["ovarian"],
+        "other": []  # No specific cancer type filter for 'other'
+    }
+
+    # Get clinicians (optionally filtered by subspecialty)
+    clinician_query = {"clinical_role": "surgeon"}
+    if specialty:
+        clinician_query["subspecialty_leads"] = specialty
+
+    clinicians = await clinicians_collection.find(clinician_query).to_list(length=None)
     
     # Create a mapping of clinician ID to full name and name to ID
     clinician_id_to_name = {}
@@ -188,9 +202,15 @@ async def get_surgeon_performance() -> Dict[str, Any]:
             clinician_name_to_id[surname.lower()] = clinician_id
             clinician_ids.add(clinician_id)
     
-    # Get all episodes to build episode_id -> lead_clinician mapping
+    # Get episodes (optionally filtered by cancer_type for the specialty)
     # Database now stores lead_clinician as names (e.g., "Jim Khan")
-    all_episodes = await episodes_collection.find({}).to_list(length=None)
+    episode_query = {}
+    if specialty and specialty in specialty_to_cancer_types:
+        cancer_types = specialty_to_cancer_types[specialty]
+        if cancer_types:  # Only filter if there are specific cancer types (not 'other')
+            episode_query["cancer_type"] = {"$in": cancer_types}
+
+    all_episodes = await episodes_collection.find(episode_query).to_list(length=None)
     episode_to_lead_clinician = {}
     for episode in all_episodes:
         episode_id = episode.get('episode_id')
@@ -307,24 +327,35 @@ async def get_surgeon_performance() -> Dict[str, Any]:
     # Sort by total surgeries
     surgeon_list.sort(key=lambda x: x['total_surgeries'], reverse=True)
     
+    filter_description = "Only primary surgical treatments (surgery_primary) with valid OPCS-4 codes"
+    if specialty:
+        filter_description += f" | Filtered by subspecialty: {specialty}"
+        if specialty in specialty_to_cancer_types and specialty_to_cancer_types[specialty]:
+            cancer_types_str = ", ".join(specialty_to_cancer_types[specialty])
+            filter_description += f" (cancer types: {cancer_types_str})"
+
     return {
         "surgeons": surgeon_list,
-        "filter_applied": "Only primary surgical treatments (surgery_primary) with valid OPCS-4 codes",
+        "specialty_filter": specialty,
+        "filter_applied": filter_description,
         "generated_at": datetime.utcnow().isoformat()
     }
 
 
 @router.get("/data-quality")
 async def get_data_quality_report() -> Dict[str, Any]:
-    """Get data completeness and quality metrics"""
+    """Get data completeness and quality metrics using aggregation"""
     db = Database.get_database()
     episodes_collection = db.episodes
     treatments_collection = db.treatments
     tumours_collection = db.tumours
-    
-    # Get all episodes
-    all_episodes = await episodes_collection.find({"condition_type": "cancer"}).to_list(length=None)
-    total_episodes = len(all_episodes)
+
+    # Count episodes using aggregation (much faster than fetch + len)
+    episode_count_result = await episodes_collection.aggregate([
+        {"$match": {"condition_type": "cancer"}},
+        {"$count": "total"}
+    ]).to_list(1)
+    total_episodes = episode_count_result[0]["total"] if episode_count_result else 0
     
     # Get all treatments and tumours
     total_treatments = await treatments_collection.count_documents({})
@@ -333,7 +364,7 @@ async def get_data_quality_report() -> Dict[str, Any]:
     # Define required and optional fields for episodes
     episode_fields = {
         "Core": [
-            "episode_id", "patient_id", "cancer_type", "lead_clinician", 
+            "episode_id", "patient_id", "cancer_type", "lead_clinician",
             "referral_date", "episode_status"
         ],
         "Referral": [
@@ -346,14 +377,39 @@ async def get_data_quality_report() -> Dict[str, Any]:
             "performance_status", "cns_involved"
         ]
     }
-    
-    # Calculate completeness
+
+    # Use aggregation to count field completeness (much faster than fetch + loop)
     categories = []
     episode_fields_flat = []
+
     for category_name, fields in episode_fields.items():
         field_stats = []
+
+        # Build aggregation pipeline to count complete fields for all fields at once
+        facet_stages = {}
         for field in fields:
-            complete_count = sum(1 for ep in all_episodes if ep.get(field))
+            facet_stages[field] = [
+                {
+                    "$match": {
+                        "condition_type": "cancer",
+                        field: {"$exists": True, "$ne": None, "$ne": ""}
+                    }
+                },
+                {"$count": "count"}
+            ]
+
+        # Execute aggregation
+        pipeline = [
+            {"$match": {"condition_type": "cancer"}},
+            {"$facet": facet_stages}
+        ]
+
+        result = await episodes_collection.aggregate(pipeline).to_list(1)
+        field_counts = result[0] if result else {}
+
+        # Process results
+        for field in fields:
+            complete_count = field_counts.get(field, [{}])[0].get("count", 0)
             field_data = {
                 "field": field,
                 "category": category_name,
@@ -364,7 +420,7 @@ async def get_data_quality_report() -> Dict[str, Any]:
             }
             field_stats.append(field_data)
             episode_fields_flat.append(field_data)
-        
+
         avg_completeness = sum(f["completeness"] for f in field_stats) / len(field_stats) if field_stats else 0
         categories.append({
             "name": category_name,
@@ -373,41 +429,83 @@ async def get_data_quality_report() -> Dict[str, Any]:
             "fields": field_stats
         })
     
-    # Treatment fields - only include treatments with valid OPCS-4 codes
-    all_treatments = await treatments_collection.find({
-        "opcs4_code": {"$exists": True, "$ne": ""}
-    }).to_list(length=None)
-    total_treatment_count = len(all_treatments)
-    
-    # Define treatment fields with their actual nested paths
-    treatment_field_checks = [
+    # Treatment fields - count using aggregation (much faster)
+    treatment_count_result = await treatments_collection.aggregate([
+        {"$match": {"opcs4_code": {"$exists": True, "$ne": ""}}},
+        {"$count": "total"}
+    ]).to_list(1)
+    total_treatment_count = treatment_count_result[0]["total"] if treatment_count_result else 0
+
+    # Define treatment field paths for aggregation
+    treatment_field_paths = [
         # Core
-        ("treatment_id", "Core", lambda t: t.get("treatment_id")),
-        ("treatment_type", "Core", lambda t: t.get("treatment_type")),
-        ("treatment_date", "Core", lambda t: t.get("treatment_date")),
-        ("provider_organisation", "Core", lambda t: t.get("provider_organisation")),
+        ("treatment_id", "Core", "treatment_id"),
+        ("treatment_type", "Core", "treatment_type"),
+        ("treatment_date", "Core", "treatment_date"),
+        ("provider_organisation", "Core", "provider_organisation"),
         # Surgery
-        ("procedure_name", "Surgery", lambda t: t.get("procedure", {}).get("primary_procedure")),
-        ("surgeon", "Surgery", lambda t: t.get("team", {}).get("primary_surgeon_text")),
-        ("approach", "Surgery", lambda t: t.get("classification", {}).get("approach")),
-        ("urgency", "Surgery", lambda t: t.get("classification", {}).get("urgency")),
-        ("complexity", "Surgery", lambda t: t.get("classification", {}).get("complexity")),
+        ("procedure_name", "Surgery", "procedure.primary_procedure"),
+        ("surgeon", "Surgery", "team.primary_surgeon_text"),
+        ("approach", "Surgery", "classification.approach"),
+        ("urgency", "Surgery", "classification.urgency"),
+        ("complexity", "Surgery", "classification.complexity"),
         # Timeline
-        ("admission_date", "Timeline", lambda t: t.get("perioperative_timeline", {}).get("admission_date")),
-        ("discharge_date", "Timeline", lambda t: t.get("perioperative_timeline", {}).get("discharge_date")),
-        ("operation_duration_minutes", "Timeline", lambda t: t.get("perioperative_timeline", {}).get("operation_duration_minutes")),
-        ("length_of_stay", "Timeline", lambda t: t.get("perioperative_timeline", {}).get("length_of_stay_days")),
-        # Outcomes (check for actual data, not just presence)
-        ("complications", "Outcomes", lambda t: t.get("postoperative_events", {}).get("complications")),
-        ("readmission_30d", "Outcomes", lambda t: t.get("outcomes", {}).get("readmission_30day") == 'yes'),
-        ("return_to_theatre", "Outcomes", lambda t: t.get("postoperative_events", {}).get("return_to_theatre", {}).get("occurred") == 'yes'),
-        ("clavien_dindo_grade", "Outcomes", lambda t: t.get("postoperative_events", {}).get("clavien_dindo_grade")),
-        ("asa_score", "Assessment", lambda t: t.get("asa_score")),
+        ("admission_date", "Timeline", "perioperative_timeline.admission_date"),
+        ("discharge_date", "Timeline", "perioperative_timeline.discharge_date"),
+        ("operation_duration_minutes", "Timeline", "perioperative_timeline.operation_duration_minutes"),
+        ("length_of_stay", "Timeline", "perioperative_timeline.length_of_stay_days"),
+        # Outcomes
+        ("complications", "Outcomes", "postoperative_events.complications"),
+        ("clavien_dindo_grade", "Outcomes", "postoperative_events.clavien_dindo_grade"),
+        ("asa_score", "Assessment", "asa_score"),
     ]
 
+    # Build facet stages for all treatment fields
+    treatment_facet_stages = {}
+    for field_name, category_name, field_path in treatment_field_paths:
+        treatment_facet_stages[field_name] = [
+            {
+                "$match": {
+                    "opcs4_code": {"$exists": True, "$ne": ""},
+                    field_path: {"$exists": True, "$ne": None, "$ne": ""}
+                }
+            },
+            {"$count": "count"}
+        ]
+
+    # Special handling for yes/no fields
+    treatment_facet_stages["readmission_30d"] = [
+        {
+            "$match": {
+                "opcs4_code": {"$exists": True, "$ne": ""},
+                "outcomes.readmission_30day": "yes"
+            }
+        },
+        {"$count": "count"}
+    ]
+    treatment_facet_stages["return_to_theatre"] = [
+        {
+            "$match": {
+                "opcs4_code": {"$exists": True, "$ne": ""},
+                "postoperative_events.return_to_theatre.occurred": "yes"
+            }
+        },
+        {"$count": "count"}
+    ]
+
+    # Execute aggregation
+    treatment_pipeline = [
+        {"$match": {"opcs4_code": {"$exists": True, "$ne": ""}}},
+        {"$facet": treatment_facet_stages}
+    ]
+
+    treatment_result = await treatments_collection.aggregate(treatment_pipeline).to_list(1)
+    treatment_field_counts = treatment_result[0] if treatment_result else {}
+
+    # Build treatment fields flat list
     treatment_fields_flat = []
-    for field_name, category_name, field_getter in treatment_field_checks:
-        complete_count = sum(1 for t in all_treatments if field_getter(t))
+    for field_name, category_name, _ in treatment_field_paths:
+        complete_count = treatment_field_counts.get(field_name, [{}])[0].get("count", 0)
         treatment_fields_flat.append({
             "field": field_name,
             "category": category_name,
@@ -417,23 +515,60 @@ async def get_data_quality_report() -> Dict[str, Any]:
             "missing_count": total_treatment_count - complete_count
         })
 
-    # Tumour fields - TNM staging
-    all_tumours = await tumours_collection.find({}).to_list(length=None)
-    total_tumour_count = len(all_tumours)
+    # Add special yes/no fields
+    for field_name, category_name in [("readmission_30d", "Outcomes"), ("return_to_theatre", "Outcomes")]:
+        complete_count = treatment_field_counts.get(field_name, [{}])[0].get("count", 0)
+        treatment_fields_flat.append({
+            "field": field_name,
+            "category": category_name,
+            "complete_count": complete_count,
+            "total_count": total_treatment_count,
+            "completeness": round((complete_count / total_treatment_count * 100) if total_treatment_count > 0 else 0, 2),
+            "missing_count": total_treatment_count - complete_count
+        })
 
-    # Define tumour field checks (excluding 'x' and null as invalid)
-    tumour_field_checks = [
-        ("clinical_t", "TNM Staging", lambda tum: tum.get("clinical_t") not in [None, "", "x"]),
-        ("clinical_n", "TNM Staging", lambda tum: tum.get("clinical_n") not in [None, "", "x"]),
-        ("clinical_m", "TNM Staging", lambda tum: tum.get("clinical_m") not in [None, "", "x"]),
-        ("pathological_t", "TNM Staging", lambda tum: tum.get("pathological_t") not in [None, "", "x"]),
-        ("pathological_n", "TNM Staging", lambda tum: tum.get("pathological_n") not in [None, "", "x"]),
-        ("pathological_m", "TNM Staging", lambda tum: tum.get("pathological_m") not in [None, "", "x"]),
+    # Tumour fields - count using aggregation
+    tumour_count_result = await tumours_collection.aggregate([
+        {"$count": "total"}
+    ]).to_list(1)
+    total_tumour_count = tumour_count_result[0]["total"] if tumour_count_result else 0
+
+    # Define tumour fields (excluding 'x' and null as invalid)
+    tumour_fields = [
+        ("clinical_t", "TNM Staging"),
+        ("clinical_n", "TNM Staging"),
+        ("clinical_m", "TNM Staging"),
+        ("pathological_t", "TNM Staging"),
+        ("pathological_n", "TNM Staging"),
+        ("pathological_m", "TNM Staging"),
     ]
 
+    # Build facet stages for tumour fields
+    tumour_facet_stages = {}
+    for field_name, _ in tumour_fields:
+        tumour_facet_stages[field_name] = [
+            {
+                "$match": {
+                    field_name: {
+                        "$exists": True,
+                        "$ne": None,
+                        "$ne": "",
+                        "$ne": "x"
+                    }
+                }
+            },
+            {"$count": "count"}
+        ]
+
+    # Execute aggregation
+    tumour_pipeline = [{"$facet": tumour_facet_stages}]
+    tumour_result = await tumours_collection.aggregate(tumour_pipeline).to_list(1)
+    tumour_field_counts = tumour_result[0] if tumour_result else {}
+
+    # Build tumour fields flat list
     tumour_fields_flat = []
-    for field_name, category_name, field_getter in tumour_field_checks:
-        complete_count = sum(1 for tum in all_tumours if field_getter(tum))
+    for field_name, category_name in tumour_fields:
+        complete_count = tumour_field_counts.get(field_name, [{}])[0].get("count", 0)
         tumour_fields_flat.append({
             "field": field_name,
             "category": category_name,

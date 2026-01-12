@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useHotkeys } from 'react-hotkeys-hook'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { HomePage } from './pages/HomePage'
@@ -11,6 +12,18 @@ import { AdminPage } from './pages/AdminPage'
 import { ProtectedRoute } from './components/layout/ProtectedRoute'
 import { Layout } from './components/layout/Layout'
 import { HelpDialog } from './components/modals/HelpDialog'
+
+// Configure React Query client
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // Data fresh for 5 minutes
+      gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes (formerly cacheTime)
+      refetchOnWindowFocus: false, // Don't refetch on window focus
+      retry: 1, // Retry failed requests once
+    },
+  },
+})
 
 function AppContent() {
   const [showHelpDialog, setShowHelpDialog] = useState(false)
@@ -98,14 +111,16 @@ function AppContent() {
 
 function App() {
   return (
-    <Router
-      future={{
-        v7_startTransition: true,
-        v7_relativeSplatPath: true
-      }}
-    >
-      <AppContent />
-    </Router>
+    <QueryClientProvider client={queryClient}>
+      <Router
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true
+        }}
+      >
+        <AppContent />
+      </Router>
+    </QueryClientProvider>
   )
 }
 

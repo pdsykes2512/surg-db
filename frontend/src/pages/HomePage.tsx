@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../contexts/AuthContext'
 import { PageHeader } from '../components/common/PageHeader'
 import { Card } from '../components/common/Card'
@@ -9,109 +9,39 @@ import api from '../services/api'
 export function HomePage() {
   const { user: _user } = useAuth()
   const navigate = useNavigate()
-  const [stats, setStats] = useState({
-    totalPatients: 0,
-    totalEpisodes: 0,
-    treatmentBreakdown: [] as { treatment_type: string, count: number }[],
-    monthlyEpisodes: [] as { month: string, count: number }[],
-    yearToDateEpisodes: 0,
-    loading: true
+
+  // Use React Query for dashboard stats - automatic caching and deduplication
+  const { data: stats, isLoading } = useQuery({
+    queryKey: ['dashboard-stats'],
+    queryFn: async () => {
+      const response = await api.get('/episodes/dashboard-stats')
+      return response.data
+    },
+    staleTime: 5 * 60 * 1000, // Fresh for 5 minutes
   })
-  const [recentActivity, setRecentActivity] = useState<any[]>([])
-  const [activityLoading, setActivityLoading] = useState(true)
+
+  // Use React Query for recent activity
+  const { data: recentActivity = [], isLoading: activityLoading } = useQuery({
+    queryKey: ['recent-activity'],
+    queryFn: async () => {
+      const API_URL = import.meta.env.VITE_API_URL || '/api'
+      const response = await fetch(`${API_URL}/audit/recent?limit=10`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      })
+      if (!response.ok) {
+        throw new Error('Failed to fetch recent activity')
+      }
+      return response.json()
+    },
+    staleTime: 2 * 60 * 1000, // Fresh for 2 minutes (activity changes more frequently)
+  })
 
   // Helper to check if treatment is a surgery type
   const isSurgeryType = (treatmentType: string) => {
     return ['surgery', 'surgery_primary', 'surgery_rtt', 'surgery_reversal'].includes(treatmentType)
   }
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const [patientsCountRes, episodesCountRes, treatmentBreakdownRes, treatmentsRes] = await Promise.all([
-          api.get('/patients/count'),
-          api.get('/episodes/count'),
-          api.get('/episodes/treatment-breakdown'),
-          api.get('/episodes/treatments')
-        ])
-        
-        const totalPatients = patientsCountRes.data.count
-        const totalEpisodes = episodesCountRes.data.count
-        const treatmentBreakdown = treatmentBreakdownRes.data.breakdown || []
-        const treatments = treatmentsRes.data
-        const now = new Date()
-        
-        // Calculate counts for the past 4 months based on treatment_date (surgery only)
-        const monthlyData = []
-        for (let i = 0; i < 4; i++) {
-          const targetMonth = new Date(now.getFullYear(), now.getMonth() - i, 1)
-          const nextMonth = new Date(now.getFullYear(), now.getMonth() - i + 1, 1)
-          
-          const count = treatments.filter((t: any) => {
-            if (!isSurgeryType(t.treatment_type)) return false
-            const treatmentDate = t.treatment_date
-            if (!treatmentDate) return false
-            const date = new Date(treatmentDate)
-            return date >= targetMonth && date < nextMonth
-          }).length
-          
-          // Format month name (e.g., "Dec", "Nov", "Oct")
-          const monthName = targetMonth.toLocaleDateString('en-US', { month: 'short' })
-          monthlyData.push({ month: monthName, count })
-        }
-        
-        // Calculate year-to-date total (all surgical treatments in 2025)
-        const yearStart = new Date(2025, 0, 1) // January 1, 2025
-        const yearToDateEpisodes = treatments.filter((t: any) => {
-          if (!isSurgeryType(t.treatment_type)) return false
-          const treatmentDate = t.treatment_date
-          if (!treatmentDate) return false
-          const date = new Date(treatmentDate)
-          return date >= yearStart && date <= now
-        }).length
-        
-        setStats({
-          totalPatients,
-          totalEpisodes,
-          treatmentBreakdown,
-          monthlyEpisodes: monthlyData,
-          yearToDateEpisodes,
-          loading: false
-        })
-      } catch (error) {
-        console.error('Failed to fetch dashboard stats:', error)
-        setStats(prev => ({ ...prev, loading: false }))
-      }
-    }
-    
-    fetchStats()
-  }, [])
-
-  useEffect(() => {
-    const fetchRecentActivity = async () => {
-      try {
-        // Fetch user's recent activity from audit log
-        // Use /api for relative URLs (uses Vite proxy)
-        const API_URL = import.meta.env.VITE_API_URL || '/api'
-        const response = await fetch(`${API_URL}/audit/recent?limit=10`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        })
-        
-        if (response.ok) {
-          const activities = await response.json()
-          setRecentActivity(activities)
-        }
-      } catch (error) {
-        console.error('Failed to fetch recent activity:', error)
-      } finally {
-        setActivityLoading(false)
-      }
-    }
-    
-    fetchRecentActivity()
-  }, [])
 
   const handleActivityClick = (activity: any) => {
     // Navigate based on entity type and pass state to open appropriate modal
@@ -196,7 +126,7 @@ export function HomePage() {
             <div className="text-center">
               <h3 className="text-sm font-medium text-gray-500 mb-1">Total Patients</h3>
               <p className="text-2xl font-semibold text-gray-900">
-                {stats.loading ? '—' : stats.totalPatients}
+                {isLoading ? '—' : stats?.totalPatients ?? 0}
               </p>
             </div>
           </div>
@@ -212,10 +142,10 @@ export function HomePage() {
             <div className="text-center">
               <h3 className="text-sm font-medium text-gray-500 mb-1">Total Episodes</h3>
               <p className="text-2xl font-semibold text-gray-900">
-                {stats.loading ? '—' : stats.totalEpisodes}
+                {isLoading ? '—' : stats?.totalEpisodes ?? 0}
               </p>
             </div>
-            {!stats.loading && (
+            {!isLoading && stats && (
               <div className="mt-3 pt-3 border-t border-gray-200 w-full">
                 <div className="grid grid-cols-2 gap-4">
                   {/* Surgery Treatments */}
@@ -265,9 +195,9 @@ export function HomePage() {
             </div>
             <div className="text-center">
               <h3 className="text-sm font-medium text-gray-500 mb-1">Monthly Operations</h3>
-              {stats.loading ? (
+              {isLoading ? (
                 <p className="text-2xl font-semibold text-gray-900">—</p>
-              ) : (
+              ) : stats ? (
                 <>
                   <div>
                     <div className="text-xs text-gray-500">Year Total</div>
@@ -286,7 +216,7 @@ export function HomePage() {
                     </div>
                   </div>
                 </>
-              )}
+              ) : null}
             </div>
           </div>
         </Card>

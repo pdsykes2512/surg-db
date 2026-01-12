@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useState, useMemo, useCallback } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { PageHeader } from '../components/common/PageHeader'
 import { Card } from '../components/common/Card'
 import { Button } from '../components/common/Button'
@@ -111,53 +112,51 @@ type Tab = 'outcomes' | 'quality'
 
 export function ReportsPage() {
   const [activeTab, setActiveTab] = useState<Tab>('outcomes')
-  const [summary, setSummary] = useState<SummaryReport | null>(null)
-  const [surgeonPerf, setSurgeonPerf] = useState<SurgeonPerformance[]>([])
-  const [dataQuality, setDataQuality] = useState<DataQualityReport | null>(null)
-  const [cosdData, setCosdData] = useState<COSDReport | null>(null)
   const [cosdYear, setCosdYear] = useState<number | null>(2024)
-  const [loading, setLoading] = useState(true)
+  const [specialtyFilter, setSpecialtyFilter] = useState<string>('')
 
-  useEffect(() => {
-    loadReports()
-  }, [activeTab])
+  // Query for summary report (outcomes tab)
+  const { data: summary, isLoading: summaryLoading } = useQuery({
+    queryKey: ['reports-summary'],
+    queryFn: async () => {
+      const response = await apiService.reports.summary()
+      return response.data as SummaryReport
+    },
+    enabled: activeTab === 'outcomes',
+    staleTime: 5 * 60 * 1000, // Fresh for 5 minutes
+  })
 
-  useEffect(() => {
-    if (activeTab === 'quality') {
-      loadCOSDData()
-    }
-  }, [cosdYear, activeTab])
+  // Query for surgeon performance (outcomes tab)
+  const { data: surgeonPerfData, isLoading: surgeonLoading } = useQuery({
+    queryKey: ['reports-surgeon-performance', specialtyFilter],
+    queryFn: async () => {
+      const response = await apiService.reports.surgeonPerformance(specialtyFilter || undefined)
+      return response.data.surgeons as SurgeonPerformance[]
+    },
+    enabled: activeTab === 'outcomes',
+    staleTime: 5 * 60 * 1000,
+  })
 
-  const loadReports = async () => {
-    try {
-      setLoading(true)
-      if (activeTab === 'outcomes') {
-        const [summaryRes, surgeonRes] = await Promise.all([
-          apiService.reports.summary(),
-          apiService.reports.surgeonPerformance()
-        ])
-        setSummary(summaryRes.data)
-        setSurgeonPerf(surgeonRes.data.surgeons || [])
-      } else {
-        // Use /api for relative URLs (uses Vite proxy)
-        const API_URL = import.meta.env.VITE_API_URL || '/api'
-        const response = await fetch(`${API_URL}/reports/data-quality`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        })
-        const data = await response.json()
-        setDataQuality(data)
-      }
-    } catch (error) {
-      console.error('Failed to load reports:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+  // Query for data quality report (quality tab)
+  const { data: dataQuality, isLoading: qualityLoading } = useQuery({
+    queryKey: ['reports-data-quality'],
+    queryFn: async () => {
+      const API_URL = import.meta.env.VITE_API_URL || '/api'
+      const response = await fetch(`${API_URL}/reports/data-quality`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      })
+      return response.json() as Promise<DataQualityReport>
+    },
+    enabled: activeTab === 'quality',
+    staleTime: 5 * 60 * 1000,
+  })
 
-  const loadCOSDData = async () => {
-    try {
+  // Query for COSD completeness (quality tab)
+  const { data: cosdData, isLoading: cosdLoading } = useQuery({
+    queryKey: ['reports-cosd-completeness', cosdYear],
+    queryFn: async () => {
       const API_URL = import.meta.env.VITE_API_URL || '/api'
       const yearParam = cosdYear ? `?year=${cosdYear}` : ''
       const response = await fetch(`${API_URL}/reports/cosd-completeness${yearParam}`, {
@@ -165,14 +164,63 @@ export function ReportsPage() {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       })
-      const data = await response.json()
-      setCosdData(data)
-    } catch (error) {
-      console.error('Failed to load COSD data:', error)
-    }
-  }
+      return response.json() as Promise<COSDReport>
+    },
+    enabled: activeTab === 'quality',
+    staleTime: 5 * 60 * 1000,
+  })
 
-  const downloadExcel = async (endpoint: string, filename: string) => {
+  // Derived values
+  const surgeonPerf = surgeonPerfData || []
+  const loading = activeTab === 'outcomes'
+    ? summaryLoading || surgeonLoading
+    : qualityLoading || cosdLoading
+
+  // Memoize yearly data transformation for chart rendering
+  const yearlyData = useMemo(() => {
+    if (!summary?.yearly_breakdown) return []
+    return Object.entries(summary.yearly_breakdown)
+      .filter(([_, data]) => data.total_surgeries > 0)
+      .sort(([yearA], [yearB]) => parseInt(yearA) - parseInt(yearB))
+  }, [summary?.yearly_breakdown])
+
+  // Memoize chart data for complications & readmissions
+  const complicationsChartData = useMemo(() => {
+    return yearlyData.map(([year, data]) => ({
+      year,
+      'Complication Rate': data.complication_rate,
+      'Readmission Rate': data.readmission_rate,
+      'RTT Rate': data.return_to_theatre_rate
+    }))
+  }, [yearlyData])
+
+  // Memoize chart data for mortality rates
+  const mortalityChartData = useMemo(() => {
+    return yearlyData.map(([year, data]) => ({
+      year,
+      '30-Day Mortality': data.mortality_30d_rate,
+      '90-Day Mortality': data.mortality_90d_rate,
+      'ICU Escalation': data.escalation_rate
+    }))
+  }, [yearlyData])
+
+  // Memoize COSD chart data
+  const cosdChartData = useMemo(() => {
+    if (!cosdData?.categories) return []
+    return cosdData.categories.map(cat => ({
+      name: cat.category,
+      completeness: cat.avg_completeness
+    }))
+  }, [cosdData?.categories])
+
+  // Memoize COSD flat fields list
+  const cosdFlatFields = useMemo(() => {
+    if (!cosdData?.categories) return []
+    return cosdData.categories
+      .flatMap(cat => cat.fields.map(field => ({...field, category: cat.category})))
+  }, [cosdData?.categories])
+
+  const downloadExcel = useCallback(async (endpoint: string, filename: string) => {
     try {
       // Endpoint already includes /api prefix, so use empty string for relative URLs
       const API_BASE = import.meta.env.VITE_API_URL === '/api' ? '' : (import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:8000')
@@ -197,40 +245,40 @@ export function ReportsPage() {
       console.error('Failed to download Excel:', error)
       alert('Failed to download report. Please try again.')
     }
-  }
+  }, [])
 
-  // For data quality: higher is better
-  const getCompletenessColor = (percentage: number) => {
+  // Memoize color functions for completeness (higher is better)
+  const getCompletenessColor = useCallback((percentage: number) => {
     if (percentage >= 90) return 'text-green-600 bg-green-100'
     if (percentage >= 70) return 'text-yellow-600 bg-yellow-100'
     if (percentage >= 50) return 'text-orange-600 bg-orange-100'
     return 'text-red-600 bg-red-100'
-  }
+  }, [])
 
-  const getCompletenessBarColor = (percentage: number) => {
+  const getCompletenessBarColor = useCallback((percentage: number) => {
     if (percentage >= 90) return 'bg-green-500'
     if (percentage >= 70) return 'bg-yellow-500'
     if (percentage >= 50) return 'bg-orange-500'
     return 'bg-red-500'
-  }
+  }, [])
 
-  const getCompletenessCardColor = (percentage: number) => {
+  const getCompletenessCardColor = useCallback((percentage: number) => {
     if (percentage >= 90) return 'bg-green-50 border-green-200'
     if (percentage >= 70) return 'bg-yellow-50 border-yellow-200'
     if (percentage >= 50) return 'bg-orange-50 border-orange-200'
     return 'bg-red-50 border-red-200'
-  }
+  }, [])
 
-  const getCompletenessTextColor = (percentage: number) => {
+  const getCompletenessTextColor = useCallback((percentage: number) => {
     if (percentage >= 90) return 'text-green-600'
     if (percentage >= 70) return 'text-yellow-600'
     if (percentage >= 50) return 'text-orange-600'
     return 'text-red-600'
-  }
+  }, [])
 
-  // For outcomes: lower is better
+  // Memoize color functions for outcomes (lower is better)
   // Based on published NBOCA and colorectal surgery benchmarks
-  const getOutcomeColor = (rate: number, metric: 'complication' | 'readmission' | 'mortality' | 'return_to_theatre') => {
+  const getOutcomeColor = useCallback((rate: number, metric: 'complication' | 'readmission' | 'mortality' | 'return_to_theatre') => {
     if (metric === 'complication') {
       // Complications: <15% excellent, 15-25% acceptable, >25% concerning
       if (rate < 15) return 'text-green-600 bg-green-100'
@@ -252,10 +300,10 @@ export function ReportsPage() {
       if (rate < 5) return 'text-yellow-600 bg-yellow-100'
       return 'text-red-600 bg-red-100'
     }
-  }
+  }, [])
 
   // Text-only color for yearly breakdown (no background)
-  const getYearlyTextColor = (rate: number, metric: 'complication' | 'readmission' | 'mortality' | 'return_to_theatre') => {
+  const getYearlyTextColor = useCallback((rate: number, metric: 'complication' | 'readmission' | 'mortality' | 'return_to_theatre') => {
     if (metric === 'complication') {
       if (rate < 15) return 'text-green-600'
       if (rate < 25) return 'text-yellow-600'
@@ -274,9 +322,9 @@ export function ReportsPage() {
       if (rate < 5) return 'text-yellow-600'
       return 'text-red-600'
     }
-  }
+  }, [])
 
-  const getOutcomeCardColor = (rate: number, metric: 'complication' | 'readmission' | 'mortality') => {
+  const getOutcomeCardColor = useCallback((rate: number, metric: 'complication' | 'readmission' | 'mortality') => {
     if (metric === 'complication') {
       if (rate < 15) return 'bg-green-50 border-green-200'
       if (rate < 25) return 'bg-yellow-50 border-yellow-200'
@@ -290,9 +338,9 @@ export function ReportsPage() {
       if (rate < 5) return 'bg-yellow-50 border-yellow-200'
       return 'bg-red-50 border-red-200'
     }
-  }
+  }, [])
 
-  const getOutcomeTextColor = (rate: number, metric: 'complication' | 'readmission' | 'mortality') => {
+  const getOutcomeTextColor = useCallback((rate: number, metric: 'complication' | 'readmission' | 'mortality') => {
     if (metric === 'complication') {
       if (rate < 15) return 'text-green-600'
       if (rate < 25) return 'text-yellow-600'
@@ -306,7 +354,7 @@ export function ReportsPage() {
       if (rate < 5) return 'text-yellow-600'
       return 'text-red-600'
     }
-  }
+  }, [])
 
   return (
     <div className="space-y-6">
@@ -556,30 +604,15 @@ export function ReportsPage() {
           </div>
 
           {/* Yearly Outcomes Trends Chart */}
-          {summary.yearly_breakdown && Object.keys(summary.yearly_breakdown).length > 0 && (() => {
-            // Filter out years with no surgeries and sort chronologically
-            const yearlyData = Object.entries(summary.yearly_breakdown)
-              .filter(([_, data]) => data.total_surgeries > 0)
-              .sort(([yearA], [yearB]) => parseInt(yearA) - parseInt(yearB))
-
-            const years = yearlyData.map(([year]) => year)
-            const startYear = years[0]
-            const endYear = years[years.length - 1]
-
-            return (
+          {yearlyData.length > 0 && (
               <Card className="p-6">
-                <h3 className="text-lg font-semibold mb-4">Outcomes Trends ({startYear}-{endYear})</h3>
+                <h3 className="text-lg font-semibold mb-4">Outcomes Trends ({yearlyData[0][0]}-{yearlyData[yearlyData.length - 1][0]})</h3>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* Complications & Readmissions */}
                   <div>
                     <h4 className="text-sm font-medium text-gray-700 mb-3">Complications & Readmissions</h4>
                     <ResponsiveContainer width="100%" height={300}>
-                      <LineChart data={yearlyData.map(([year, data]) => ({
-                        year,
-                        'Complication Rate': data.complication_rate,
-                        'Readmission Rate': data.readmission_rate,
-                        'RTT Rate': data.return_to_theatre_rate
-                      }))}>
+                      <LineChart data={complicationsChartData}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="year" angle={-45} textAnchor="end" height={70} />
                         <YAxis label={{ value: 'Rate (%)', angle: -90, position: 'insideLeft' }} />
@@ -596,12 +629,7 @@ export function ReportsPage() {
                   <div>
                     <h4 className="text-sm font-medium text-gray-700 mb-3">Mortality Rates</h4>
                     <ResponsiveContainer width="100%" height={300}>
-                      <LineChart data={yearlyData.map(([year, data]) => ({
-                        year,
-                        '30-Day Mortality': data.mortality_30d_rate,
-                        '90-Day Mortality': data.mortality_90d_rate,
-                        'ICU Escalation': data.escalation_rate
-                      }))}>
+                      <LineChart data={mortalityChartData}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="year" angle={-45} textAnchor="end" height={70} />
                         <YAxis label={{ value: 'Rate (%)', angle: -90, position: 'insideLeft' }} />
@@ -615,8 +643,7 @@ export function ReportsPage() {
                   </div>
                 </div>
               </Card>
-            )
-          })()}
+            )}
 
           {/* Urgency Breakdown */}
           {summary.urgency_breakdown && Object.keys(summary.urgency_breakdown).length > 0 && (
@@ -689,9 +716,30 @@ export function ReportsPage() {
           )}
 
           {/* Surgeon Performance */}
-          {surgeonPerf.length > 0 && (
-            <Card className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Surgeon Performance</h3>
+          <Card className="p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Surgeon Performance</h3>
+              <div className="flex items-center gap-2">
+                <label htmlFor="specialty-filter" className="text-sm font-medium text-gray-700">
+                  Filter by Specialty:
+                </label>
+                <select
+                  id="specialty-filter"
+                  value={specialtyFilter}
+                  onChange={(e) => setSpecialtyFilter(e.target.value)}
+                  className="px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">All Specialties</option>
+                  <option value="colorectal">Colorectal</option>
+                  <option value="urology">Urology</option>
+                  <option value="breast">Breast</option>
+                  <option value="upper_gi">Upper GI</option>
+                  <option value="gynae_onc">Gynae Oncology</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+            </div>
+            {surgeonPerf.length > 0 ? (
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -754,8 +802,12 @@ export function ReportsPage() {
                   ))}
                 </TableBody>
               </Table>
-            </Card>
-          )}
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <p>No surgeons found{specialtyFilter ? ` for ${specialtyFilter} specialty` : ''}.</p>
+              </div>
+            )}
+          </Card>
 
           {/* Export Buttons */}
           <Card className="p-6">
@@ -861,10 +913,9 @@ export function ReportsPage() {
 
                 {/* COSD Completeness Bar Chart */}
                 <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={cosdData.categories.map(cat => ({
-                    name: cat.category,
-                    'Completeness': cat.avg_completeness,
-                    'Fields': cat.field_count
+                  <BarChart data={cosdChartData.map(cat => ({
+                    name: cat.name,
+                    'Completeness': cat.completeness
                   }))}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
@@ -877,14 +928,14 @@ export function ReportsPage() {
                     />
                     <Legend />
                     <Bar dataKey="Completeness" name="Completeness (%)">
-                      {cosdData.categories.map((cat, index) => {
+                      {cosdChartData.map((cat, index) => {
                         const getBarColor = (completeness: number) => {
                           if (completeness >= 90) return '#10b981'
                           if (completeness >= 70) return '#f59e0b'
                           if (completeness >= 50) return '#fb923c'
                           return '#ef4444'
                         }
-                        return <Cell key={`cell-${index}`} fill={getBarColor(cat.avg_completeness)} />
+                        return <Cell key={`cell-${index}`} fill={getBarColor(cat.completeness)} />
                       })}
                     </Bar>
                   </BarChart>
@@ -926,9 +977,7 @@ export function ReportsPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {cosdData.categories.flatMap(cat =>
-                        cat.fields.map(field => ({...field, category: cat.category}))
-                      )
+                      {cosdFlatFields
                       .sort((a, b) => a.completeness - b.completeness)
                       .map((field, idx) => (
                         <TableRow key={idx}>

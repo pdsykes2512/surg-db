@@ -43,7 +43,14 @@ export function CancerEpisodesPage() {
   const loadEpisodes = useCallback(async () => {
     try {
       setLoading(true)
-      const response = await api.get('/episodes/')
+      // Build query parameters for server-side filtering
+      const params: any = {}
+      if (searchTerm) params.search = searchTerm
+      if (cancerTypeFilter) params.cancer_type = cancerTypeFilter
+      if (statusFilter) params.episode_status = statusFilter
+
+      // Fetch filtered episodes from server
+      const response = await api.get('/episodes/', { params })
       setEpisodes(response.data)
       setError('')
     } catch (err: any) {
@@ -52,25 +59,14 @@ export function CancerEpisodesPage() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [searchTerm, cancerTypeFilter, statusFilter])
 
   useEffect(() => {
     loadEpisodes()
   }, [loadEpisodes])
 
-  const filteredEpisodes = useMemo(() => {
-    return episodes.filter(episode => {
-      const matchesSearch = !searchTerm || 
-        episode.episode_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        episode.patient_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        episode.lead_clinician?.toLowerCase().includes(searchTerm.toLowerCase())
-      
-      const matchesCancerType = !cancerTypeFilter || episode.cancer_type === cancerTypeFilter
-      const matchesStatus = !statusFilter || episode.episode_status === statusFilter
-
-      return matchesSearch && matchesCancerType && matchesStatus
-    })
-  }, [episodes, searchTerm, cancerTypeFilter, statusFilter])
+  // No client-side filtering needed - backend handles all filtering
+  const filteredEpisodes = episodes
 
   const handleCreate = async (data: any) => {
     try {
