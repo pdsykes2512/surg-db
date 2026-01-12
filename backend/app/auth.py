@@ -22,7 +22,8 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
 # JWT settings
 SECRET_KEY = settings.secret_key
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours
+ACCESS_TOKEN_EXPIRE_MINUTES = settings.access_token_expire_minutes
+REFRESH_TOKEN_EXPIRE_DAYS = settings.refresh_token_expire_days
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -49,7 +50,19 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
         expire = datetime.utcnow() + expires_delta
     else:
         expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    to_encode.update({"exp": expire})
+    to_encode.update({"exp": expire, "token_type": "access"})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+
+def create_refresh_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+    """Create a JWT refresh token"""
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+    to_encode.update({"exp": expire, "token_type": "refresh"})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
@@ -88,9 +101,16 @@ async def get_current_user(
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         email: str = payload.get("sub")
+        token_type: str = payload.get("token_type")
+        
         if email is None:
             raise credentials_exception
-        token_data = TokenData(email=email, role=payload.get("role"))
+        
+        # Ensure this is an access token, not a refresh token
+        if token_type != "access":
+            raise credentials_exception
+            
+        token_data = TokenData(email=email, role=payload.get("role"), token_type=token_type)
     except JWTError:
         raise credentials_exception
     
@@ -117,6 +137,28 @@ async def get_current_user(
         "created_at": user.created_at,
         "last_login": datetime.utcnow()
     }
+
+
+async def verify_refresh_token(
+    refresh_token: str,
+    db: AsyncIOMotorDatabase
+) -> Optional[UserInDB]:
+    """Verify refresh token and return user"""
+    try:
+        payload = jwt.decode(refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
+        email: str = payload.get("sub")
+        token_type: str = payload.get("token_type")
+        
+        if email is None or token_type != "refresh":
+            return None
+            
+        user = await get_user_by_email(db, email=email)
+        if user is None or not user.is_active:
+            return None
+            
+        return user
+    except JWTError:
+        return None
 
 
 def require_role(required_roles: list[UserRole]):
