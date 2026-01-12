@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useHotkeys } from 'react-hotkeys-hook'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
+import { AuthProvider } from './contexts/AuthContext'
 import { HomePage } from './pages/HomePage'
 import { PatientsPage } from './pages/PatientsPage'
 import { EpisodesPage } from './pages/EpisodesPage'
@@ -118,7 +119,9 @@ function App() {
           v7_relativeSplatPath: true
         }}
       >
-        <AppContent />
+        <AuthProvider>
+          <AppContent />
+        </AuthProvider>
       </Router>
     </QueryClientProvider>
   )
