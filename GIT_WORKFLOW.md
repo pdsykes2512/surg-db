@@ -87,10 +87,12 @@ git push origin main
 **What happens automatically:**
 1. GitHub Actions workflow triggers
 2. Analyzes commit messages since last version
-3. Bumps version number appropriately
-4. Updates `VERSION`, `frontend/package.json`, `backend/app/config.py`
-5. Creates git tag (e.g., `v1.9.0`)
-6. Creates GitHub release with changelog
+3. **If minor/major version will change** (e.g., 1.8.x → 1.9.0 or 2.0.0):
+   - Creates backup branch `archive/v1.8.3` preserving the old version
+4. Bumps version number appropriately
+5. Updates `VERSION`, `frontend/package.json`, `backend/app/config.py`
+6. Creates git tag (e.g., `v1.9.0`)
+7. Creates GitHub release with changelog
 
 ### 3. After Merge to Main
 
@@ -229,6 +231,62 @@ For stricter control, consider enabling branch protection on `main`:
 
 This forces all changes to go through pull requests from `develop` to `main`.
 
+## Archive Branches (Backup Snapshots)
+
+### What Are Archive Branches?
+
+When the version number changes in the second position (e.g., 1.8.x → 1.9.0 or 1.x → 2.0.0), the system **automatically creates a backup branch** preserving the code at that point.
+
+**Naming Convention:** `archive/v{old_version}`
+
+**Examples:**
+- Version bump 1.8.3 → 1.9.0 creates `archive/v1.8.3`
+- Version bump 1.9.5 → 2.0.0 creates `archive/v1.9.5`
+- Version bump 1.8.3 → 1.8.4 does NOT create backup (patch only)
+
+### Why Archive Branches?
+
+**Purpose:** Preserve production state for posterity when significant versions change.
+
+**Use Cases:**
+1. **Historical reference** - See exactly what code was deployed at version 1.8.x
+2. **Emergency rollback** - If 1.9.0 has critical issues, can reference or deploy from `archive/v1.8.3`
+3. **Support old versions** - If clients still using 1.8.x need bug fixes
+4. **Audit trail** - Compliance and regulatory requirements
+
+### Viewing Archive Branches
+
+List all archive branches:
+
+```bash
+git branch -r | grep archive
+```
+
+Example output:
+```
+origin/archive/v1.6.2
+origin/archive/v1.7.4
+origin/archive/v1.8.3
+```
+
+Checkout an archive branch to view old code:
+
+```bash
+git checkout archive/v1.8.3
+# Read-only - DO NOT commit to archive branches
+```
+
+### Archive Branch Lifecycle
+
+**Creation:** Automatic on minor/major version bumps
+**Retention:** Permanent (never auto-deleted)
+**Updates:** Read-only snapshots (should not be modified)
+
+**Note:** If you need to clean up old archives, manually delete from GitHub:
+```bash
+git push origin --delete archive/v1.5.0
+```
+
 ## Current Version
 
 Check current version:
@@ -274,9 +332,11 @@ git push origin develop
 - Work on `develop` until features are stable
 - Merge to `main` when ready for a release
 - Versioning happens automatically on `main`
+- Archive branches created automatically for minor/major versions
 
 **Benefits:**
 - Clean production history on `main`
 - Freedom to experiment on `develop`
 - Automatic semantic versioning
+- Automatic backup branches for version history
 - No manual version management
