@@ -15,6 +15,46 @@ This file tracks significant changes made to the IMPACT application (formerly su
 
 ---
 
+## 2026-01-12 - Session Timeout and Automatic Token Refresh Implementation
+
+**Changed by:** AI Session (GitHub Copilot)
+
+**Issue:** Implement automatic session timeout for security with warning dialog, activity tracking, and refresh token mechanism.
+
+**Solution:**
+Implemented comprehensive session timeout system with 30-minute inactivity timeout, 5-minute warning, automatic token refresh, and intended destination redirect.
+
+**Changes:**
+- Added refresh token support with 7-day validity
+- Implemented token rotation for security
+- Created SessionManager utility for activity tracking
+- Built SessionWarningModal component with countdown
+- Enhanced AuthContext with session management
+- Added session expired message to LoginPage
+- Configured all timeouts via environment variables
+
+**Files Affected:**
+- Backend: `config.py`, `auth.py`, `routes/auth.py`, `models/user.py`
+- Frontend: `AuthContext.tsx`, `LoginPage.tsx`, `sessionManager.ts` (NEW), `SessionWarningModal.tsx` (NEW)
+- Documentation: `docs/features/SESSION_TIMEOUT.md` (NEW)
+
+**Testing:**
+1. Log in and remain inactive for 30 minutes - verify warning at 25 min, logout at 30 min
+2. Click "Continue Session" in warning - verify token refresh and session extension
+3. Interact with app - verify session stays active beyond 30 minutes
+4. Let session expire from specific page - verify redirect to that page after re-login
+
+**Notes:**
+- Session timeout: 30 minutes (configurable via ACCESS_TOKEN_EXPIRE_MINUTES)
+- Refresh token: 7 days validity (configurable via REFRESH_TOKEN_EXPIRE_DAYS)
+- Warning: 5 minutes before timeout
+- Auto-refresh: When 10 minutes or less remain
+- Activity events: mouse, keyboard, touch, scroll
+- Token rotation on refresh for security
+- For dev testing, reduce timeouts in config
+
+---
+
 ## 2026-01-12 - Phase 2 Performance Optimizations: React Query, Aggregation, and Memoization
 
 **Changed by:** AI Session (Claude Code)
