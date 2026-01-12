@@ -50,6 +50,10 @@ jobs:
       - name: Run version bump script
         id: version_bump
         run: |
+          # Store old version before bump
+          OLD_VERSION=$(cat VERSION)
+          echo "old_version=$OLD_VERSION" >> $GITHUB_OUTPUT
+
           python3 execution/version_bump.py --ci
 
           # Check if VERSION file changed
@@ -61,7 +65,38 @@ jobs:
             echo "version_changed=true" >> $GITHUB_OUTPUT
             echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
             echo "Version bumped to $NEW_VERSION"
+
+            # Determine if minor or major version changed
+            OLD_MINOR=$(echo $OLD_VERSION | cut -d. -f1-2)
+            NEW_MINOR=$(echo $NEW_VERSION | cut -d. -f1-2)
+
+            if [ "$OLD_MINOR" != "$NEW_MINOR" ]; then
+              echo "needs_backup=true" >> $GITHUB_OUTPUT
+              echo "backup_branch=archive/v$OLD_VERSION" >> $GITHUB_OUTPUT
+              echo "Minor/Major version change detected - backup branch will be created"
+            else
+              echo "needs_backup=false" >> $GITHUB_OUTPUT
+            fi
           fi
+
+      - name: Create backup branch for minor/major version change
+        if: steps.version_bump.outputs.needs_backup == 'true'
+        run: |
+          # Reset the version files to pre-bump state
+          git restore VERSION frontend/package.json backend/app/config.py
+
+          # Create backup branch from current state (before version bump)
+          BACKUP_BRANCH="${{ steps.version_bump.outputs.backup_branch }}"
+          git checkout -b "$BACKUP_BRANCH"
+          git push origin "$BACKUP_BRANCH"
+
+          echo "✅ Created backup branch: $BACKUP_BRANCH"
+
+          # Return to main branch
+          git checkout main
+
+          # Re-run version bump to apply changes
+          python3 execution/version_bump.py --ci
 
       - name: Commit version bump
         if: steps.version_bump.outputs.version_changed == 'true'
@@ -95,8 +130,13 @@ jobs:
         run: |
           echo "### ✅ Version Bumped Successfully!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Old Version:** \`v${{ steps.version_bump.outputs.old_version }}\`" >> $GITHUB_STEP_SUMMARY
           echo "**New Version:** \`v${{ steps.version_bump.outputs.new_version }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- Git tag created and pushed" >> $GITHUB_STEP_SUMMARY
           echo "- GitHub release created" >> $GITHUB_STEP_SUMMARY
           echo "- Version files updated" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ steps.version_bump.outputs.needs_backup }}" == "true" ]; then
+            echo "- 📦 **Backup branch created:** \`${{ steps.version_bump.outputs.backup_branch }}\`" >> $GITHUB_STEP_SUMMARY
+          fi
