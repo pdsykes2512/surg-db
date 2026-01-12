@@ -22,6 +22,9 @@ class Settings(BaseSettings):
     
     # Security settings
     secret_key: str = "your-secret-key-change-in-production-min-32-characters-long"
+    access_token_expire_minutes: int = 30  # 30 minutes of inactivity
+    refresh_token_expire_days: int = 7  # 7 days for refresh token
+    session_warning_minutes: int = 5  # Warning 5 minutes before timeout
     
     # CORS settings
     cors_origins: list = [

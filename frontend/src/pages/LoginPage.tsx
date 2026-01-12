@@ -1,9 +1,10 @@
-import { useState, FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, FormEvent, useEffect } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 
 export function LoginPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { login, register } = useAuth()
   const [isLogin, setIsLogin] = useState(true)
   const [email, setEmail] = useState('')
@@ -11,11 +12,22 @@ export function LoginPage() {
   const [fullName, setFullName] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [sessionExpired, setSessionExpired] = useState(false)
+
+  useEffect(() => {
+    // Check if user was redirected due to session expiration
+    if (location.state?.sessionExpired) {
+      setSessionExpired(true)
+      // Clear the state
+      window.history.replaceState({}, document.title)
+    }
+  }, [location])
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setError('')
     setLoading(true)
+    setSessionExpired(false)
 
     try {
       if (isLogin) {
@@ -47,6 +59,20 @@ export function LoginPage() {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+          {sessionExpired && (
+            <div className="mb-4 rounded-md bg-amber-50 border border-amber-200 p-4">
+              <div className="flex">
+                <div className="text-amber-400 text-xl mr-3">⏰</div>
+                <div>
+                  <h3 className="text-sm font-medium text-amber-800">Session Expired</h3>
+                  <p className="mt-1 text-sm text-amber-700">
+                    Your session has expired due to inactivity. Please sign in again.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           <form className="space-y-6" onSubmit={handleSubmit}>
             {!isLogin && (
               <div>
@@ -145,6 +171,7 @@ export function LoginPage() {
                 onClick={() => {
                   setIsLogin(!isLogin)
                   setError('')
+                  setSessionExpired(false)
                 }}
                 className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >

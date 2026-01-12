@@ -63,11 +63,19 @@ class User(UserBase):
 class Token(BaseModel):
     """JWT token response"""
     access_token: str
+    refresh_token: str
     token_type: str = "bearer"
+    expires_in: int  # seconds until token expires
     user: User
+
+
+class RefreshTokenRequest(BaseModel):
+    """Refresh token request"""
+    refresh_token: str
 
 
 class TokenData(BaseModel):
     """Token payload data"""
     email: Optional[str] = None
     role: Optional[str] = None
+    token_type: Optional[str] = None  # "access" or "refresh"
