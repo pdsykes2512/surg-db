@@ -107,6 +107,7 @@ This maintains continuity across AI chat sessions.
 - **Atomic Commits:** Commit often with small, logical units of work. Do not bundle unrelated changes (e.g., do not mix refactoring with new features).
 - **Semantic Messages:** Use clear commit messages following the `type: description` format (e.g., `feat: add scraper script`, `fix: handle API timeout`). This enables automatic versioning on `main` branch.
 - **Auto-versioning:** The `main` branch automatically versions based on conventional commits (`feat:` = minor bump, `fix:` = patch bump). The `develop` branch does not auto-version.
+- **Archive Branches:** When merging to `main` triggers a minor or major version bump (e.g., 1.8.x → 1.9.0 or 2.0.0), GitHub Actions automatically creates a backup branch `archive/v{old_version}` preserving the code state before the bump. Patch bumps (1.8.3 → 1.8.4) do not create archives.
 
 ## Self-annealing loop
 
