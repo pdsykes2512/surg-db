@@ -73,7 +73,7 @@ export function LoginPage() {
             </div>
           )}
 
-          <form className="space-y-6" onSubmit={handleSubmit}>
+          <form className="space-y-6" onSubmit={handleSubmit} name={isLogin ? 'login' : 'register'}>
             {!isLogin && (
               <div>
                 <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">
@@ -84,6 +84,7 @@ export function LoginPage() {
                     id="fullName"
                     name="fullName"
                     type="text"
+                    autoComplete="name"
                     required={!isLogin}
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
@@ -102,7 +103,7 @@ export function LoginPage() {
                   id="email"
                   name="email"
                   type="email"
-                  autoComplete="email"
+                  autoComplete={isLogin ? 'username' : 'email'}
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
