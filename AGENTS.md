@@ -103,9 +103,10 @@ If a task requires schema changes:
 This maintains continuity across AI chat sessions.
 
 **5. Version Control & Environment** Initialize all environments as GitHub repositories using the GitHub API. You must strictly follow these Git best practices to maintain a revertible and clean history:
+- **Branching Strategy:** Work on the `develop` branch for all active development. Only merge to `main` when features are stable and ready for production release. See `GIT_WORKFLOW.md` for detailed instructions.
 - **Atomic Commits:** Commit often with small, logical units of work. Do not bundle unrelated changes (e.g., do not mix refactoring with new features).
-- **Semantic Messages:** Use clear commit messages following the `type: description` format (e.g., `feat: add scraper script`, `fix: handle API timeout`).
-- **Feature Branches:** Never commit directly to `main` or `master`. Create specific branches for each directive or task (e.g., `feat/add-google-sheets-integration`) and merge only when the task is complete and tested.
+- **Semantic Messages:** Use clear commit messages following the `type: description` format (e.g., `feat: add scraper script`, `fix: handle API timeout`). This enables automatic versioning on `main` branch.
+- **Auto-versioning:** The `main` branch automatically versions based on conventional commits (`feat:` = minor bump, `fix:` = patch bump). The `develop` branch does not auto-version.
 
 ## Self-annealing loop
 
@@ -127,6 +128,7 @@ Errors are learning opportunities. When something breaks:
 - `RECENT_CHANGES.md` - **READ THIS FIRST** - Log of recent changes across AI sessions (prevents duplicate work and breaking fixes)
 - `STYLE_GUIDE.md` - **UI/UX design patterns** - Modal layouts, button placement, color schemes, component standards
 - `DATABASE_SCHEMA.md` - **DATABASE STRUCTURE REFERENCE** - Definitive schema documentation. MUST NOT modify structure without explicit user approval.
+- `GIT_WORKFLOW.md` - **BRANCHING STRATEGY** - Explains develop/main branch workflow and when to merge for releases.
 - `.env` - Environment variables and API keys
 - `credentials.json`, `token.json` - Google OAuth credentials (required files, in `.gitignore`)
 
