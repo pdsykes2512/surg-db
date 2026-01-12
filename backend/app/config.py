@@ -65,7 +65,7 @@ class Settings(BaseSettings):
         return v
 
     class Config:
-        env_file = "../.env"  # .env is in parent directory
+        env_file = "/etc/impact/secrets.env"  # Secrets stored in /etc/impact
         case_sensitive = False
         extra = "ignore"  # Ignore extra fields in .env
 
