@@ -235,8 +235,41 @@ def create_git_tag(version: str, commits: List[str]):
     return tag_name
 
 
+def process_commit_incrementally(commit: str, current_version: str, is_ci: bool) -> str:
+    """
+    Process a single commit and bump version if needed
+    Returns the new version (or current if no bump)
+    """
+    commit_type, is_breaking = parse_commit_message(commit)
+
+    # Determine bump type for this specific commit
+    if is_breaking:
+        bump_type = 'major'
+    else:
+        bump_type = COMMIT_TYPE_MAP.get(commit_type, 'none')
+
+    if bump_type == 'none':
+        return current_version
+
+    # Calculate new version
+    new_version = bump_version(current_version, bump_type)
+
+    print(f'\n  📦 {current_version} → {new_version} ({bump_type})')
+    print(f'     {commit}')
+
+    # Apply version bump
+    update_version_file(new_version)
+    update_frontend_package_json(new_version)
+    update_backend_config(new_version)
+
+    # Create git tag
+    create_git_tag(new_version, [commit])
+
+    return new_version
+
+
 def main():
-    """Main version bump workflow"""
+    """Main version bump workflow with incremental processing"""
     print('🔍 Analyzing commits for version bump...\n')
 
     # Get current version
@@ -250,12 +283,15 @@ def main():
     else:
         print('No previous version tags found')
 
-    # Get commits since last tag
+    # Get commits since last tag (in chronological order - oldest first)
     commits = get_commits_since_tag(last_tag)
 
     if not commits:
         print('\n✨ No new commits since last version')
         return
+
+    # Reverse to get chronological order (git log shows newest first)
+    commits.reverse()
 
     print(f'\n📝 Found {len(commits)} commits since last version:')
     for commit in commits[:5]:  # Show first 5
@@ -263,43 +299,52 @@ def main():
     if len(commits) > 5:
         print(f'  ... and {len(commits) - 5} more')
 
-    # Determine version bump
-    bump_type = determine_version_bump(commits)
+    # Check if any commits require version bump
+    has_bump_commits = False
+    for commit in commits:
+        commit_type, is_breaking = parse_commit_message(commit)
+        bump = COMMIT_TYPE_MAP.get(commit_type, 'none')
+        if bump != 'none' or is_breaking:
+            has_bump_commits = True
+            break
 
-    if bump_type == 'none':
+    if not has_bump_commits:
         print('\n✨ No version bump needed (only docs/chore commits)')
         return
-
-    # Calculate new version
-    new_version = bump_version(current_version, bump_type)
-
-    print(f'\n🎯 Version bump type: {bump_type.upper()}')
-    print(f'📦 New version: {current_version} → {new_version}')
 
     # Check if running in CI (non-interactive)
     is_ci = '--ci' in sys.argv or 'CI' in subprocess.os.environ
 
     if not is_ci:
         # Interactive mode: ask for confirmation
-        response = input('\n❓ Apply this version bump? [y/N]: ')
+        print('\n🎯 Incremental version bumping: Each commit will get its own version bump')
+        response = input('❓ Apply version bumps? [y/N]: ')
         if response.lower() != 'y':
             print('❌ Version bump cancelled')
             return
 
-    # Apply version bump
-    print('\n🚀 Applying version bump...')
-    update_version_file(new_version)
-    update_frontend_package_json(new_version)
-    update_backend_config(new_version)
+    # Process commits incrementally
+    print('\n🚀 Applying incremental version bumps...')
+    version = current_version
+    bumped_count = 0
 
-    # Create git tag
-    tag_name = create_git_tag(new_version, commits)
+    for commit in commits:
+        new_version = process_commit_incrementally(commit, version, is_ci)
+        if new_version != version:
+            version = new_version
+            bumped_count += 1
+
+    if bumped_count == 0:
+        print('\n✨ No version bumps applied')
+        return
 
     print(f'\n✅ Version bumped successfully!')
-    print(f'📌 Next steps:')
+    print(f'📊 Applied {bumped_count} incremental version bump(s)')
+    print(f'📌 Final version: {current_version} → {version}')
+    print(f'\n📌 Next steps:')
     print(f'   1. Review the changes: git diff')
     print(f'   2. Commit version files: git add VERSION frontend/package.json backend/app/config.py')
-    print(f'   3. Commit: git commit -m "chore: bump version to {new_version}"')
+    print(f'   3. Commit: git commit -m "chore: bump version to {version}"')
     print(f'   4. Push with tags: git push && git push --tags')
 
 
