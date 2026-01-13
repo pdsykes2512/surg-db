@@ -42,11 +42,14 @@ git push origin develop
 - Protected - should only receive merges from `develop`
 - Always deployable
 
-**Auto-versioning Rules:**
-- `feat:` prefix → Minor version bump (1.8.0 → 1.9.0)
-- `fix:` prefix → Patch version bump (1.8.0 → 1.8.1)
-- `BREAKING CHANGE:` in commit body → Major version bump (1.8.0 → 2.0.0)
-- Other prefixes → Patch version bump
+**Auto-versioning Rules (Incremental Processing):**
+- Each commit is processed individually in chronological order
+- Each commit gets its own version bump and tag:
+  - `feat:` prefix → Minor version bump (1.8.0 → 1.9.0)
+  - `fix:` prefix → Patch version bump (1.8.0 → 1.8.1)
+  - `refactor:`, `perf:`, `style:` → Patch version bump
+  - `BREAKING CHANGE:` → Major version bump (1.8.0 → 2.0.0)
+  - `docs:`, `test:`, `chore:`, `build:`, `ci:` → No version bump
 
 ## Workflow
 
@@ -171,7 +174,11 @@ git push origin develop
 git checkout main
 git merge develop
 git push origin main
-# → Auto-bumps to v1.9.0 (two features = minor bump)
+# → Incremental auto-versioning processes each commit:
+#   1.8.0 → 1.9.0 (feat: add patient filtering)
+#   1.9.0 → 1.10.0 (feat: add export to CSV)
+#   1.10.0 → 1.10.1 (fix: resolve date picker issue)
+# → Final version: v1.10.1
 ```
 
 ### Scenario 2: Hotfix on Production
