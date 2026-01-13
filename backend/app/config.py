@@ -8,30 +8,37 @@ from typing import Optional
 
 class Settings(BaseSettings):
     """Application settings from environment variables"""
-    
+
+    # Server hostname (configurable for different deployments)
+    server_hostname: str = "impact.vps"  # Default hostname, override via SERVER_HOSTNAME env var
+    frontend_port: int = 3000  # Frontend port for CORS
+
     # MongoDB settings
-    mongodb_uri: str = "mongodb://surg-db.vps:27017"
+    mongodb_uri: str = "mongodb://localhost:27017"  # Override via MONGODB_URI env var
     mongodb_db_name: str = "impact"  # Clinical audit data
     mongodb_system_db_name: str = "impact_system"  # System data (users, clinicians)
-    
+
     # API settings
     api_host: str = "0.0.0.0"
     api_port: int = 8000
     api_title: str = "IMPACT API"
     api_version: str = "1.11.0"
-    
+
     # Security settings
     secret_key: str = "your-secret-key-change-in-production-min-32-characters-long"
     access_token_expire_minutes: int = 30  # 30 minutes of inactivity
     refresh_token_expire_days: int = 7  # 7 days for refresh token
     session_warning_minutes: int = 5  # Warning 5 minutes before timeout
-    
-    # CORS settings
-    cors_origins: list = [
-        "http://localhost:3000",
-        "http://surg-db.vps:3000"
-    ]
-    
+
+    # CORS settings - built dynamically from server_hostname
+    @property
+    def cors_origins(self) -> list:
+        """Dynamic CORS origins based on server hostname"""
+        return [
+            "http://localhost:3000",
+            f"http://{self.server_hostname}:{self.frontend_port}"
+        ]
+
     # CORS regex for both network ranges (192.168.10.0/24 and 192.168.11.0/24)
     cors_origin_regex: str = r"http://192\.168\.(10|11)\.\d{1,3}:\d+"
 

@@ -15,6 +15,70 @@ This file tracks significant changes made to the IMPACT application (formerly su
 
 ---
 
+## 2026-01-13 - Remove Hardcoded Hostnames, Use Environment Variables
+
+**Changed by:** AI Session (Claude Code)
+
+**Issue:** Hostnames were hardcoded throughout the application (surg-db.vps, impact.vps, IP addresses), making it difficult to deploy to different environments or change server names without modifying code.
+
+**Solution:**
+Centralized all hostname configuration into environment variables:
+
+**New Environment Variables:**
+- `SERVER_HOSTNAME` - Main server hostname (default: impact.vps)
+- `FRONTEND_PORT` - Frontend port for CORS (default: 3000)
+- `BACKEND_HOST` - Backend IP/hostname for Vite proxy (default: 192.168.11.238)
+- `BACKEND_PORT` - Backend port for Vite proxy (default: 8000)
+
+**Changes:**
+
+1. **Backend Config** ([backend/app/config.py](backend/app/config.py)):
+   - Removed hardcoded MongoDB URI `mongodb://surg-db.vps:27017`
+   - Changed to use `MONGODB_URI` from environment (set in `/etc/impact/secrets.env`)
+   - Added `server_hostname` and `frontend_port` properties
+   - Made `cors_origins` dynamic property: builds from `SERVER_HOSTNAME` env var
+   - CORS now automatically includes: `http://localhost:3000` and `http://{SERVER_HOSTNAME}:{FRONTEND_PORT}`
+
+2. **Frontend Vite Config** ([frontend/vite.config.ts](frontend/vite.config.ts)):
+   - Removed hardcoded hostname `surg-db.vps` from allowedHosts
+   - Removed hardcoded proxy target `http://192.168.11.238:8000`
+   - Now reads `SERVER_HOSTNAME`, `BACKEND_HOST`, `BACKEND_PORT` from environment
+   - Dynamically builds allowed hosts and proxy target
+
+3. **Environment Files**:
+   - Updated [.env](.env), [.env.example](.env.example)
+   - Updated [frontend/.env](frontend/.env), [frontend/.env.example](frontend/.env.example)
+   - Added hostname variables with current values as defaults
+
+**Files Affected:**
+- [backend/app/config.py](backend/app/config.py) - Dynamic CORS origins property
+- [frontend/vite.config.ts](frontend/vite.config.ts) - Environment-based config
+- [.env](.env) - Added SERVER_HOSTNAME, BACKEND_HOST, BACKEND_PORT
+- [.env.example](.env.example) - Documented new variables
+- [frontend/.env](frontend/.env) - Added hostname variables
+- [frontend/.env.example](frontend/.env.example) - Documented variables
+
+**Configuration:**
+To change hostname from `impact.vps` to something else:
+1. Update `SERVER_HOSTNAME=your.hostname` in `.env`
+2. Update `SERVER_HOSTNAME=your.hostname` in `frontend/.env`
+3. Optionally update `BACKEND_HOST` if backend IP changes
+4. Restart: `sudo systemctl restart impact-backend impact-frontend`
+
+**Testing:**
+```bash
+# Verify backend CORS includes your hostname
+python3 -c "from backend.app.config import settings; print(settings.cors_origins)"
+# Should output: ['http://localhost:3000', 'http://impact.vps:3000']
+```
+
+**Notes:**
+- Old hostname `surg-db.vps` references remain in RECENT_CHANGES.md for historical documentation
+- MongoDB credentials still stored in `/etc/impact/secrets.env` via `MONGODB_URI`
+- Changes are backward compatible - old deployments continue to work with defaults
+
+---
+
 ## 2026-01-13 - Make Session Timeout Configurable via Environment Variables
 
 **Changed by:** AI Session (Claude Code)
