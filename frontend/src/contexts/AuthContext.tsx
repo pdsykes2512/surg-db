@@ -140,9 +140,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setShowWarning(false)
     const success = await refreshAccessToken()
     if (success) {
-      // Reset session manager
+      // Reset session manager - force record activity to bypass throttling
       const manager = getSessionManager()
-      manager.recordActivity()
+      manager.recordActivity(true) // Force parameter bypasses throttling
     }
   }, [refreshAccessToken])
 

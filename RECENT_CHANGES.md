@@ -15,6 +15,48 @@ This file tracks significant changes made to the IMPACT application (formerly su
 
 ---
 
+## 2026-01-13 - Session Timeout Fix: Activity Throttling
+
+**Changed by:** AI Session (Claude Code)
+
+**Issue:** Session timeout was not triggering because overly sensitive activity listeners (mousemove, scroll) were recording activity from passive browser behavior, preventing the 30-minute timeout from ever occurring.
+
+**Solution:**
+Implemented activity throttling and reduced listener sensitivity:
+
+1. **Activity Throttling**: Added 1-minute throttle to `recordActivity()` - activity is only recorded once per minute, preventing micro-interactions from constantly resetting the session timer
+2. **Reduced Sensitivity**: Removed overly sensitive event listeners (mousemove, scroll) that fire from passive browser behavior. Now only tracks meaningful interactions: mousedown, click, keydown, touchstart
+3. **Warning State Tracking**: Added `warningShown` flag to prevent multiple warning dialogs
+4. **Force Record**: Added `force` parameter to `recordActivity()` to bypass throttling when user manually extends session
+
+**Changes:**
+- Added `lastRecordedActivityTime` to track when activity was last recorded (separate from lastActivityTime)
+- Added `activityThrottleMs` property (60000ms = 1 minute)
+- Added `warningShown` flag to prevent duplicate warnings
+- Modified `recordActivity()` to throttle updates (only record once per minute)
+- Removed mousemove, scroll, keypress, touchmove event listeners
+- Added force parameter to `recordActivity()` for manual extension
+- Updated `extendSession()` in [AuthContext.tsx](frontend/src/contexts/AuthContext.tsx:145) to force record activity
+
+**Files Affected:**
+- [frontend/src/utils/sessionManager.ts](frontend/src/utils/sessionManager.ts)
+- [frontend/src/contexts/AuthContext.tsx](frontend/src/contexts/AuthContext.tsx)
+
+**Testing:**
+1. Log in and remain completely inactive (no mouse clicks, no keyboard) for 30 minutes
+2. Verify warning appears at 25 minutes
+3. Verify automatic logout at 30 minutes
+4. Test that clicking/typing once per minute keeps session active
+5. Verify warning modal "Continue Session" button works and extends session
+
+**Notes:**
+- Activity is now throttled to once per minute to prevent passive interactions from resetting timer
+- Only meaningful user interactions (clicks, key presses) are tracked
+- This ensures the session timeout actually works as intended for security
+- The 30-minute timeout starts from the last *significant* activity, not micro-movements
+
+---
+
 ## 2026-01-12 - Session Timeout and Automatic Token Refresh Implementation
 
 **Changed by:** AI Session (GitHub Copilot)

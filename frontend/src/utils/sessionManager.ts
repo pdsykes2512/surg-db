@@ -16,15 +16,19 @@ export type SessionEventHandler = (event: SessionEventType) => void
 class SessionManager {
   private config: SessionConfig
   private lastActivityTime: number
+  private lastRecordedActivityTime: number // Track when we last recorded activity (for throttling)
   private warningTimer: NodeJS.Timeout | null = null
   private timeoutTimer: NodeJS.Timeout | null = null
   private checkInterval: NodeJS.Timeout | null = null
   private eventHandlers: SessionEventHandler[] = []
   private isActive: boolean = false
-  
+  private warningShown: boolean = false // Track if warning has been shown
+  private activityThrottleMs: number = 60000 // Only record activity once per minute
+
   constructor(config: SessionConfig) {
     this.config = config
     this.lastActivityTime = Date.now()
+    this.lastRecordedActivityTime = Date.now()
   }
   
   /**
@@ -32,13 +36,15 @@ class SessionManager {
    */
   start(): void {
     if (this.isActive) return
-    
+
     this.isActive = true
     this.lastActivityTime = Date.now()
-    
+    this.lastRecordedActivityTime = Date.now()
+    this.warningShown = false
+
     // Set up activity listeners
     this.setupActivityListeners()
-    
+
     // Check session status every 30 seconds
     this.checkInterval = setInterval(() => {
       this.checkSessionStatus()
@@ -83,12 +89,28 @@ class SessionManager {
   }
   
   /**
-   * Update last activity time
+   * Update last activity time (with throttling to prevent micro-interactions from resetting timer)
+   * @param force - If true, bypass throttling (used for manual session extension)
    */
-  recordActivity(): void {
-    this.lastActivityTime = Date.now()
-    
-    // Clear existing timers when user is active
+  recordActivity(force: boolean = false): void {
+    const now = Date.now()
+
+    // Throttle: only record activity if it's been more than 1 minute since last recorded
+    // This prevents mouse movements, scroll events, etc from constantly resetting the timer
+    if (!force) {
+      const timeSinceLastRecorded = now - this.lastRecordedActivityTime
+      if (timeSinceLastRecorded < this.activityThrottleMs) {
+        // Too soon since last activity recording, ignore this event
+        return
+      }
+    }
+
+    // Record this activity
+    this.lastActivityTime = now
+    this.lastRecordedActivityTime = now
+    this.warningShown = false // Reset warning state
+
+    // Clear existing timers when user has significant activity
     if (this.warningTimer) {
       clearTimeout(this.warningTimer)
       this.warningTimer = null
@@ -140,27 +162,32 @@ class SessionManager {
    */
   private checkSessionStatus(): void {
     if (!this.isActive) return
-    
+
     const timeRemaining = this.getTimeRemaining()
     const warningSeconds = this.config.warningMinutes * 60
-    
+
     // Session has timed out
     if (timeRemaining === 0) {
       this.emit('timeout')
       this.stop()
       return
     }
-    
-    // Show warning if within warning window
-    if (timeRemaining <= warningSeconds && !this.warningTimer) {
+
+    // Show warning if within warning window and we haven't shown it yet
+    if (timeRemaining <= warningSeconds && !this.warningShown) {
+      this.warningShown = true
+      this.warningTimer = setTimeout(() => {
+        // Timer to prevent multiple warnings
+      }, warningSeconds * 1000)
       this.emit('warning')
+
       // Set timeout for actual timeout
       this.timeoutTimer = setTimeout(() => {
         this.emit('timeout')
         this.stop()
       }, timeRemaining * 1000)
     }
-    
+
     // Check if token should be refreshed
     if (this.shouldRefreshToken()) {
       this.emit('refreshed')
@@ -169,26 +196,26 @@ class SessionManager {
   
   /**
    * Set up activity listeners
+   * Note: Using throttled recording (once per minute) to prevent micro-interactions
+   * from constantly resetting the session timeout
    */
   private setupActivityListeners(): void {
     const activityHandler = () => this.recordActivity()
-    
-    // Mouse events
-    window.addEventListener('mousemove', activityHandler, { passive: true })
+
+    // Only track meaningful interactions, not passive movements
+    // Mouse events - only clicks, not movements
     window.addEventListener('mousedown', activityHandler, { passive: true })
     window.addEventListener('click', activityHandler, { passive: true })
-    
-    // Keyboard events
-    window.addEventListener('keypress', activityHandler, { passive: true })
+
+    // Keyboard events - only keydown (actual typing)
     window.addEventListener('keydown', activityHandler, { passive: true })
-    
-    // Touch events for mobile
+
+    // Touch events for mobile - only start, not movement
     window.addEventListener('touchstart', activityHandler, { passive: true })
-    window.addEventListener('touchmove', activityHandler, { passive: true })
-    
-    // Scroll events
-    window.addEventListener('scroll', activityHandler, { passive: true })
-    
+
+    // Note: Removed mousemove and scroll as they fire too frequently from passive behavior
+    // Note: The recordActivity() method has throttling built in anyway
+
     // Store handlers for cleanup
     ;(this as any)._activityHandler = activityHandler
   }
@@ -199,15 +226,11 @@ class SessionManager {
   private removeActivityListeners(): void {
     const activityHandler = (this as any)._activityHandler
     if (!activityHandler) return
-    
-    window.removeEventListener('mousemove', activityHandler)
+
     window.removeEventListener('mousedown', activityHandler)
     window.removeEventListener('click', activityHandler)
-    window.removeEventListener('keypress', activityHandler)
     window.removeEventListener('keydown', activityHandler)
     window.removeEventListener('touchstart', activityHandler)
-    window.removeEventListener('touchmove', activityHandler)
-    window.removeEventListener('scroll', activityHandler)
   }
 }
 
