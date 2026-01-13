@@ -110,6 +110,9 @@ class SessionManager {
     this.lastRecordedActivityTime = now
     this.warningShown = false // Reset warning state
 
+    // Persist activity timestamp to localStorage so session expiry survives browser close
+    localStorage.setItem('lastActivityTimestamp', String(now))
+
     // Clear existing timers when user has significant activity
     if (this.warningTimer) {
       clearTimeout(this.warningTimer)

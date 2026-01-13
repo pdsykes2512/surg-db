@@ -66,8 +66,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     localStorage.removeItem('user')
     localStorage.removeItem('refreshToken')
     localStorage.removeItem('tokenExpiry')
+    localStorage.removeItem('lastActivityTimestamp')
     delete axios.defaults.headers.common['Authorization']
-    
+
     // Stop session manager
     destroySessionManager()
     
@@ -96,13 +97,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setToken(access_token)
       setRefreshToken(new_refresh_token)
       setUser(userData)
-      
+
       // Store in localStorage
       localStorage.setItem('token', access_token)
       localStorage.setItem('refreshToken', new_refresh_token)
       localStorage.setItem('user', JSON.stringify(userData))
       localStorage.setItem('tokenExpiry', String(Date.now() + expires_in * 1000))
-      
+      localStorage.setItem('lastActivityTimestamp', String(Date.now()))
+
       // Set default authorization header
       axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`
       
@@ -158,8 +160,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const storedUser = localStorage.getItem('user')
     const storedRefreshToken = localStorage.getItem('refreshToken')
     const tokenExpiry = localStorage.getItem('tokenExpiry')
-    
+    const lastActivityTimestamp = localStorage.getItem('lastActivityTimestamp')
+
+    // Get session timeout from environment (in minutes, convert to milliseconds)
+    const sessionTimeoutMs = (parseInt(import.meta.env.VITE_SESSION_TIMEOUT_MINUTES || '30')) * 60 * 1000
+
     if (storedToken && storedUser && storedRefreshToken) {
+      // Check if session has expired due to inactivity (browser close, long absence)
+      if (lastActivityTimestamp) {
+        const timeSinceLastActivity = Date.now() - parseInt(lastActivityTimestamp)
+        if (timeSinceLastActivity > sessionTimeoutMs) {
+          // Session expired due to inactivity - force re-login
+          console.log('Session expired due to inactivity:', Math.round(timeSinceLastActivity / 60000), 'minutes')
+          clearAuth()
+          setLoading(false)
+          return
+        }
+      }
+
       // Check if token has expired
       if (tokenExpiry && Date.now() > parseInt(tokenExpiry)) {
         // Try to refresh
@@ -176,6 +194,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setRefreshToken(storedRefreshToken)
         // Set default authorization header
         axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`
+        // Update last activity timestamp on successful auth restore
+        localStorage.setItem('lastActivityTimestamp', String(Date.now()))
         setLoading(false)
       }
     } else {
@@ -227,7 +247,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       localStorage.setItem('refreshToken', refresh_token)
       localStorage.setItem('user', JSON.stringify(userData))
       localStorage.setItem('tokenExpiry', String(Date.now() + expires_in * 1000))
-      
+      localStorage.setItem('lastActivityTimestamp', String(Date.now()))
+
       // Set default authorization header
       axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`
       

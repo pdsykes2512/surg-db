@@ -15,6 +15,69 @@ This file tracks significant changes made to the IMPACT application (formerly su
 
 ---
 
+## 2026-01-13 - Fix Session Persistence After Browser Close
+
+**Changed by:** AI Session (Claude Code)
+
+**Issue:** Session tokens persisted indefinitely in localStorage, allowing users to close the browser and return hours/days later without re-authenticating. This defeated the purpose of the 30-minute session timeout, which only worked while the browser stayed open.
+
+**Solution:**
+Implemented session expiry validation that survives browser close:
+
+**Changes:**
+
+1. **Track Last Activity Timestamp** ([frontend/src/utils/sessionManager.ts](frontend/src/utils/sessionManager.ts:114)):
+   - Added `localStorage.setItem('lastActivityTimestamp', ...)` in `recordActivity()`
+   - Persists activity timestamp so session expiry can be validated after browser close
+
+2. **Validate Session on Page Load** ([frontend/src/contexts/AuthContext.tsx](frontend/src/contexts/AuthContext.tsx:167-177)):
+   - Check `lastActivityTimestamp` when app loads
+   - Calculate time since last activity: `Date.now() - lastActivityTimestamp`
+   - If time exceeds `VITE_SESSION_TIMEOUT_MINUTES`, clear auth and force re-login
+   - Validation happens BEFORE restoring tokens from localStorage
+
+3. **Update Timestamp on Auth Events**:
+   - Set `lastActivityTimestamp` on login ([AuthContext.tsx:248](frontend/src/contexts/AuthContext.tsx:248))
+   - Update on token refresh ([AuthContext.tsx:105](frontend/src/contexts/AuthContext.tsx:105))
+   - Update when session is manually restored ([AuthContext.tsx:196](frontend/src/contexts/AuthContext.tsx:196))
+   - Clear on logout ([AuthContext.tsx:69](frontend/src/contexts/AuthContext.tsx:69))
+
+**How It Works:**
+1. User logs in → `lastActivityTimestamp` stored in localStorage
+2. User interacts with app → timestamp updated (throttled to once per minute)
+3. User closes browser
+4. User reopens browser after 31 minutes
+5. App loads → checks `lastActivityTimestamp`
+6. Time since last activity (31 min) > timeout (30 min)
+7. Session cleared → user redirected to login page
+
+**Files Affected:**
+- [frontend/src/contexts/AuthContext.tsx](frontend/src/contexts/AuthContext.tsx) - Session expiry validation
+- [frontend/src/utils/sessionManager.ts](frontend/src/utils/sessionManager.ts) - Persist activity timestamp
+
+**Testing:**
+1. Log in to the application
+2. Interact with app (click around)
+3. Note the current time
+4. Close browser completely
+5. Wait 31+ minutes (or temporarily reduce `VITE_SESSION_TIMEOUT_MINUTES` in frontend/.env)
+6. Reopen browser and navigate to app
+7. Verify you're forced to log in again (not auto-logged in)
+
+**Console Output:**
+When session expires due to inactivity, browser console shows:
+```
+Session expired due to inactivity: XX minutes
+```
+
+**Notes:**
+- Works with the existing 30-minute timeout setting (configurable via `VITE_SESSION_TIMEOUT_MINUTES`)
+- Activity tracking is still throttled (once per minute) to prevent excessive localStorage writes
+- Combines with in-session timeout: whichever expires first (browser-open timeout or browser-close check)
+- For testing, temporarily set `VITE_SESSION_TIMEOUT_MINUTES=2` to test 2-minute expiry
+
+---
+
 ## 2026-01-13 - Remove Hardcoded Hostnames, Use Environment Variables
 
 **Changed by:** AI Session (Claude Code)
