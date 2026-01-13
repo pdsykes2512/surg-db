@@ -186,11 +186,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Start session manager when user is authenticated
   useEffect(() => {
     if (user && token) {
-      // Initialize session manager
+      // Initialize session manager with configurable timeouts from environment variables
       const manager = getSessionManager({
-        timeoutMinutes: 30,  // 30 minutes session timeout
-        warningMinutes: 5,   // Show warning 5 minutes before
-        refreshThresholdMinutes: 10  // Refresh token when 10 minutes remain
+        timeoutMinutes: parseInt(import.meta.env.VITE_SESSION_TIMEOUT_MINUTES || '30'),
+        warningMinutes: parseInt(import.meta.env.VITE_SESSION_WARNING_MINUTES || '5'),
+        refreshThresholdMinutes: parseInt(import.meta.env.VITE_SESSION_REFRESH_THRESHOLD_MINUTES || '10')
       })
       
       manager.on(handleSessionEvent)

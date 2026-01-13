@@ -15,6 +15,49 @@ This file tracks significant changes made to the IMPACT application (formerly su
 
 ---
 
+## 2026-01-13 - Make Session Timeout Configurable via Environment Variables
+
+**Changed by:** AI Session (Claude Code)
+
+**Issue:** Session timeout duration was hardcoded in both frontend and backend code, making it difficult to adjust for different deployment environments or security requirements.
+
+**Solution:**
+Made all session timeout settings configurable via environment variables:
+
+**Backend Environment Variables** (in `.env` or `/etc/impact/secrets.env`):
+- `ACCESS_TOKEN_EXPIRE_MINUTES` - Session timeout duration (default: 30)
+- `REFRESH_TOKEN_EXPIRE_DAYS` - Refresh token validity (default: 7)
+- `SESSION_WARNING_MINUTES` - Warning before timeout (default: 5)
+
+**Frontend Environment Variables** (in `frontend/.env`):
+- `VITE_SESSION_TIMEOUT_MINUTES` - Must match backend ACCESS_TOKEN_EXPIRE_MINUTES (default: 30)
+- `VITE_SESSION_WARNING_MINUTES` - Warning before timeout (default: 5)
+- `VITE_SESSION_REFRESH_THRESHOLD_MINUTES` - Auto-refresh threshold (default: 10)
+
+**Changes:**
+- Added session timeout variables to [.env](.env) and [frontend/.env](frontend/.env)
+- Updated [AuthContext.tsx](frontend/src/contexts/AuthContext.tsx:190-193) to read from environment variables
+- Added clear comments about frontend/backend timeout synchronization requirements
+
+**Files Affected:**
+- [.env](.env) - Added backend timeout variables
+- [frontend/.env](frontend/.env) - Added frontend timeout variables
+- [frontend/src/contexts/AuthContext.tsx](frontend/src/contexts/AuthContext.tsx)
+
+**Configuration:**
+To change session timeout from 30 minutes to a different value:
+1. Update `ACCESS_TOKEN_EXPIRE_MINUTES=XX` in `.env` or `/etc/impact/secrets.env`
+2. Update `VITE_SESSION_TIMEOUT_MINUTES=XX` in `frontend/.env` (must match backend value)
+3. Optionally adjust warning time and refresh threshold
+4. Restart both services: `sudo systemctl restart impact-backend impact-frontend`
+
+**Notes:**
+- Frontend and backend timeouts MUST match to prevent token expiration mismatches
+- For testing, you can temporarily reduce to 5 minutes
+- Changes require service restart to take effect
+
+---
+
 ## 2026-01-13 - Session Timeout Fix: Activity Throttling
 
 **Changed by:** AI Session (Claude Code)
