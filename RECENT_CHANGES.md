@@ -15,6 +15,68 @@ This file tracks significant changes made to the IMPACT application (formerly su
 
 ---
 
+## 2026-01-14 - RStudio Integration Strategy Document
+
+**Changed by:** AI Session (Claude Code)
+
+**Issue:** Need strategy for integrating RStudio Server into IMPACT for advanced statistical analysis and data extraction capabilities.
+
+**Solution:**
+Created comprehensive strategy document for embedding RStudio Server into the IMPACT application with secure SSO authentication and direct MongoDB access.
+
+**Changes:**
+
+1. **Created Strategy Document** ([directives/rstudio_integration_strategy.md](directives/rstudio_integration_strategy.md)):
+   - Architecture design with embedded RStudio Server approach
+   - Three integration options evaluated (embedded, API-based, Jupyter)
+   - Recommended approach: Embedded RStudio Server with reverse proxy authentication
+   - Technical implementation plan across 4 phases
+   - Custom R helper library design (`impactdb` package)
+   - Security model with read-only database access
+   - Backend API endpoints specification
+   - Frontend component design (RStudioPage with embedded iframe)
+   - Nginx reverse proxy configuration
+   - Example use cases (survival analysis, risk prediction, funnel plots)
+   - Deployment checklist and testing procedures
+
+2. **Created GitHub Issue** ([#33](https://github.com/pdsykes2512/impact/issues/33)):
+   - Tracked implementation phases as checkboxes
+   - Documented acceptance criteria
+   - Listed security considerations and resource requirements
+
+**Key Features:**
+- **Seamless UX:** Single sign-on via JWT, embedded in IMPACT UI
+- **Custom R Library:** Pre-built functions like `get_surgical_outcomes()` for easy data access
+- **Security:** Read-only MongoDB access, role-based permissions (surgeons/admins only)
+- **Analytics Capabilities:** Survival analysis, predictive modeling, custom visualizations
+- **Resource Efficient:** Localhost-only RStudio, no internet exposure
+
+**Files Affected:**
+- [directives/rstudio_integration_strategy.md](directives/rstudio_integration_strategy.md) - New strategy document
+
+**Implementation Status:**
+- Documentation complete ✅
+- GitHub issue created for tracking ✅
+- Ready for implementation (estimated 2-3 days)
+
+**Next Steps:**
+1. Review strategy document with stakeholders
+2. Begin Phase 1: Install RStudio Server and R packages
+3. Implement custom R helper library (`impactdb`)
+4. Build backend API endpoints for authentication
+5. Create frontend RStudio page component
+6. Configure nginx reverse proxy
+7. Test and validate complete integration
+
+**Notes:**
+- Strategy document is comprehensive and implementation-ready
+- All security considerations documented (read-only DB, SSO, role-based access)
+- Example R code provided for common use cases
+- Alternative approaches documented for future reference
+- Resource requirements: +2-4 GB RAM, +1-2 CPU cores for concurrent sessions
+
+---
+
 ## 2026-01-13 - Fix Session Persistence After Browser Close
 
 **Changed by:** AI Session (Claude Code)
