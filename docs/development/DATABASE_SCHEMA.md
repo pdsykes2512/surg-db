@@ -443,19 +443,23 @@ Patient (1) ──► Episode (N) ──► Treatment (N)
     "mesorectal_involvement": bool | null,
 
     # Pathology (post-resection)
+    "background_morphology": str | null,    # Origin: Adenoma (Tubular/Tubulovillous/Villous)/IBD/Serrated lesion/De novo/Unknown
     "lymph_nodes_examined": int | null,     # pCR0890: Total nodes examined
     "lymph_nodes_positive": int | null,     # pCR0900: Positive nodes
-    "lymphovascular_invasion": str | null,  # present/absent/uncertain
-    "perineural_invasion": str | null,      # present/absent/uncertain
+    "apical_node": str | null,              # Involved/Not Involved/Unknown
+    "lymphatic_invasion": str | null,       # yes/no/uncertain (L0/L1)
+    "vascular_invasion": str | null,        # yes/no/uncertain (V0/V1)
+    "perineural_invasion": str | null,      # yes/no/uncertain (Pn0/Pn1)
 
     # Resection margins
-    "crm_status": str | null,        # pCR1150: yes/no/uncertain (CRM involved)
+    "margin_status": str | null,     # pCR1150: R0/R1/R2/uncertain (resection margin status)
     "crm_distance_mm": float | null, # Distance to CRM
     "proximal_margin_mm": float | null,
     "distal_margin_mm": float | null,
+    "donuts_involved": str | null,   # Involved/Not Involved/Not Sent/Unknown
 
     # Molecular markers
-    "mismatch_repair_status": str | null,  # proficient/deficient/unknown
+    "mismatch_repair_status": str | null,  # intact/deficient/unknown
     "kras_status": str | null,             # wild_type/mutant/unknown
     "braf_status": str | null,             # wild_type/mutant/unknown
 
@@ -676,7 +680,7 @@ The database tracks NBOCA-required fields with their official codes:
 #### Pathology
 - **pCR0890** `lymph_nodes_examined`: Total lymph nodes examined
 - **pCR0900** `lymph_nodes_positive`: Positive lymph nodes
-- **pCR1150** `crm_status`: Circumferential resection margin status
+- **pCR1150** `margin_status`: Resection margin status (R0/R1/R2)
 
 #### Treatment
 - **CR1450** `provider_organisation`: NHS Trust code of provider

@@ -396,9 +396,40 @@ export function AddTreatmentModal({
     canSubmit: currentStep === totalSteps
   })
 
+  // Validate current step before progressing
+  const validateCurrentStep = (): { isValid: boolean; missingFields: string[] } => {
+    const missing: string[] = []
+
+    switch (currentStep) {
+      case 1: // Treatment Details
+        if (!formData.treatment_date) missing.push('Treatment Date')
+        if (isSurgeryType && !formData.opcs4_code) missing.push('Primary Procedure (OPCS-4)')
+        break
+      case 2: // Team & Approach / Additional Information - check for surgery-specific required fields
+        // No universally required fields on step 2
+        break
+      case 3: // Intraoperative (surgery only) - no required fields
+        break
+      case 4: // Technical Details / Post-operative - no required fields
+        break
+      case 5: // Post-operative (colorectal only) - no required fields
+        break
+    }
+
+    return { isValid: missing.length === 0, missingFields: missing }
+  }
+
   const nextStep = (e?: React.MouseEvent) => {
     e?.preventDefault()
     e?.stopPropagation()
+
+    // Validate current step before progressing
+    const validation = validateCurrentStep()
+    if (!validation.isValid) {
+      alert(`Please fill in the following required fields before continuing:\n\n${validation.missingFields.map(f => `• ${f}`).join('\n')}`)
+      return
+    }
+
     if (currentStep < totalSteps) {
       setCurrentStep(currentStep + 1)
     }

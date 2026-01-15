@@ -7,6 +7,7 @@ import { ChartBarIcon, BookOpenIcon } from '@heroicons/react/24/outline';
 interface RStudioAuthResponse {
   redirect_url: string;
   username: string;
+  password: string;
   full_name: string;
   role: string;
   message: string;
@@ -93,11 +94,44 @@ const RStudioPage: React.FC = () => {
           <div className="relative bg-gray-100" style={{ height: 'calc(100vh - 200px)', minHeight: '500px' }}>
             {authData?.redirect_url ? (
               <iframe
+                id="rstudio-iframe"
                 src={authData.redirect_url}
                 className="w-full h-full border-0"
                 title="RStudio Server"
                 sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-downloads allow-top-navigation-by-user-activation allow-modals"
                 allow="fullscreen"
+                onLoad={(e) => {
+                  // Attempt to auto-fill RStudio login form
+                  try {
+                    const iframe = e.target as HTMLIFrameElement;
+                    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+                    if (iframeDoc) {
+                      // Wait a bit for RStudio to render
+                      setTimeout(() => {
+                        const usernameInput = iframeDoc.querySelector('input[name="username"]') as HTMLInputElement;
+                        const passwordInput = iframeDoc.querySelector('input[name="password"]') as HTMLInputElement;
+                        const submitButton = iframeDoc.querySelector('input[type="submit"], button[type="submit"]') as HTMLButtonElement;
+
+                        if (usernameInput && passwordInput && authData?.username && authData?.password) {
+                          usernameInput.value = authData.username;
+                          passwordInput.value = authData.password;
+
+                          // Auto-submit the form
+                          if (submitButton) {
+                            submitButton.click();
+                          } else {
+                            // Try form submission
+                            const form = usernameInput.closest('form');
+                            if (form) form.submit();
+                          }
+                        }
+                      }, 500);
+                    }
+                  } catch (err) {
+                    // Cross-origin restrictions prevent access - user needs to sign in manually
+                    console.log('Cannot auto-fill RStudio login (cross-origin restriction)');
+                  }
+                }}
               />
             ) : (
               <div className="flex items-center justify-center h-full">
@@ -106,19 +140,42 @@ const RStudioPage: React.FC = () => {
             )}
           </div>
 
-          {/* Controls below iframe */}
-          <div className="p-3 border-t bg-gray-50 flex items-center justify-between">
-            <div className="text-sm text-gray-600">
-              Connected as {authData?.full_name} ({authData?.username})
+          {/* Sign-in instructions and controls below iframe */}
+          <div className="border-t bg-gradient-to-r from-blue-50 to-purple-50">
+            <div className="p-3 flex items-center justify-between flex-wrap gap-3">
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-semibold text-gray-900 mb-1">
+                  🔐 RStudio Sign-In
+                </div>
+                <div className="text-xs text-gray-700 space-y-0.5">
+                  <div className="mb-1 text-gray-600">
+                    Copy and paste these credentials into RStudio:
+                  </div>
+                  <div className="font-mono bg-white px-3 py-2 rounded border inline-flex items-center gap-3 shadow-sm">
+                    <div>
+                      <span className="text-gray-500 text-xs">Username:</span>{' '}
+                      <span className="font-semibold text-blue-700 select-all">{authData?.username}</span>
+                    </div>
+                    <span className="text-gray-300">|</span>
+                    <div>
+                      <span className="text-gray-500 text-xs">Password:</span>{' '}
+                      <span className="font-semibold text-blue-700 select-all">{authData?.password}</span>
+                    </div>
+                  </div>
+                  <div className="text-gray-500 mt-2 text-xs">
+                    Authenticated as <strong>{authData?.full_name}</strong> • All users share this RStudio account • Data access controlled by your IMPACT token
+                  </div>
+                </div>
+              </div>
+              <a
+                href={authData?.redirect_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-semibold shadow-sm whitespace-nowrap"
+              >
+                Open in New Window →
+              </a>
             </div>
-            <a
-              href={authData?.redirect_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-semibold shadow-sm"
-            >
-              Open in New Window →
-            </a>
           </div>
         </Card>
 

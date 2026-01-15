@@ -19,9 +19,39 @@ RSTUDIO_BASE_URL = "http://localhost:8787"  # RStudio Server URL (internal)
 RSTUDIO_PROXY_PATH = "/rstudio-server/"  # nginx reverse proxy path (separate from React route)
 
 
+def convert_value_for_r(value: Any) -> Any:
+    """
+    Convert MongoDB values to R-compatible types with consistent typing.
+
+    The key challenge: MongoDB documents have inconsistent types across records.
+    For example, clinical_n might be boolean True in one record and string "N1" in another.
+    R's bind_rows() requires consistent types, so we standardize here.
+
+    Args:
+        value: Value from MongoDB
+
+    Returns:
+        Value converted for R compatibility:
+        - Booleans → strings ("TRUE"/"FALSE") for consistency
+        - Empty strings → None (becomes NA in R)
+        - All other values unchanged (strings, numbers, None, etc.)
+    """
+    if isinstance(value, bool):
+        # Convert booleans to strings to prevent type mismatches
+        # (Some fields have boolean in some records, string in others)
+        return "TRUE" if value else "FALSE"
+    elif isinstance(value, str):
+        # Empty string becomes None (NA in R)
+        return None if value.strip() == '' else value
+    else:
+        # Pass through numbers, None, dates, etc.
+        return value
+
+
 def flatten_dict(data: Any, prefix: str = '', separator: str = '_') -> Dict[str, Any]:
     """
     Recursively flatten nested dictionaries and lists into a flat dictionary.
+    Converts values to R-compatible types.
 
     Args:
         data: The data to flatten (dict, list, or primitive)
@@ -35,6 +65,7 @@ def flatten_dict(data: Any, prefix: str = '', separator: str = '_') -> Dict[str,
         {"a": {"b": 1}} -> {"a_b": 1}
         {"a": [1, 2]} -> {"a": "1, 2"}  (arrays as comma-separated strings)
         {"a": {"b": {"c": 1}}} -> {"a_b_c": 1}
+        {"occurred": True} -> {"occurred": "TRUE"}  (booleans as strings)
     """
     result = {}
 
@@ -59,10 +90,10 @@ def flatten_dict(data: Any, prefix: str = '', separator: str = '_') -> Dict[str,
                         if isinstance(item, dict):
                             result.update(flatten_dict(item, f"{new_key}{separator}{idx}", separator))
                         else:
-                            result[f"{new_key}{separator}{idx}"] = item
+                            result[f"{new_key}{separator}{idx}"] = convert_value_for_r(item)
             else:
-                # Primitive value
-                result[new_key] = value
+                # Primitive value - convert for R
+                result[new_key] = convert_value_for_r(value)
     elif isinstance(data, list):
         # Handle top-level list
         if len(data) == 0:
@@ -74,11 +105,11 @@ def flatten_dict(data: Any, prefix: str = '', separator: str = '_') -> Dict[str,
                 if isinstance(item, dict):
                     result.update(flatten_dict(item, f"{prefix}{separator}{idx}", separator))
                 else:
-                    result[f"{prefix}{separator}{idx}"] = item
+                    result[f"{prefix}{separator}{idx}"] = convert_value_for_r(item)
     else:
-        # Primitive at top level
+        # Primitive at top level - convert for R
         if prefix:
-            result[prefix] = data
+            result[prefix] = convert_value_for_r(data)
 
     return result
 
@@ -95,7 +126,12 @@ async def rstudio_auth(
     Only surgeons and admins can access RStudio.
 
     Also saves the JWT token to ~/.impact_token for automatic R library authentication.
+    Automatically signs in to RStudio as rstudio-user.
     """
+    import httpx
+    import os
+    import subprocess
+
     # Check if user has permission to use RStudio
     allowed_roles = ["admin", "surgeon"]
     if current_user["role"] not in allowed_roles:
@@ -113,7 +149,6 @@ async def rstudio_auth(
     # Save token to RStudio user's home directory for automatic R authentication
     if token:
         try:
-            import os
             token_file = "/home/rstudio-user/.impact_token"
 
             # Write token to file with restricted permissions
@@ -124,11 +159,41 @@ async def rstudio_auth(
             os.chmod(token_file, 0o600)
 
             # Change ownership to rstudio-user
-            import subprocess
             subprocess.run(['chown', 'rstudio-user:rstudio-user', token_file], check=False)
         except Exception as e:
             # Log error but don't fail the request
             print(f"Warning: Failed to save RStudio token: {e}")
+
+    # Get RStudio password from environment (stored in /etc/impact/secrets.env)
+    rstudio_password = os.getenv("RSTUDIO_PASSWORD", "")
+    if not rstudio_password:
+        raise HTTPException(status_code=500, detail="RStudio password not configured")
+
+    # Automatically sign in to RStudio as rstudio-user
+    try:
+        async with httpx.AsyncClient() as client:
+            # Sign in to RStudio Server
+            sign_in_response = await client.post(
+                f"{RSTUDIO_BASE_URL}/auth-do-sign-in",
+                data={
+                    "username": "rstudio-user",
+                    "password": rstudio_password,
+                    "persist": "1",
+                    "appUri": ""
+                },
+                follow_redirects=False
+            )
+
+            # Get session cookie from response
+            session_cookie = None
+            if "set-cookie" in sign_in_response.headers:
+                cookies = sign_in_response.headers.get_list("set-cookie")
+                for cookie in cookies:
+                    if "user-id=" in cookie:
+                        session_cookie = cookie.split(";")[0]
+                        break
+    except Exception as e:
+        print(f"Warning: Failed to auto-sign-in to RStudio: {e}")
 
     # Construct RStudio URL for nginx proxy
     # Use the Host header directly, which should be the public-facing host:port
@@ -145,13 +210,15 @@ async def rstudio_auth(
 
     rstudio_url = f"{forwarded_proto}://{forwarded_host}{RSTUDIO_PROXY_PATH}"
 
-    # Return RStudio URL and user info
+    # Return RStudio URL, user info, and credentials
+    # Password is returned so frontend can display it (already authenticated users only)
     return {
         "redirect_url": rstudio_url,
-        "username": current_user["email"],
+        "username": "rstudio-user",  # All users share this account
+        "password": rstudio_password,  # Secure password from secrets
         "full_name": current_user["full_name"],
         "role": current_user["role"],
-        "message": "RStudio Server is available. Open in a new window."
+        "message": "Sign in to RStudio with the credentials shown below"
     }
 
 
@@ -505,19 +572,19 @@ async def get_patients_for_rstudio(
                         flattened = flatten_dict(value, prefix=key)
                         flat_patient.update(flattened)
                     else:
-                        flat_patient[key] = value
+                        flat_patient[key] = convert_value_for_r(value)
 
         # Add other top-level fields (recursively flatten nested structures)
         # Exclude medical_history - not needed for clinical analysis
         for key, value in patient.items():
-            if key not in ['_id', 'patient_id', 'demographics', 'medical_history']:
+            if key not in ['_id', 'patient_id', 'demographics', 'medical_history', 'created_at', 'updated_at', 'updated_by']:
                 if key not in ENCRYPTED_FIELDS:
                     # Recursively flatten nested structures
                     if isinstance(value, (list, dict)):
                         flattened = flatten_dict(value, prefix=key)
                         flat_patient.update(flattened)
                     else:
-                        flat_patient[key] = value
+                        flat_patient[key] = convert_value_for_r(value)
 
         flattened_patients.append(flat_patient)
 
@@ -598,14 +665,14 @@ async def get_episodes_for_rstudio(
 
         # Add other top-level fields (recursively flatten nested structures)
         for key, value in episode.items():
-            if key not in ['_id', 'episode_id', 'patient_id']:
+            if key not in ['_id', 'episode_id', 'patient_id', 'created_at', 'updated_at', 'updated_by']:
                 if key not in ENCRYPTED_FIELDS:
                     # Recursively flatten nested structures
                     if isinstance(value, (list, dict)):
                         flattened = flatten_dict(value, prefix=key)
                         flat_episode.update(flattened)
                     else:
-                        flat_episode[key] = value
+                        flat_episode[key] = convert_value_for_r(value)
 
         flattened_episodes.append(flat_episode)
 
@@ -657,14 +724,14 @@ async def get_treatments_for_rstudio(
 
         # Add other top-level fields (recursively flatten nested structures)
         for key, value in treatment.items():
-            if key not in ['_id', 'treatment_id', 'episode_id', 'patient_id']:
+            if key not in ['_id', 'treatment_id', 'episode_id', 'patient_id', 'created_at', 'updated_at', 'updated_by']:
                 if key not in ENCRYPTED_FIELDS:
                     # Recursively flatten nested structures
                     if isinstance(value, (list, dict)):
                         flattened = flatten_dict(value, prefix=key)
                         flat_treatment.update(flattened)
                     else:
-                        flat_treatment[key] = value
+                        flat_treatment[key] = convert_value_for_r(value)
 
         flattened_treatments.append(flat_treatment)
 
@@ -713,14 +780,14 @@ async def get_tumours_for_rstudio(
 
         # Add other top-level fields (recursively flatten nested structures)
         for key, value in tumour.items():
-            if key not in ['_id', 'tumour_id', 'episode_id', 'patient_id']:
+            if key not in ['_id', 'tumour_id', 'episode_id', 'patient_id', 'created_at', 'updated_at', 'updated_by']:
                 if key not in ENCRYPTED_FIELDS:
                     # Recursively flatten nested structures
                     if isinstance(value, (list, dict)):
                         flattened = flatten_dict(value, prefix=key)
                         flat_tumour.update(flattened)
                     else:
-                        flat_tumour[key] = value
+                        flat_tumour[key] = convert_value_for_r(value)
 
         flattened_tumours.append(flat_tumour)
 

@@ -158,11 +158,44 @@ export function CancerEpisodeForm({ onSubmit, onCancel, initialData, initialPati
     canSubmit: currentStep === totalSteps
   })
 
+  // Validate current step before progressing
+  const validateCurrentStep = (): { isValid: boolean; missingFields: string[] } => {
+    const missing: string[] = []
+
+    switch (currentStep) {
+      case 1: // Patient Details
+        if (!formData.patient_id) missing.push('Patient')
+        if (!formData.cancer_type) missing.push('Cancer Type')
+        if (!formData.referral_date) missing.push('Referral Date')
+        if (!formData.lead_clinician) missing.push('Lead Clinician')
+        break
+      case 2: // Referral Details - no required fields
+        break
+      case 3: // MDT & Planning - no required fields
+        break
+      case 4: // Treatment Status - no required fields
+        break
+      case 5: // Clinical Data - no required fields
+        break
+      case 6: // Review - validation happens on submit
+        break
+    }
+
+    return { isValid: missing.length === 0, missingFields: missing }
+  }
+
   // Step navigation with event prevention
   const nextStep = (e?: React.MouseEvent) => {
     e?.preventDefault()
     e?.stopPropagation()
-    
+
+    // Validate current step before progressing
+    const validation = validateCurrentStep()
+    if (!validation.isValid) {
+      alert(`Please fill in the following required fields before continuing:\n\n${validation.missingFields.map(f => `• ${f}`).join('\n')}`)
+      return
+    }
+
     // Skip step 5 (clinical data) in edit mode
     if (mode === 'edit' && currentStep === 4) {
       setCurrentStep(6)
@@ -863,17 +896,17 @@ export function CancerEpisodeForm({ onSubmit, onCancel, initialData, initialPati
 
           {/* Progress Indicator */}
           <div className="mt-4">
-            <div className="flex items-center justify-between overflow-x-auto pb-2">
+            <div className="flex overflow-x-auto pb-2 pt-1">
               {Array.from({ length: totalSteps }, (_, i) => i + 1)
                 .filter(stepNum => mode === 'edit' ? stepNum !== 5 : true) // Skip step 5 in edit mode
-                .map((stepNum, index, array) => {
+                .map((stepNum, index) => {
                   return (
-                    <div key={stepNum} className="flex items-center flex-1">
+                    <div key={stepNum} className="flex-1 flex flex-col items-center">
                       <button
                         onClick={() => mode === 'edit' ? setCurrentStep(stepNum) : undefined}
                         disabled={mode === 'create'}
                         className={`
-                          w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-all
+                          w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-all mb-2
                           ${currentStep === stepNum ? 'bg-blue-600 text-white' :
                             currentStep > stepNum ? 'bg-green-600 text-white' :
                             'bg-gray-200 text-gray-600'}
@@ -883,14 +916,11 @@ export function CancerEpisodeForm({ onSubmit, onCancel, initialData, initialPati
                       >
                         {currentStep > stepNum ? '✓' : index + 1}
                       </button>
-                      <div className="ml-3 text-sm flex-1">
-                        <div className={`font-medium ${currentStep >= stepNum ? 'text-blue-600' : 'text-gray-600'}`}>
+                      <div className="text-xs font-medium text-center px-1">
+                        <div className={currentStep >= stepNum ? 'text-blue-600' : 'text-gray-600'}>
                           {getStepTitle(stepNum)}
                         </div>
                       </div>
-                      {index < array.length - 1 && (
-                        <div className={`flex-1 h-1 mx-4 ${currentStep > stepNum ? 'bg-green-600' : 'bg-gray-200'}`} />
-                      )}
                     </div>
                   )
                 })}

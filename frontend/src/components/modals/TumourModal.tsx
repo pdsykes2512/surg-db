@@ -99,11 +99,18 @@ const HISTOLOGY_TYPES = [
   { value: 'Other', label: 'Other' }
 ]
 
-const CRM_STATUS = [
-  { value: 'clear', label: 'Clear (>1mm)' },
-  { value: 'involved', label: 'Involved (≤1mm)' },
+const MARGIN_STATUS = [
+  { value: 'R0', label: 'R0 (Complete resection)' },
+  { value: 'R1', label: 'R1 (Microscopic residual)' },
+  { value: 'R2', label: 'R2 (Macroscopic residual)' },
   { value: 'uncertain', label: 'Uncertain' },
   { value: 'not_applicable', label: 'Not Applicable' }
+]
+
+const YES_NO_OPTIONS = [
+  { value: 'yes', label: 'Yes' },
+  { value: 'no', label: 'No' },
+  { value: 'uncertain', label: 'Uncertain' }
 ]
 
 export function TumourModal({ episodeId, onSubmit, onCancel, mode = 'create', initialData }: TumourModalProps) {
@@ -178,17 +185,21 @@ export function TumourModal({ episodeId, onSubmit, onCancel, mode = 'create', in
       pathological_stage_date: '',
       grade: '',
       histology_type: '',
+      background_morphology: '',
       size_mm: '',
       distance_from_anal_verge_cm: '',
       mesorectal_involvement: false,
       lymph_nodes_examined: '',
       lymph_nodes_positive: '',
-      lymphovascular_invasion: false,
-      perineural_invasion: false,
-      crm_status: '',
+      apical_node: '',
+      lymphatic_invasion: '',
+      vascular_invasion: '',
+      perineural_invasion: '',
+      margin_status: '',
       crm_distance_mm: '',
       proximal_margin_mm: '',
       distal_margin_mm: '',
+      donuts_involved: '',
       mismatch_repair_status: '',
       kras_status: '',
       braf_status: '',
@@ -243,7 +254,8 @@ export function TumourModal({ episodeId, onSubmit, onCancel, mode = 'create', in
     setFormData({
       ...formData,
       site,
-      icd10_code: siteInfo && 'icd10' in siteInfo ? siteInfo.icd10 : formData.icd10_code
+      // Clear ICD-10 code if site is cleared, otherwise update it based on site info
+      icd10_code: site ? (siteInfo && 'icd10' in siteInfo ? siteInfo.icd10 : formData.icd10_code) : ''
     })
   }
 
@@ -455,19 +467,6 @@ export function TumourModal({ episodeId, onSubmit, onCancel, mode = 'create', in
                       <p className="mt-1 text-xs text-gray-500">Recommended for NBOCA (CO5160)</p>
                     </div>
                   )}
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      SNOMED Morphology Code
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.snomed_morphology}
-                      onChange={(e) => setFormData({ ...formData, snomed_morphology: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                      placeholder="SNOMED code"
-                    />
-                  </div>
                 </div>
 
                 <div>
@@ -646,10 +645,36 @@ export function TumourModal({ episodeId, onSubmit, onCancel, mode = 'create', in
             {/* Pathology Tab */}
             {activeTab === 'pathology' && (
               <div className="space-y-6">
+                {/* Background Morphology */}
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-3">Background Morphology</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <SearchableSelect
+                        value={formData.background_morphology}
+                        onChange={(value) => setFormData({ ...formData, background_morphology: value })}
+                        options={[
+                          { value: 'Adenoma (Tubular)', label: 'Adenoma (Tubular)' },
+                          { value: 'Adenoma (Tubulovillous)', label: 'Adenoma (Tubulovillous)' },
+                          { value: 'Adenoma (Villous)', label: 'Adenoma (Villous)' },
+                          { value: 'IBD', label: 'IBD' },
+                          { value: 'Serrated lesion', label: 'Serrated lesion' },
+                          { value: 'De novo', label: 'De novo' },
+                          { value: 'Unknown', label: 'Unknown' }
+                        ]}
+                        getOptionValue={(opt) => opt.value}
+                        getOptionLabel={(opt) => opt.label}
+                        placeholder="Select background morphology..."
+                      />
+                      <p className="mt-1 text-xs text-gray-500">Origin/precursor lesion of the cancer</p>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Lymph Nodes */}
                 <div>
                   <h4 className="font-medium text-gray-900 mb-3">Lymph Node Assessment</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Nodes Examined
@@ -677,66 +702,111 @@ export function TumourModal({ episodeId, onSubmit, onCancel, mode = 'create', in
                       />
                       <p className="mt-1 text-xs text-gray-500">NBOCA (pCR0900)</p>
                     </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Apical Node
+                      </label>
+                      <SearchableSelect
+                        value={formData.apical_node}
+                        onChange={(value) => setFormData({ ...formData, apical_node: value })}
+                        options={[
+                          { value: 'Involved', label: 'Involved' },
+                          { value: 'Not Involved', label: 'Not Involved' },
+                          { value: 'Unknown', label: 'Unknown' }
+                        ]}
+                        getOptionValue={(opt) => opt.value}
+                        getOptionLabel={(opt) => opt.label}
+                        placeholder="Select..."
+                      />
+                    </div>
                   </div>
                 </div>
 
                 {/* Resection Margins */}
                 <div>
                   <h4 className="font-medium text-gray-900 mb-3">Resection Margins</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        CRM Status
-                      </label>
-                      <SearchableSelect
-                        value={formData.crm_status}
-                        onChange={(value) => setFormData({ ...formData, crm_status: value })}
-                        options={CRM_STATUS}
-                        getOptionValue={(opt) => opt.value}
-                        getOptionLabel={(opt) => opt.label}
-                        placeholder="Search CRM status..."
-                      />
-                      <p className="mt-1 text-xs text-gray-500">NBOCA (pCR1150)</p>
+                  <div className="space-y-4">
+                    {/* Row 1: Margin Status and Donuts */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Margin Status (R)
+                        </label>
+                        <SearchableSelect
+                          value={formData.margin_status}
+                          onChange={(value) => setFormData({ ...formData, margin_status: value })}
+                          options={MARGIN_STATUS}
+                          getOptionValue={(opt) => opt.value}
+                          getOptionLabel={(opt) => opt.label}
+                          placeholder="Select margin status..."
+                        />
+                        <p className="mt-1 text-xs text-gray-500">NBOCA (pCR1150) - Resection margin status</p>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Donuts
+                        </label>
+                        <SearchableSelect
+                          value={formData.donuts_involved}
+                          onChange={(value) => setFormData({ ...formData, donuts_involved: value })}
+                          options={[
+                            { value: 'Involved', label: 'Involved' },
+                            { value: 'Not Involved', label: 'Not Involved' },
+                            { value: 'Not Sent', label: 'Not Sent' },
+                            { value: 'Unknown', label: 'Unknown' }
+                          ]}
+                          getOptionValue={(opt) => opt.value}
+                          getOptionLabel={(opt) => opt.label}
+                          placeholder="Select..."
+                        />
+                      </div>
                     </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        CRM Distance (mm)
-                      </label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        value={formData.crm_distance_mm}
-                        onChange={(e) => setFormData({ ...formData, crm_distance_mm: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                        placeholder="Distance to CRM"
-                      />
-                    </div>
+                    {/* Row 2: Distance measurements */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          CRM Distance (mm)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={formData.crm_distance_mm}
+                          onChange={(e) => setFormData({ ...formData, crm_distance_mm: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                          placeholder="Distance to CRM"
+                        />
+                      </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Proximal Margin (mm)
-                      </label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        value={formData.proximal_margin_mm}
-                        onChange={(e) => setFormData({ ...formData, proximal_margin_mm: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Proximal Margin (mm)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={formData.proximal_margin_mm}
+                          onChange={(e) => setFormData({ ...formData, proximal_margin_mm: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                          placeholder="Proximal margin"
+                        />
+                      </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Distal Margin (mm)
-                      </label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        value={formData.distal_margin_mm}
-                        onChange={(e) => setFormData({ ...formData, distal_margin_mm: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                      />
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Distal Margin (mm)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={formData.distal_margin_mm}
+                          onChange={(e) => setFormData({ ...formData, distal_margin_mm: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                          placeholder="Distal margin"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -744,28 +814,52 @@ export function TumourModal({ episodeId, onSubmit, onCancel, mode = 'create', in
                 {/* Invasion */}
                 <div>
                   <h4 className="font-medium text-gray-900 mb-3">Invasion Features</h4>
-                  <div className="space-y-3">
-                    <label className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        checked={formData.lymphovascular_invasion}
-                        onChange={(e) => setFormData({ ...formData, lymphovascular_invasion: e.target.checked })}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Lymphatic (L)
+                      </label>
+                      <SearchableSelect
+                        value={formData.lymphatic_invasion}
+                        onChange={(value) => setFormData({ ...formData, lymphatic_invasion: value })}
+                        options={YES_NO_OPTIONS}
+                        getOptionValue={(opt) => opt.value}
+                        getOptionLabel={(opt) => opt.label}
+                        placeholder="Select..."
                       />
-                      <span className="text-sm text-gray-700">Lymphovascular Invasion</span>
-                    </label>
+                    </div>
 
-                    <label className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        checked={formData.perineural_invasion}
-                        onChange={(e) => setFormData({ ...formData, perineural_invasion: e.target.checked })}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Vascular (V)
+                      </label>
+                      <SearchableSelect
+                        value={formData.vascular_invasion}
+                        onChange={(value) => setFormData({ ...formData, vascular_invasion: value })}
+                        options={YES_NO_OPTIONS}
+                        getOptionValue={(opt) => opt.value}
+                        getOptionLabel={(opt) => opt.label}
+                        placeholder="Select..."
                       />
-                      <span className="text-sm text-gray-700">Perineural Invasion</span>
-                    </label>
+                    </div>
 
-                    {isRectal && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Perineural (Pn)
+                      </label>
+                      <SearchableSelect
+                        value={formData.perineural_invasion}
+                        onChange={(value) => setFormData({ ...formData, perineural_invasion: value })}
+                        options={YES_NO_OPTIONS}
+                        getOptionValue={(opt) => opt.value}
+                        getOptionLabel={(opt) => opt.label}
+                        placeholder="Select..."
+                      />
+                    </div>
+                  </div>
+
+                  {isRectal && (
+                    <div className="mt-3">
                       <label className="flex items-center space-x-2">
                         <input
                           type="checkbox"
@@ -775,8 +869,8 @@ export function TumourModal({ episodeId, onSubmit, onCancel, mode = 'create', in
                         />
                         <span className="text-sm text-gray-700">Mesorectal Involvement</span>
                       </label>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -793,13 +887,13 @@ export function TumourModal({ episodeId, onSubmit, onCancel, mode = 'create', in
                       value={formData.mismatch_repair_status}
                       onChange={(value) => setFormData({ ...formData, mismatch_repair_status: value })}
                       options={[
-                        { value: 'MSI-H', label: 'MSI-H (Microsatellite Instability High)' },
-                        { value: 'MSS', label: 'MSS (Microsatellite Stable)' },
+                        { value: 'Intact', label: 'Intact' },
+                        { value: 'Deficient', label: 'Deficient' },
                         { value: 'Unknown', label: 'Unknown' }
                       ]}
                       getOptionValue={(opt) => opt.value}
                       getOptionLabel={(opt) => opt.label}
-                      placeholder="Search MMR status..."
+                      placeholder="Select MMR status..."
                     />
                   </div>
 

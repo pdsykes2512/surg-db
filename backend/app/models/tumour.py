@@ -77,9 +77,11 @@ class MStage(str, Enum):
     M1C = "M1c"
 
 
-class CRMStatus(str, Enum):
-    CLEAR = "clear"
-    INVOLVED = "involved"
+class MarginStatus(str, Enum):
+    """Resection margin status (R classification)"""
+    R0 = "R0"  # Complete resection, margins clear
+    R1 = "R1"  # Microscopic residual disease
+    R2 = "R2"  # Macroscopic residual disease
     UNCERTAIN = "uncertain"
     NOT_APPLICABLE = "not_applicable"
 
@@ -118,19 +120,23 @@ class TumourBase(BaseModel):
     mesorectal_involvement: Optional[bool] = None
     
     # Pathology (post-resection)
+    background_morphology: Optional[str] = Field(None, description="Cancer origin: Adenoma/IBD/Serrated/De novo/Unknown")
     lymph_nodes_examined: Optional[int] = Field(None, description="Total nodes examined (pCR0890)")
     lymph_nodes_positive: Optional[int] = Field(None, description="Positive nodes (pCR0900)")
-    lymphovascular_invasion: Optional[bool] = None
-    perineural_invasion: Optional[bool] = None
-    
+    apical_node: Optional[str] = Field(None, description="Apical node status: Involved/Not Involved/Unknown")
+    lymphatic_invasion: Optional[str] = Field(None, description="Lymphatic invasion (L0/L1): yes/no/uncertain")
+    vascular_invasion: Optional[str] = Field(None, description="Vascular invasion (V0/V1): yes/no/uncertain")
+    perineural_invasion: Optional[str] = Field(None, description="Perineural invasion (Pn0/Pn1): yes/no/uncertain")
+
     # Resection margins
-    crm_status: Optional[CRMStatus] = Field(None, description="Circumferential resection margin (pCR1150)")
+    margin_status: Optional[MarginStatus] = Field(None, description="Resection margin status R0/R1/R2 (pCR1150)")
     crm_distance_mm: Optional[float] = Field(None, description="Distance to CRM in mm")
-    proximal_margin_mm: Optional[float] = None
-    distal_margin_mm: Optional[float] = None
+    proximal_margin_mm: Optional[float] = Field(None, description="Proximal margin in mm")
+    distal_margin_mm: Optional[float] = Field(None, description="Distal margin in mm")
+    donuts_involved: Optional[str] = Field(None, description="Donut status: Involved/Not Involved/Not Sent/Unknown")
     
     # Molecular markers
-    mismatch_repair_status: Optional[str] = Field(None, description="MSI-H/MSS/Unknown")
+    mismatch_repair_status: Optional[str] = Field(None, description="Intact/Deficient/Unknown")
     kras_status: Optional[str] = Field(None, description="Wild-type/Mutant/Unknown")
     braf_status: Optional[str] = Field(None, description="Wild-type/Mutant/Unknown")
     
@@ -176,14 +182,18 @@ class TumourUpdate(BaseModel):
     size_mm: Optional[float] = None
     distance_from_anal_verge_cm: Optional[float] = None
     mesorectal_involvement: Optional[bool] = None
+    background_morphology: Optional[str] = None
     lymph_nodes_examined: Optional[int] = None
     lymph_nodes_positive: Optional[int] = None
-    lymphovascular_invasion: Optional[bool] = None
-    perineural_invasion: Optional[bool] = None
-    crm_status: Optional[CRMStatus] = None
+    apical_node: Optional[str] = None
+    lymphatic_invasion: Optional[str] = None
+    vascular_invasion: Optional[str] = None
+    perineural_invasion: Optional[str] = None
+    margin_status: Optional[MarginStatus] = None
     crm_distance_mm: Optional[float] = None
     proximal_margin_mm: Optional[float] = None
     distal_margin_mm: Optional[float] = None
+    donuts_involved: Optional[str] = None
     mismatch_repair_status: Optional[str] = None
     kras_status: Optional[str] = None
     braf_status: Optional[str] = None
