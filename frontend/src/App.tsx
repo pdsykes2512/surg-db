@@ -10,6 +10,7 @@ import { EpisodesPage } from './pages/EpisodesPage'
 import { ReportsPage } from './pages/ReportsPage'
 import { LoginPage } from './pages/LoginPage'
 import { AdminPage } from './pages/AdminPage'
+import RStudioPage from './pages/RStudioPage'
 import { ProtectedRoute } from './components/layout/ProtectedRoute'
 import { Layout } from './components/layout/Layout'
 import { HelpDialog } from './components/modals/HelpDialog'
@@ -89,6 +90,16 @@ function AppContent() {
             <ProtectedRoute>
               <Layout>
                 <ReportsPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/rstudio"
+          element={
+            <ProtectedRoute requiredRoles={['surgeon', 'admin']}>
+              <Layout>
+                <RStudioPage />
               </Layout>
             </ProtectedRoute>
           }

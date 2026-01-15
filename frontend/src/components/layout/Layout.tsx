@@ -81,6 +81,11 @@ export function Layout({ children }: LayoutProps) {
               <Link to="/reports" className={navLinkClass('/reports')}>
                 Reports
               </Link>
+              {(user?.role === 'surgeon' || user?.role === 'admin') && (
+                <Link to="/rstudio" className={navLinkClass('/rstudio')}>
+                  RStudio
+                </Link>
+              )}
               {user?.role === 'admin' && (
                 <Link to="/admin" className={navLinkClass('/admin')}>
                   Admin
@@ -166,6 +171,19 @@ export function Layout({ children }: LayoutProps) {
               >
                 Reports
               </Link>
+              {(user?.role === 'surgeon' || user?.role === 'admin') && (
+                <Link
+                  to="/rstudio"
+                  className={`block px-4 py-2 text-sm font-medium transition-colors duration-200 ${
+                    isActive('/rstudio')
+                      ? 'bg-blue-600 text-white'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  RStudio
+                </Link>
+              )}
               {user?.role === 'admin' && (
                 <Link
                   to="/admin"
@@ -200,7 +218,11 @@ export function Layout({ children }: LayoutProps) {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full">
+      <main className={`mx-auto flex-grow w-full ${
+        location.pathname === '/rstudio'
+          ? 'px-0 py-0'
+          : 'max-w-7xl px-4 sm:px-6 lg:px-8 py-8'
+      }`}>
         {children}
       </main>
 

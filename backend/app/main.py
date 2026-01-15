@@ -9,7 +9,7 @@ from slowapi.errors import RateLimitExceeded
 
 from .config import settings
 from .database import Database
-from .routes import patients, episodes, reports, auth, admin, clinicians, exports, codes, nhs_providers, audit, investigations, backups, treatments_surgery
+from .routes import patients, episodes, reports, auth, admin, clinicians, exports, codes, nhs_providers, audit, investigations, backups, treatments_surgery, rstudio
 from .middleware import limiter, rate_limit_exceeded_handler, RequestLoggingMiddleware, register_error_handlers
 
 
@@ -64,6 +64,7 @@ app.include_router(nhs_providers.router)  # NHS provider lookup via ODS API
 app.include_router(audit.router)  # Audit logging and activity tracking
 app.include_router(investigations.router)  # Clinical investigations and imaging
 app.include_router(backups.router)  # Database backup management
+app.include_router(rstudio.router)  # RStudio Server integration for advanced analytics
 
 
 @app.get("/")
