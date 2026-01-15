@@ -26,6 +26,7 @@ export default defineConfig(({ mode }) => {
       allowedHosts: [
         serverHostname,  // Configurable hostname from env
         'localhost',
+	'impact.pdsykes.co.uk',
         '127.0.0.1'
       ],
       proxy: {

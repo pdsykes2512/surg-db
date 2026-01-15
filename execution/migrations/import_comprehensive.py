@@ -1233,8 +1233,12 @@ def import_patients(db, csv_path: str, stats: Dict) -> Dict[str, str]:
                 'postcode': str(row.get('Postcode', '')).strip() or None
             },
             'medical_history': {
-                'family_history': bool(row.get('Fam_Hist')),
-                'family_history_positive': str(row.get('Fam_Hist_positive', '')).strip() or None
+                'conditions': [],
+                'previous_surgeries': [],
+                'medications': [],
+                'allergies': [],
+                'smoking_status': None,
+                'alcohol_use': None
             },
             'created_at': datetime.utcnow(),
             'updated_at': datetime.utcnow()

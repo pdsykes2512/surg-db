@@ -409,7 +409,8 @@ async def get_data_quality_report() -> Dict[str, Any]:
 
         # Process results
         for field in fields:
-            complete_count = field_counts.get(field, [{}])[0].get("count", 0)
+            field_result = field_counts.get(field, [])
+            complete_count = field_result[0].get("count", 0) if field_result else 0
             field_data = {
                 "field": field,
                 "category": category_name,
@@ -505,7 +506,8 @@ async def get_data_quality_report() -> Dict[str, Any]:
     # Build treatment fields flat list
     treatment_fields_flat = []
     for field_name, category_name, _ in treatment_field_paths:
-        complete_count = treatment_field_counts.get(field_name, [{}])[0].get("count", 0)
+        field_result = treatment_field_counts.get(field_name, [])
+        complete_count = field_result[0].get("count", 0) if field_result else 0
         treatment_fields_flat.append({
             "field": field_name,
             "category": category_name,
@@ -517,7 +519,8 @@ async def get_data_quality_report() -> Dict[str, Any]:
 
     # Add special yes/no fields
     for field_name, category_name in [("readmission_30d", "Outcomes"), ("return_to_theatre", "Outcomes")]:
-        complete_count = treatment_field_counts.get(field_name, [{}])[0].get("count", 0)
+        field_result = treatment_field_counts.get(field_name, [])
+        complete_count = field_result[0].get("count", 0) if field_result else 0
         treatment_fields_flat.append({
             "field": field_name,
             "category": category_name,
