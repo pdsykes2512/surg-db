@@ -191,6 +191,7 @@ export function TumourModal({ episodeId, onSubmit, onCancel, mode = 'create', in
       mesorectal_involvement: false,
       lymph_nodes_examined: '',
       lymph_nodes_positive: '',
+      tumour_deposits: '',
       apical_node: '',
       lymphatic_invasion: '',
       vascular_invasion: '',
@@ -239,7 +240,7 @@ export function TumourModal({ episodeId, onSubmit, onCancel, mode = 'create', in
         if (cleanedData[key]) {
           cleanedData[key] = parseFloat(cleanedData[key])
         }
-      } else if (['lymph_nodes_examined', 'lymph_nodes_positive'].includes(key)) {
+      } else if (['lymph_nodes_examined', 'lymph_nodes_positive', 'tumour_deposits'].includes(key)) {
         if (cleanedData[key]) {
           cleanedData[key] = parseInt(cleanedData[key])
         }
@@ -674,7 +675,7 @@ export function TumourModal({ episodeId, onSubmit, onCancel, mode = 'create', in
                 {/* Lymph Nodes */}
                 <div>
                   <h4 className="font-medium text-gray-900 mb-3">Lymph Node Assessment</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Nodes Examined
@@ -701,6 +702,20 @@ export function TumourModal({ episodeId, onSubmit, onCancel, mode = 'create', in
                         placeholder="Positive nodes"
                       />
                       <p className="mt-1 text-xs text-gray-500">NBOCA (pCR0900)</p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Tumour Deposits
+                      </label>
+                      <input
+                        type="number"
+                        value={formData.tumour_deposits}
+                        onChange={(e) => setFormData({ ...formData, tumour_deposits: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        placeholder="Number of deposits"
+                      />
+                      <p className="mt-1 text-xs text-gray-500">Tumour deposits (N1c staging)</p>
                     </div>
 
                     <div>

@@ -1,3 +1,38 @@
+## 2026-01-15 - Added Tumour Deposits Field to Tumour Modal and Dataset
+
+**Changed by:** AI Session (Claude Code)
+
+**What was added:** A new field "tumour_deposits" to track the number of tumour deposits found in pathology specimens. This is clinically important for TNM staging (N1c refers to tumour deposits without lymph node involvement).
+
+**Changes:**
+
+- **[backend/app/models/tumour.py](backend/app/models/tumour.py:126):**
+  - Added `tumour_deposits: Optional[int]` field to `TumourBase` model
+  - Added to `TumourUpdate` model for edit operations
+  - Positioned in lymph node assessment section (after lymph_nodes_positive)
+
+- **[frontend/src/components/modals/TumourModal.tsx](frontend/src/components/modals/TumourModal.tsx):**
+  - Added `tumour_deposits` to initial form state (line 194)
+  - Added input field in Pathology tab → Lymph Node Assessment section (lines 707-719)
+  - Updated grid layout from 3 columns to 2 columns for better spacing
+  - Added to integer parsing logic in handleSubmit (line 243)
+
+**Location in UI:** Pathology tab → Lymph Node Assessment section
+
+**Data Type:** Integer (number of deposits)
+
+**How to test:**
+1. Open any episode
+2. Add or edit a tumour
+3. Go to "Pathology" tab
+4. Look for "Tumour Deposits" field in the Lymph Node Assessment section
+5. Enter a number and save
+6. Verify the value is saved and displays correctly when editing
+
+**RStudio Access:** The field will automatically be available in RStudio's `get_tumours()` function as `tumour_deposits` column (no endpoint changes needed due to automatic field flattening).
+
+---
+
 ## 2026-01-15 - RStudio: Fixed Type Consistency for R bind_rows() Compatibility
 
 **Changed by:** AI Session (Claude Code)

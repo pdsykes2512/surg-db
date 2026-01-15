@@ -123,6 +123,7 @@ class TumourBase(BaseModel):
     background_morphology: Optional[str] = Field(None, description="Cancer origin: Adenoma/IBD/Serrated/De novo/Unknown")
     lymph_nodes_examined: Optional[int] = Field(None, description="Total nodes examined (pCR0890)")
     lymph_nodes_positive: Optional[int] = Field(None, description="Positive nodes (pCR0900)")
+    tumour_deposits: Optional[int] = Field(None, description="Number of tumour deposits (N1c staging)")
     apical_node: Optional[str] = Field(None, description="Apical node status: Involved/Not Involved/Unknown")
     lymphatic_invasion: Optional[str] = Field(None, description="Lymphatic invasion (L0/L1): yes/no/uncertain")
     vascular_invasion: Optional[str] = Field(None, description="Vascular invasion (V0/V1): yes/no/uncertain")
@@ -185,6 +186,7 @@ class TumourUpdate(BaseModel):
     background_morphology: Optional[str] = None
     lymph_nodes_examined: Optional[int] = None
     lymph_nodes_positive: Optional[int] = None
+    tumour_deposits: Optional[int] = None
     apical_node: Optional[str] = None
     lymphatic_invasion: Optional[str] = None
     vascular_invasion: Optional[str] = None
