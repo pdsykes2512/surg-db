@@ -1,3 +1,113 @@
+## 2026-01-15 - RStudio: Fixed Type Consistency for R bind_rows() Compatibility
+
+**Changed by:** AI Session (Claude Code)
+
+**Issue:** R's `bind_rows()` function was failing with type mismatch errors like:
+```
+Error: Can't combine `..1$clinical_n` <logical> and `..4$clinical_n` <character>
+```
+
+**Root Cause:** MongoDB documents had inconsistent types across records. For example:
+- Some tumours had `clinical_n: true` (boolean)
+- Others had `clinical_n: "N1"` (string)
+
+When R tried to combine these into a data frame, it failed because it requires consistent types per column.
+
+**Solution:** Replaced `normalize_boolean()` with `convert_value_for_r()` function that converts all boolean values to strings ("TRUE"/"FALSE") to ensure type consistency across all records.
+
+**Changes:**
+
+- **[backend/app/routes/rstudio.py](backend/app/routes/rstudio.py:22-48):**
+  - Removed `normalize_boolean()` function
+  - Created new `convert_value_for_r()` function:
+    - Converts booleans → strings: `True` → `"TRUE"`, `False` → `"FALSE"`
+    - Converts empty strings → `None` (becomes NA in R)
+    - Preserves all other values: strings, numbers, dates, None
+  - Updated all 8 locations in endpoints to use `convert_value_for_r()`
+
+**Verified Fields (31 total):**
+
+All new pathology fields from TumourModal are accessible in RStudio:
+- ✅ **Basic Info**: `tumour_type`, `site`, `diagnosis_date`, `icd10_code`, `histology_type`, `size_mm`, `grade`
+- ✅ **TNM Staging**: `tnm_version`, `clinical_t/n/m`, `pathological_t/n/m`, `clinical_stage_date`, `pathological_stage_date`
+- ✅ **Background**: `background_morphology` (Adenoma, IBD, Serrated, De novo)
+- ✅ **Lymph Nodes**: `lymph_nodes_examined`, `lymph_nodes_positive`, `apical_node`
+- ✅ **Invasion Features**: `lymphatic_invasion`, `vascular_invasion`, `perineural_invasion`, `mesorectal_involvement`
+- ✅ **Resection Margins**: `margin_status` (R0/R1/R2), `crm_distance_mm`, `proximal_margin_mm`, `distal_margin_mm`, `donuts_involved`
+- ✅ **Molecular Markers**: `mismatch_repair_status` (Intact/Deficient), `kras_status` (Wild-type/Mutant), `braf_status`
+- ✅ **Rectal Specific**: `distance_from_anal_verge_cm`
+
+**Impact:**
+
+All pathology fields are now properly accessible in R with categorical values preserved:
+
+```r
+# Get tumours with pathology data
+tumours <- get_tumours()
+
+# Access all new fields
+tumours$vascular_invasion         # "present", "absent" (not NULL!)
+tumours$histology_type            # "Adenocarcinoma", "Mucinous", etc.
+tumours$background_morphology     # "Adenoma (Tubular)", "IBD", etc.
+tumours$mismatch_repair_status    # "Intact", "Deficient", "Unknown"
+tumours$margin_status             # "R0", "R1", "R2"
+
+# Molecular markers for targeted therapy
+msi_high <- tumours[tumours$mismatch_repair_status == "Deficient", ]
+kras_mutant <- tumours[tumours$kras_status == "Mutant", ]
+```
+
+**Technical Details:**
+
+The `flatten_dict()` function automatically includes ALL fields from MongoDB except:
+- `_id`, `tumour_id`, `episode_id`, `patient_id` (identifiers handled separately)
+- `created_at`, `updated_at` (timestamp fields - see separate change)
+- Encrypted fields (names, dates of birth, NHS numbers, etc.)
+
+This means any new fields added to TumourModal will automatically appear in RStudio data as soon as they're saved to the database - no endpoint changes required!
+
+---
+
+## 2026-01-15 - RStudio: Removed Metadata Fields from All API Endpoints
+
+**Changed by:** AI Session (Claude Code)
+
+**Issue:** The RStudio API endpoints were returning MongoDB metadata fields (`created_at`, `updated_at`, `updated_by`) which are not needed for clinical analysis and add unnecessary clutter to the R data frames.
+
+**Solution:** Excluded all metadata fields from the four RStudio data endpoints.
+
+**Changes:**
+
+- **[backend/app/routes/rstudio.py](backend/app/routes/rstudio.py):**
+  - Line 580: Added `'created_at', 'updated_at', 'updated_by'` to patients endpoint exclusion list
+  - Line 668: Added `'created_at', 'updated_at', 'updated_by'` to episodes endpoint exclusion list
+  - Line 727: Added `'created_at', 'updated_at', 'updated_by'` to treatments endpoint exclusion list
+  - Line 783: Added `'created_at', 'updated_at', 'updated_by'` to tumours endpoint exclusion list
+
+**Testing Results:**
+
+All four endpoints tested and verified - metadata fields excluded:
+- ✅ **Patients**: 8 fields returned, no metadata fields
+- ✅ **Episodes**: 107 fields returned, no metadata fields
+- ✅ **Treatments**: 55 fields returned, no metadata fields
+- ✅ **Tumours**: 50 fields returned, no metadata fields
+
+**Impact:**
+
+R data frames are now cleaner and more focused on clinically relevant fields. The metadata fields (`created_at`, `updated_at`, `updated_by`) were internal MongoDB tracking fields not useful for statistical analysis.
+
+```r
+# Before: metadata fields in every record
+patients <- get_patients(limit = 1)
+# patient_id, birth_year, gender, created_at, updated_at, updated_by, ...
+
+# After: Only clinically relevant fields
+patients <- get_patients(limit = 1)
+# patient_id, birth_year, gender, ethnicity, bmi, ...
+```
+
+---
+
 ## 2026-01-15 - RStudio: Removed Unnecessary API URL Warning
 
 **Changed by:** AI Session (Claude Code)
