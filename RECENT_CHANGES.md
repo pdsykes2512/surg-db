@@ -1,31 +1,3 @@
-## 2026-01-18 - Updated Apical Node Field Options
-
-**Changed by:** AI Session (Claude Code)
-
-**What was changed:** Removed "Unknown" option from the apical node field dropdown. The field now only allows "Involved" or "Not Involved" as valid options.
-
-**Changes:**
-
-- **[frontend/src/components/modals/TumourModal.tsx](frontend/src/components/modals/TumourModal.tsx:728-731):**
-  - Removed "Unknown" option from SearchableSelect options array
-  - Field now only shows "Involved" and "Not Involved"
-
-- **[backend/app/models/tumour.py](backend/app/models/tumour.py:127):**
-  - Updated field description to reflect the allowed values
-
-**Location in UI:** Pathology tab → Lymph Node Assessment section → Apical Node
-
-**Rationale:** Apical node status should be definitively determined from pathology - either the apical node is involved or it is not.
-
-**How to test:**
-1. Open any episode
-2. Add or edit a tumour
-3. Go to "Pathology" tab
-4. Click on "Apical Node" dropdown in the Lymph Node Assessment section
-5. Verify only "Involved" and "Not Involved" options appear (no "Unknown")
-
----
-
 ## 2026-01-15 - Added Tumour Deposits Field to Tumour Modal and Dataset
 
 **Changed by:** AI Session (Claude Code)
