@@ -727,8 +727,7 @@ export function TumourModal({ episodeId, onSubmit, onCancel, mode = 'create', in
                         onChange={(value) => setFormData({ ...formData, apical_node: value })}
                         options={[
                           { value: 'Involved', label: 'Involved' },
-                          { value: 'Not Involved', label: 'Not Involved' },
-                          { value: 'Unknown', label: 'Unknown' }
+                          { value: 'Not Involved', label: 'Not Involved' }
                         ]}
                         getOptionValue={(opt) => opt.value}
                         getOptionLabel={(opt) => opt.label}
