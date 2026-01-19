@@ -26,7 +26,7 @@
 import axios from 'axios'
 
 /** Base URL for all API requests, from environment or defaults to localhost:8000 */
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
 
 /**
  * Configured axios instance with authentication interceptor

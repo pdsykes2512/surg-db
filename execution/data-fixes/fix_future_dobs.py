@@ -1,3 +1,4 @@
+import os
 #!/usr/bin/env python3
 """
 Fix patients with future dates of birth (2026+) by subtracting 100 years.
@@ -8,7 +9,7 @@ from pymongo import MongoClient
 from datetime import datetime
 
 # Connect to MongoDB
-client = MongoClient('mongodb://admin:admin123@surg-db.vps:27017/surgdb?authSource=admin')
+client = MongoClient(os.getenv("MONGODB_URI", "mongodb://localhost:27017"))
 db = client['surgdb']
 patients_collection = db.patients
 

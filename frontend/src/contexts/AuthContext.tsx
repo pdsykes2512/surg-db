@@ -3,6 +3,7 @@ import axios from 'axios'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { getSessionManager, destroySessionManager, SessionEventType } from '../utils/sessionManager'
 import { SessionWarningModal } from '../components/modals/SessionWarningModal'
+import { API_BASE_URL } from '../services/api'
 
 // Use empty string for relative URLs when VITE_API_URL is /api (uses Vite proxy)
 // Otherwise fall back to localhost for direct backend access

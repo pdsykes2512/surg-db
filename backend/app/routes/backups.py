@@ -5,6 +5,7 @@ Handles database backup and restore operations
 import os
 import sys
 import json
+import logging
 import subprocess
 from pathlib import Path
 from datetime import datetime
@@ -15,6 +16,8 @@ from pydantic import BaseModel
 
 from ..auth import require_admin
 from ..database import Database
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/admin/backups", tags=["admin", "backups"])
 
@@ -72,7 +75,7 @@ def get_all_backups() -> List[BackupInfo]:
                     collections=manifest.get('collections', {})
                 ))
             except Exception as e:
-                print(f"Error reading backup {item}: {e}")
+                logger.error(f"Error reading backup {item}: {e}")
                 continue
 
         # Handle encrypted backups (.tar.gz.enc files)
@@ -110,12 +113,12 @@ def get_all_backups() -> List[BackupInfo]:
                     ))
                 else:
                     # Fallback: parse info from filename
-                    from datetime import datetime
                     try:
                         timestamp_str = backup_name
                         dt = datetime.strptime(timestamp_str, '%Y-%m-%d_%H-%M-%S')
                         timestamp = dt.isoformat()
-                    except:
+                    except ValueError:
+                        # If parsing fails, use the raw backup name
                         timestamp = backup_name
 
                     backups.append(BackupInfo(
@@ -129,7 +132,7 @@ def get_all_backups() -> List[BackupInfo]:
                         collections={}
                     ))
             except Exception as e:
-                print(f"Error reading encrypted backup {item}: {e}")
+                logger.error(f"Error reading encrypted backup {item}: {e}")
                 continue
 
     return backups
@@ -189,10 +192,10 @@ async def run_backup_script(note: Optional[str] = None):
             text=True,
             check=True
         )
-        print(f"Backup completed: {result.stdout}")
+        logger.info(f"Backup completed: {result.stdout}")
         return True
     except subprocess.CalledProcessError as e:
-        print(f"Backup failed: {e.stderr}")
+        logger.error(f"Backup failed: {e.stderr}")
         return False
 
 
@@ -342,9 +345,9 @@ async def cleanup_old_backups(
                 text=True,
                 check=True
             )
-            print(f"Cleanup completed: {result.stdout}")
+            logger.info(f"Cleanup completed: {result.stdout}")
         except subprocess.CalledProcessError as e:
-            print(f"Cleanup failed: {e.stderr}")
+            logger.error(f"Cleanup failed: {e.stderr}")
     
     background_tasks.add_task(run_cleanup)
     

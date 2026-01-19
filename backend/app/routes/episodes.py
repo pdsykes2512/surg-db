@@ -10,6 +10,8 @@ from typing import List, Optional
 # Third-party
 from bson import ObjectId
 from fastapi import APIRouter, HTTPException, status, Query, Depends, Request
+from pydantic import ValidationError
+from pymongo.errors import DuplicateKeyError, PyMongoError
 
 # Local application
 from ..auth import get_current_user
@@ -32,6 +34,49 @@ logger = logging.getLogger(__name__)
 
 
 router = APIRouter(prefix="/api/episodes", tags=["episodes"])
+
+
+async def validate_lead_clinician(lead_clinician: Optional[str]) -> Optional[str]:
+    """
+    Validate that lead_clinician is a full canonical name from clinicians collection.
+    Raises HTTPException if validation fails.
+    Returns the validated (and potentially case-corrected) clinician name.
+    """
+    if not lead_clinician:
+        return None
+
+    # Get all clinicians to build canonical name set
+    clinicians_collection = await get_clinicians_collection()
+    clinicians = await clinicians_collection.find({}, {"first_name": 1, "surname": 1}).to_list(length=None)
+
+    # Build set of valid full names (case-insensitive)
+    valid_names = {}
+    for clinician in clinicians:
+        first = clinician.get('first_name', '')
+        surname = clinician.get('surname', '')
+        if first and surname:
+            full_name = f"{first} {surname}"
+            valid_names[full_name.lower()] = full_name
+
+    # Check if provided name matches a valid full name
+    lead_clinician_lower = lead_clinician.lower().strip()
+    if lead_clinician_lower in valid_names:
+        # Return the canonical case version
+        return valid_names[lead_clinician_lower]
+
+    # Check if it's a surname-only (which we want to reject)
+    is_surname_only = ' ' not in lead_clinician.strip()
+    if is_surname_only:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid lead_clinician: '{lead_clinician}'. Surname-only names are not allowed. Please provide full name (e.g., 'Jim Khan' not 'Khan')."
+        )
+
+    # Name doesn't match any known clinician
+    raise HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail=f"Invalid lead_clinician: '{lead_clinician}' is not a recognized clinician. Please select from the list of valid clinicians."
+    )
 
 
 def flatten_treatment_for_frontend(treatment: dict, clinician_map: dict = None, surname_map: dict = None) -> dict:
@@ -291,7 +336,12 @@ async def create_episode(
                     detail="cancer_type is required when condition_type is 'cancer'"
                 )
             # cancer_data is optional - detailed data captured in tumours array
-        
+
+        # Validate lead_clinician (must be full canonical name)
+        if episode.lead_clinician:
+            validated_clinician = await validate_lead_clinician(episode.lead_clinician)
+            episode.lead_clinician = validated_clinician
+
         # Set timestamps
         now = datetime.utcnow()
         episode_dict = episode.model_dump()
@@ -355,12 +405,23 @@ async def create_episode(
         return Episode(**created_episode)
     except HTTPException:
         raise
-    except Exception as e:
-        import traceback
-        logger.error(f"Error creating episode: {str(e)}", exc_info=True)
+    except ValidationError as e:
+        logger.error(f"Validation error creating episode: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Invalid episode data: {str(e)}"
+        )
+    except PyMongoError as e:
+        logger.error(f"Database error creating episode: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create episode: {str(e)}"
+            detail="Database operation failed"
+        )
+    except Exception as e:
+        logger.error(f"Unexpected error creating episode: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred"
         )
 
 
@@ -1040,7 +1101,12 @@ async def update_episode(
         # Remove fields that shouldn't be updated
         fields_to_remove = ['_id', 'episode_id', 'patient_id', 'created_at', 'created_by', 'treatments', 'tumours']
         update_dict = {k: v for k, v in update_data.items() if k not in fields_to_remove and v is not None}
-        
+
+        # Validate lead_clinician if being updated (must be full canonical name)
+        if 'lead_clinician' in update_dict and update_dict['lead_clinician']:
+            validated_clinician = await validate_lead_clinician(update_dict['lead_clinician'])
+            update_dict['lead_clinician'] = validated_clinician
+
         # Set last_modified_at timestamp and updated_by
         update_dict['last_modified_at'] = datetime.utcnow()
         update_dict['updated_by'] = current_user["username"]
@@ -1072,12 +1138,23 @@ async def update_episode(
         return updated_episode
     except HTTPException:
         raise
-    except Exception as e:
-        import traceback
-        logger.error(f"Error updating episode: {str(e)}", exc_info=True)
+    except ValidationError as e:
+        logger.error(f"Validation error updating episode {episode_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Invalid episode data: {str(e)}"
+        )
+    except PyMongoError as e:
+        logger.error(f"Database error updating episode {episode_id}: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update episode: {str(e)}"
+            detail="Database operation failed"
+        )
+    except Exception as e:
+        logger.error(f"Unexpected error updating episode {episode_id}: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred"
         )
 
 
@@ -1200,12 +1277,23 @@ async def add_treatment_to_episode(
         return created_treatment
     except HTTPException:
         raise
-    except Exception as e:
-        import traceback
-        logger.error(f"Error adding treatment: {str(e)}", exc_info=True)
+    except ValidationError as e:
+        logger.error(f"Validation error adding treatment: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Invalid treatment data: {str(e)}"
+        )
+    except PyMongoError as e:
+        logger.error(f"Database error adding treatment: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to add treatment: {str(e)}"
+            detail="Database operation failed"
+        )
+    except Exception as e:
+        logger.error(f"Unexpected error adding treatment: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred"
         )
 
 
@@ -1293,12 +1381,23 @@ async def update_treatment_in_episode(
         return updated_treatment
     except HTTPException:
         raise
-    except Exception as e:
-        import traceback
-        logger.error(f"Error updating treatment: {str(e)}", exc_info=True)
+    except ValidationError as e:
+        logger.error(f"Validation error updating treatment {treatment_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Invalid treatment data: {str(e)}"
+        )
+    except PyMongoError as e:
+        logger.error(f"Database error updating treatment {treatment_id}: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update treatment: {str(e)}"
+            detail="Database operation failed"
+        )
+    except Exception as e:
+        logger.error(f"Unexpected error updating treatment {treatment_id}: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred"
         )
 
 
@@ -1473,12 +1572,23 @@ async def add_tumour_to_episode(
         return created_tumour
     except HTTPException:
         raise
-    except Exception as e:
-        import traceback
-        logger.error(f"Error adding tumour: {str(e)}", exc_info=True)
+    except ValidationError as e:
+        logger.error(f"Validation error adding tumour: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Invalid tumour data: {str(e)}"
+        )
+    except PyMongoError as e:
+        logger.error(f"Database error adding tumour: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to add tumour: {str(e)}"
+            detail="Database operation failed"
+        )
+    except Exception as e:
+        logger.error(f"Unexpected error adding tumour: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred"
         )
 
 
@@ -1559,12 +1669,23 @@ async def update_tumour_in_episode(
         return updated_tumour
     except HTTPException:
         raise
-    except Exception as e:
-        import traceback
-        logger.error(f"Error updating tumour: {str(e)}", exc_info=True)
+    except ValidationError as e:
+        logger.error(f"Validation error updating tumour {tumour_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Invalid tumour data: {str(e)}"
+        )
+    except PyMongoError as e:
+        logger.error(f"Database error updating tumour {tumour_id}: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update tumour: {str(e)}"
+            detail="Database operation failed"
+        )
+    except Exception as e:
+        logger.error(f"Unexpected error updating tumour {tumour_id}: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred"
         )
 
 
@@ -1631,12 +1752,17 @@ async def delete_tumour_from_episode(
             )
     except HTTPException:
         raise
-    except Exception as e:
-        import traceback
-        logger.error(f"Error deleting tumour: {str(e)}", exc_info=True)
+    except PyMongoError as e:
+        logger.error(f"Database error deleting tumour {tumour_id}: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete tumour: {str(e)}"
+            detail="Database operation failed"
+        )
+    except Exception as e:
+        logger.error(f"Unexpected error deleting tumour {tumour_id}: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred"
         )
 
 @router.delete("/{episode_id}/treatments/{treatment_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -1702,10 +1828,15 @@ async def delete_treatment_from_episode(
             )
     except HTTPException:
         raise
-    except Exception as e:
-        import traceback
-        logger.error(f"Error deleting treatment: {str(e)}", exc_info=True)
+    except PyMongoError as e:
+        logger.error(f"Database error deleting treatment {treatment_id}: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete treatment: {str(e)}"
+            detail="Database operation failed"
+        )
+    except Exception as e:
+        logger.error(f"Unexpected error deleting treatment {treatment_id}: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred"
         )

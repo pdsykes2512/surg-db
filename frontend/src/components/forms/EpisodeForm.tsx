@@ -5,6 +5,7 @@ import { formatNHSNumber } from '../../utils/formatters'
 import { procedureToICD10, procedureToOPCS, standardProcedures } from '../../data/procedures'
 import { commonDiagnoses } from '../../data/diagnoses'
 import { generateTreatmentId } from '../../utils/idGenerators'
+import { API_BASE_URL } from '../../services/api'
 
 interface EpisodeFormProps {
   onSubmit: (data: any) => void
@@ -34,8 +35,7 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
   useEffect(() => {
     const fetchPatients = async () => {
       try {
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
-        const response = await fetch(`${API_URL}/patients/`, {
+        const response = await fetch(`${API_BASE_URL}/patients/`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
           }
@@ -55,8 +55,7 @@ export function EpisodeForm({ onSubmit, onCancel, initialData, mode = 'create' }
   useEffect(() => {
     const fetchSurgeons = async () => {
       try {
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
-        const response = await fetch(`${API_URL}/admin/surgeons`, {
+        const response = await fetch(`${API_BASE_URL}/admin/surgeons`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
           }

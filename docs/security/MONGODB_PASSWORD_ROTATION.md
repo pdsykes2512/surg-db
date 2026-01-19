@@ -70,7 +70,7 @@ MongoDB Password Rotation Script
 ======================================================================
 
 📋 Step 1: Reading current configuration...
-   Current host: surg-db.vps:27017
+   Current host: impact.vps:27017
    Current user: admin
    Current database: surgdb
    Auth source: admin
@@ -122,7 +122,7 @@ After rotating the password, verify:
    ```
 
 2. **Application login works**
-   - Open browser: http://surg-db.vps:3000
+   - Open browser: http://impact.vps:3000
    - Log in with your user credentials
    - Navigate to a few pages to ensure database connectivity
 
@@ -157,7 +157,7 @@ After rotating the password, verify:
 
 **Solutions:**
 1. Check MongoDB is running: `sudo systemctl status mongod`
-2. Verify network connectivity: `ping surg-db.vps`
+2. Verify network connectivity: `ping impact.vps`
 3. Check firewall rules allow port 27017
 4. Verify current password in `.env` is correct
 
@@ -196,7 +196,7 @@ ls -lt /root/impact/.tmp/.env.backup_*
 cp /root/impact/.tmp/.env.backup_YYYYMMDD_HHMMSS /root/impact/.env
 
 # 3. Manually change MongoDB password back using mongosh
-mongosh mongodb://admin:NEW_PASSWORD@surg-db.vps:27017/admin
+mongosh mongodb://admin:NEW_PASSWORD@impact.vps:27017/admin
 > db.changeUserPassword("admin", "OLD_PASSWORD_FROM_BACKUP")
 
 # 4. Restart backend
@@ -279,4 +279,4 @@ sudo crontab -e
 For issues or questions:
 - Check logs: `sudo journalctl -u surg-db-backend -n 100`
 - Review RECENT_CHANGES.md for context
-- Test connection: `mongosh "mongodb://admin:PASSWORD@surg-db.vps:27017/admin"`
+- Test connection: `mongosh "mongodb://admin:PASSWORD@impact.vps:27017/admin"`

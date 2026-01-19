@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # MongoDB connection
-MONGODB_URL = os.getenv('MONGODB_URL', 'mongodb://admin:admin123@surg-db.vps:27017/surgdb?authSource=admin')
+MONGODB_URL = os.getenv('MONGODB_URI', os.getenv('MONGODB_URL', 'mongodb://localhost:27017'))
 
 def update_mri_rectum_records():
     """Update all investigations with 'MRI Rectum' to 'MRI Pelvis/Rectum'"""

@@ -1,3 +1,4 @@
+import os
 #!/usr/bin/env python3
 """Fix investigation dates - convert datetime objects to strings."""
 
@@ -6,7 +7,7 @@ from datetime import datetime
 from motor.motor_asyncio import AsyncIOMotorClient
 
 async def fix_investigation_dates():
-    client = AsyncIOMotorClient("mongodb://admin:admin123@surg-db.vps:27017/surgdb?authSource=admin")
+    client = AsyncIOMotorClient(os.getenv("MONGODB_URI", "mongodb://localhost:27017"))
     db = client.surgdb
     collection = db.investigations
     

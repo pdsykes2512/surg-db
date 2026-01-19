@@ -27,7 +27,7 @@ async def cleanup_all_lead_clinicians():
     load_dotenv('.env')
 
     # Connect to databases
-    mongodb_uri = os.getenv('MONGODB_URI', 'mongodb://surg-db.vps:27017')
+    mongodb_uri = os.getenv('MONGODB_URI', 'mongodb://localhost:27017')
     client = AsyncIOMotorClient(mongodb_uri)
     db = client['impact']
     db_system = client['impact_system']

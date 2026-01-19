@@ -823,7 +823,8 @@ async def validate_nboca_submission(
                         treat_date = datetime.fromisoformat(treatment["treatment_date"])
                         if treat_date < diag_date:
                             episode_validation["errors"].append(f"{treatment_num}: Treatment date before diagnosis date")
-                    except:
+                    except (ValueError, TypeError):
+                        # Skip validation if date parsing fails
                         pass
         
         # Update summary counts

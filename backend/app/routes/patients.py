@@ -36,6 +36,8 @@ from typing import List, Optional
 # Third-party
 from bson import ObjectId
 from fastapi import APIRouter, HTTPException, status, Depends
+from pydantic import ValidationError
+from pymongo.errors import DuplicateKeyError, PyMongoError
 
 # Local application
 from ..auth import get_current_user, require_data_entry_or_higher, require_admin
@@ -122,11 +124,29 @@ async def create_patient(
         return Patient(**decrypted_patient)
     except HTTPException:
         raise
-    except Exception as e:
-        logger.error(f"Error creating patient: {str(e)}", exc_info=True)
+    except DuplicateKeyError:
+        logger.warning(f"Duplicate patient MRN attempted: {patient.mrn}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Patient with MRN {patient.mrn} already exists"
+        )
+    except ValidationError as e:
+        logger.error(f"Validation error creating patient: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Invalid patient data: {str(e)}"
+        )
+    except PyMongoError as e:
+        logger.error(f"Database error creating patient: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create patient: {str(e)}"
+            detail="Database operation failed"
+        )
+    except Exception as e:
+        logger.error(f"Unexpected error creating patient: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred"
         )
 
 
@@ -442,11 +462,23 @@ async def update_patient(
         return Patient(**decrypted_patient)
     except HTTPException:
         raise
-    except Exception as e:
-        logger.error(f"Error updating patient {patient_id}: {str(e)}", exc_info=True)
+    except ValidationError as e:
+        logger.error(f"Validation error updating patient {patient_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Invalid patient data: {str(e)}"
+        )
+    except PyMongoError as e:
+        logger.error(f"Database error updating patient {patient_id}: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update patient: {str(e)}"
+            detail="Database operation failed"
+        )
+    except Exception as e:
+        logger.error(f"Unexpected error updating patient {patient_id}: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred"
         )
 
 
@@ -499,9 +531,15 @@ async def delete_patient(
         return None
     except HTTPException:
         raise
-    except Exception as e:
-        logger.error(f"Error deleting patient {patient_id}: {str(e)}", exc_info=True)
+    except PyMongoError as e:
+        logger.error(f"Database error deleting patient {patient_id}: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete patient: {str(e)}"
+            detail="Database operation failed"
+        )
+    except Exception as e:
+        logger.error(f"Unexpected error deleting patient {patient_id}: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred"
         )

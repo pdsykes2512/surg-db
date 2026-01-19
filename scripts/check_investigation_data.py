@@ -1,3 +1,4 @@
+import os
 #!/usr/bin/env python3
 """Check investigation data structure."""
 
@@ -6,7 +7,7 @@ import json
 from motor.motor_asyncio import AsyncIOMotorClient
 
 async def check_investigation():
-    client = AsyncIOMotorClient("mongodb://admin:admin123@surg-db.vps:27017/surgdb?authSource=admin")
+    client = AsyncIOMotorClient(os.getenv("MONGODB_URI", "mongodb://localhost:27017"))
     db = client.surgdb
     collection = db.investigations
     

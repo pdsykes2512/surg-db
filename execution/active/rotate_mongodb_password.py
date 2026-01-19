@@ -38,10 +38,12 @@ from pymongo.errors import OperationFailure, ConnectionFailure
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 SECRETS_FILE = Path("/etc/impact/secrets.env")  # System secrets file (not in git)
 ENV_BACKUP_DIR = Path("/etc/impact/backups")  # Backup location for secrets
-MONGODB_HOST = "surg-db.vps"
-MONGODB_PORT = 27017
-MONGODB_AUTH_DB = "admin"
-MONGODB_USERNAME = "admin"
+
+# Get configuration from environment variables
+MONGODB_HOST = os.getenv("MONGODB_HOST", "localhost")
+MONGODB_PORT = int(os.getenv("MONGODB_PORT", "27017"))
+MONGODB_AUTH_DB = os.getenv("MONGODB_AUTH_DB", "admin")
+MONGODB_USERNAME = os.getenv("MONGODB_USERNAME", "admin")
 
 
 def generate_strong_password(length: int = 32) -> str:

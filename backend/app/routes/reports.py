@@ -13,44 +13,228 @@ router = APIRouter(prefix="/api/reports", tags=["reports"])
 
 @router.get("/summary")
 async def get_summary_report() -> Dict[str, Any]:
-    """Get overall surgical outcome statistics from treatments with yearly breakdown"""
+    """Get overall surgical outcome statistics from treatments with yearly breakdown
+
+    Optimized version using MongoDB aggregation instead of in-memory processing.
+    This significantly improves performance for large datasets (10K+ treatments).
+    """
     db = Database.get_database()
     treatments_collection = db.treatments
-    
-    # Get all surgical treatments with valid OPCS-4 codes
-    # Only count primary surgeries (RTT and reversals are captured in other metrics)
-    all_treatments = await treatments_collection.find({
-        "treatment_type": "surgery_primary",
-        "opcs4_code": {"$exists": True, "$ne": ""}
-    }).to_list(length=None)
-    total_surgeries = len(all_treatments)
-    
-    # Helper function to calculate metrics for a list of treatments
-    def calculate_metrics(treatments):
-        """Calculate outcome metrics from treatment records.
-        
-        Computes key surgical outcome metrics including complication rates,
-        mortality, readmissions, and length of stay statistics.
-        
-        Args:
-            treatments: List of treatment dictionaries with outcomes data
-        
-        Returns:
-            dict: Metrics dictionary with keys:
-                - total_surgeries: int, count of treatments
-                - complication_rate: float, percentage with complications
-                - readmission_rate: float, percentage readmitted within 30 days
-                - mortality_30d_rate: float, percentage died within 30 days
-                - mortality_90d_rate: float, percentage died within 90 days
-                - return_to_theatre_rate: float, percentage requiring RTT
-                - escalation_rate: float, percentage requiring ICU
-                - median_length_of_stay_days: float, median LOS
-        
-        Note:
-            Returns zeros for all metrics if treatments list is empty.
-        """
-        if not treatments:
-            return {
+
+    # Use MongoDB aggregation to compute metrics efficiently
+    # Match only primary surgeries with valid OPCS-4 codes
+    pipeline = [
+        {
+            "$match": {
+                "treatment_type": "surgery_primary",
+                "opcs4_code": {"$exists": True, "$ne": ""}
+            }
+        },
+        {
+            "$facet": {
+                # Count total surgeries
+                "total": [{"$count": "count"}],
+
+                # Calculate outcome metrics
+                "outcomes": [
+                    {
+                        "$group": {
+                            "_id": None,
+                            "total": {"$sum": 1},
+                            "complications": {
+                                "$sum": {
+                                    "$cond": [
+                                        {"$eq": ["$postoperative_events.complications", True]},
+                                        1,
+                                        0
+                                    ]
+                                }
+                            },
+                            "readmissions": {
+                                "$sum": {
+                                    "$cond": [
+                                        {"$eq": ["$outcomes.readmission_30day", "yes"]},
+                                        1,
+                                        0
+                                    ]
+                                }
+                            },
+                            "mortality_30d": {
+                                "$sum": {
+                                    "$cond": [
+                                        {"$eq": ["$outcomes.mortality_30day", True]},
+                                        1,
+                                        0
+                                    ]
+                                }
+                            },
+                            "mortality_90d": {
+                                "$sum": {
+                                    "$cond": [
+                                        {"$eq": ["$outcomes.mortality_90day", True]},
+                                        1,
+                                        0
+                                    ]
+                                }
+                            },
+                            "return_to_theatre": {
+                                "$sum": {
+                                    "$cond": [
+                                        {"$eq": ["$outcomes.return_to_theatre", "yes"]},
+                                        1,
+                                        0
+                                    ]
+                                }
+                            },
+                            "icu_admission": {
+                                "$sum": {
+                                    "$cond": [
+                                        {"$eq": ["$postoperative_events.icu_admission", True]},
+                                        1,
+                                        0
+                                    ]
+                                }
+                            },
+                            "los_values": {
+                                "$push": {
+                                    "$cond": [
+                                        {"$ne": ["$perioperative_timeline.length_of_stay_days", None]},
+                                        "$perioperative_timeline.length_of_stay_days",
+                                        "$$REMOVE"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                ],
+
+                # Get yearly breakdown
+                "yearly": [
+                    {
+                        "$addFields": {
+                            "treatment_year": {
+                                "$cond": [
+                                    {"$ne": ["$treatment_date", None]},
+                                    {
+                                        "$year": {
+                                            "$cond": [
+                                                {"$eq": [{"$type": "$treatment_date"}, "string"]},
+                                                {"$dateFromString": {"dateString": "$treatment_date"}},
+                                                "$treatment_date"
+                                            ]
+                                        }
+                                    },
+                                    None
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        "$match": {
+                            "treatment_year": {"$ne": None}
+                        }
+                    },
+                    {
+                        "$group": {
+                            "_id": "$treatment_year",
+                            "total": {"$sum": 1},
+                            "complications": {
+                                "$sum": {
+                                    "$cond": [
+                                        {"$eq": ["$postoperative_events.complications", True]},
+                                        1,
+                                        0
+                                    ]
+                                }
+                            },
+                            "readmissions": {
+                                "$sum": {
+                                    "$cond": [
+                                        {"$eq": ["$outcomes.readmission_30day", "yes"]},
+                                        1,
+                                        0
+                                    ]
+                                }
+                            },
+                            "mortality_30d": {
+                                "$sum": {
+                                    "$cond": [
+                                        {"$eq": ["$outcomes.mortality_30day", True]},
+                                        1,
+                                        0
+                                    ]
+                                }
+                            },
+                            "mortality_90d": {
+                                "$sum": {
+                                    "$cond": [
+                                        {"$eq": ["$outcomes.mortality_90day", True]},
+                                        1,
+                                        0
+                                    ]
+                                }
+                            },
+                            "return_to_theatre": {
+                                "$sum": {
+                                    "$cond": [
+                                        {"$eq": ["$outcomes.return_to_theatre", "yes"]},
+                                        1,
+                                        0
+                                    ]
+                                }
+                            },
+                            "icu_admission": {
+                                "$sum": {
+                                    "$cond": [
+                                        {"$eq": ["$postoperative_events.icu_admission", True]},
+                                        1,
+                                        0
+                                    ]
+                                }
+                            },
+                            "los_values": {
+                                "$push": {
+                                    "$cond": [
+                                        {"$ne": ["$perioperative_timeline.length_of_stay_days", None]},
+                                        "$perioperative_timeline.length_of_stay_days",
+                                        "$$REMOVE"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                ],
+
+                # Get urgency breakdown
+                "urgency": [
+                    {
+                        "$group": {
+                            "_id": "$classification.urgency",
+                            "count": {"$sum": 1}
+                        }
+                    }
+                ],
+
+                # Get specialty breakdown
+                "specialty": [
+                    {
+                        "$group": {
+                            "_id": "$classification.specialty",
+                            "count": {"$sum": 1}
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+
+    # Execute aggregation
+    results = await treatments_collection.aggregate(pipeline).to_list(length=1)
+    if not results:
+        # Return empty metrics if no data
+        return {
+            "total_surgeries": 0,
+            "overall_metrics": {
                 "total_surgeries": 0,
                 "complication_rate": 0,
                 "readmission_rate": 0,
@@ -59,105 +243,89 @@ async def get_summary_report() -> Dict[str, Any]:
                 "return_to_theatre_rate": 0,
                 "escalation_rate": 0,
                 "median_length_of_stay_days": 0
-            }
+            },
+            "yearly_breakdown": {},
+            "urgency_breakdown": {},
+            "specialty_breakdown": {}
+        }
 
-        total = len(treatments)
+    result = results[0]
+    total_surgeries = result["total"][0]["count"] if result["total"] else 0
 
-        # Access nested fields correctly
-        # Note: 'complications' is a boolean, 'occurred' fields are strings "yes"/"no"
-        surgeries_with_complications = sum(1 for t in treatments
-                                          if t.get('postoperative_events', {}).get('complications'))
-        readmissions = sum(1 for t in treatments
-                          if t.get('outcomes', {}).get('readmission_30day') == 'yes')
-
-        # Use boolean mortality fields (auto-populated from deceased_date)
-        mortality_30d_count = sum(1 for t in treatments if t.get('outcomes', {}).get('mortality_30day') == True)
-        mortality_90d_count = sum(1 for t in treatments if t.get('outcomes', {}).get('mortality_90day') == True)
-
-        return_to_theatre = sum(1 for t in treatments
-                               if t.get('outcomes', {}).get('return_to_theatre') == 'yes')
-        escalation_of_care = sum(1 for t in treatments
-                                if t.get('postoperative_events', {}).get('icu_admission'))
-
-        # Calculate median length of stay from nested field
-        los_values = [t.get('perioperative_timeline', {}).get('length_of_stay_days')
-                     for t in treatments
-                     if t.get('perioperative_timeline', {}).get('length_of_stay_days') is not None]
+    # Process aggregation results
+    overall_outcomes = result["outcomes"][0] if result["outcomes"] else None
+    if overall_outcomes and overall_outcomes["total"] > 0:
+        total = overall_outcomes["total"]
+        # Calculate median LOS from los_values array
+        los_values = sorted(overall_outcomes.get("los_values", []))
         if los_values:
-            sorted_los = sorted(los_values)
-            n = len(sorted_los)
-            median_los = sorted_los[n // 2] if n % 2 == 1 else (sorted_los[n // 2 - 1] + sorted_los[n // 2]) / 2
+            n = len(los_values)
+            median_los = los_values[n // 2] if n % 2 == 1 else (los_values[n // 2 - 1] + los_values[n // 2]) / 2
         else:
             median_los = 0
-        
-        return {
+
+        overall_metrics = {
             "total_surgeries": total,
-            "complication_rate": round((surgeries_with_complications / total * 100), 2),
-            "readmission_rate": round((readmissions / total * 100), 2),
-            "mortality_30d_rate": round((mortality_30d_count / total * 100), 2),
-            "mortality_90d_rate": round((mortality_90d_count / total * 100), 2),
-            "return_to_theatre_rate": round((return_to_theatre / total * 100), 2),
-            "escalation_rate": round((escalation_of_care / total * 100), 2),
-            "median_length_of_stay_days": round(median_los, 2)
+            "complication_rate": round((overall_outcomes["complications"] / total * 100), 2),
+            "readmission_rate": round((overall_outcomes["readmissions"] / total * 100), 2),
+            "mortality_30d_rate": round((overall_outcomes["mortality_30d"] / total * 100), 2),
+            "mortality_90d_rate": round((overall_outcomes["mortality_90d"] / total * 100), 2),
+            "return_to_theatre_rate": round((overall_outcomes["return_to_theatre"] / total * 100), 2),
+            "escalation_rate": round((overall_outcomes["icu_admission"] / total * 100), 2),
+            "median_length_of_stay_days": round(median_los, 1)
         }
-    
-    # Split treatments by year (last 20 years)
-    current_year = datetime.utcnow().year
-    start_year = current_year - 19  # 20 years of data (e.g., 2006-2025)
+    else:
+        overall_metrics = {
+            "total_surgeries": 0,
+            "complication_rate": 0,
+            "readmission_rate": 0,
+            "mortality_30d_rate": 0,
+            "mortality_90d_rate": 0,
+            "return_to_theatre_rate": 0,
+            "escalation_rate": 0,
+            "median_length_of_stay_days": 0
+        }
 
-    # Create a dictionary to hold treatments by year
-    treatments_by_year = {year: [] for year in range(start_year, current_year + 1)}
-
-    for t in all_treatments:
-        treatment_date = t.get('treatment_date')
-        if treatment_date:
-            try:
-                if isinstance(treatment_date, str):
-                    # Parse ISO format date string (e.g., "2024-01-15" or "2024-01-15T10:30:00")
-                    dt = datetime.fromisoformat(treatment_date.replace('Z', '+00:00'))
-                else:
-                    dt = treatment_date
-
-                # Add treatment to the appropriate year if within our 20-year range
-                if start_year <= dt.year <= current_year:
-                    treatments_by_year[dt.year].append(t)
-            except:
-                pass
-
-    # Calculate overall metrics
-    overall_metrics = calculate_metrics(all_treatments)
-
-    # Calculate yearly metrics for all years
+    # Build yearly breakdown
     yearly_breakdown = {}
-    for year in range(start_year, current_year + 1):
-        yearly_breakdown[str(year)] = calculate_metrics(treatments_by_year[year])
-    
-    # Urgency breakdown - using nested field
-    urgency_breakdown = {}
-    for treatment in all_treatments:
-        urgency = treatment.get('classification', {}).get('urgency', 'unknown')
-        urgency_breakdown[urgency] = urgency_breakdown.get(urgency, 0) + 1
+    for year_data in result.get("yearly", []):
+        if year_data["_id"] and year_data["total"] > 0:
+            year = str(year_data["_id"])
+            total = year_data["total"]
+            # Calculate median LOS for this year
+            los_values = sorted(year_data.get("los_values", []))
+            if los_values:
+                n = len(los_values)
+                median_los = los_values[n // 2] if n % 2 == 1 else (los_values[n // 2 - 1] + los_values[n // 2]) / 2
+            else:
+                median_los = 0
 
-    # ASA score breakdown - using top-level field
-    # Convert numbers to Roman numerals for frontend display
-    asa_to_roman = {1: 'I', 2: 'II', 3: 'III', 4: 'IV', 5: 'V'}
-    asa_breakdown = {}
-    for treatment in all_treatments:
-        asa = treatment.get('asa_score')
-        if asa is None:
-            asa_key = 'unknown'
-        else:
-            asa_key = asa_to_roman.get(asa, str(asa))
-        asa_breakdown[asa_key] = asa_breakdown.get(asa_key, 0) + 1
+            yearly_breakdown[year] = {
+                "total_surgeries": total,
+                "complication_rate": round((year_data["complications"] / total * 100), 2),
+                "readmission_rate": round((year_data["readmissions"] / total * 100), 2),
+                "mortality_30d_rate": round((year_data["mortality_30d"] / total * 100), 2),
+                "mortality_90d_rate": round((year_data["mortality_90d"] / total * 100), 2),
+                "return_to_theatre_rate": round((year_data["return_to_theatre"] / total * 100), 2),
+                "escalation_rate": round((year_data["icu_admission"] / total * 100), 2),
+                "median_length_of_stay_days": round(median_los, 1)
+            }
+
+    # Build urgency breakdown
+    urgency_breakdown = {item["_id"]: item["count"] for item in result.get("urgency", []) if item["_id"]}
+
+    # Build specialty breakdown
+    specialty_breakdown = {item["_id"]: item["count"] for item in result.get("specialty", []) if item["_id"]}
 
     return {
         **overall_metrics,
         "urgency_breakdown": urgency_breakdown,
-        "asa_breakdown": asa_breakdown,
+        "specialty_breakdown": specialty_breakdown,
         "yearly_breakdown": yearly_breakdown,
         "filter_applied": "Only primary surgical treatments (surgery_primary) with valid OPCS-4 codes",
         "generated_at": datetime.utcnow().isoformat()
     }
+
 
 
 @router.get("/surgeon-performance")
@@ -179,152 +347,214 @@ async def get_surgeon_performance(specialty: Optional[str] = Query(None, descrip
         "other": []  # No specific cancer type filter for 'other'
     }
 
-    # Get clinicians (optionally filtered by subspecialty)
+    # Hybrid approach: Use aggregation for treatments+episodes (same DB),
+    # then efficiently join with clinicians (different DB) in Python
+
+    # Step 1: Get clinicians from system DB (with filters)
     clinician_query = {"clinical_role": "surgeon"}
     if specialty:
         clinician_query["subspecialty_leads"] = specialty
 
-    clinicians = await clinicians_collection.find(clinician_query).to_list(length=None)
-    
-    # Create a mapping of clinician ID to full name and name to ID
-    clinician_id_to_name = {}
-    clinician_name_to_id = {}
-    clinician_ids = set()
+    # Only fetch needed fields to minimize memory
+    clinician_projection = {"first_name": 1, "surname": 1, "subspecialty_leads": 1}
+    clinicians = await clinicians_collection.find(clinician_query, clinician_projection).to_list(length=None)
+
+    # Build name lookup maps (efficient O(1) lookups later)
+    clinician_name_to_info = {}
     for clinician in clinicians:
-        clinician_id = str(clinician['_id'])
         first_name = clinician.get('first_name', '')
         surname = clinician.get('surname', '')
         if first_name and surname:
             full_name = f"{first_name} {surname}"
-            clinician_id_to_name[clinician_id] = full_name
-            clinician_name_to_id[full_name.lower()] = clinician_id
-            # Also try surname only
-            clinician_name_to_id[surname.lower()] = clinician_id
-            clinician_ids.add(clinician_id)
-    
-    # Get episodes (optionally filtered by cancer_type for the specialty)
-    # Database now stores lead_clinician as names (e.g., "Jim Khan")
-    episode_query = {}
+            clinician_name_to_info[full_name.lower()] = full_name
+            # Also index by surname only for flexible matching
+            clinician_name_to_info[surname.lower()] = full_name
+
+    # If no clinicians match filters, return empty result early
+    if not clinician_name_to_info:
+        return {
+            "surgeons": [],
+            "specialty_filter": specialty,
+            "filter_applied": f"Filtered by subspecialty: {specialty}" if specialty else "All subspecialties",
+            "generated_at": datetime.utcnow().isoformat()
+        }
+
+    # Step 2: Build aggregation pipeline for treatments + episodes
+    pipeline = []
+
+    # Stage 1: Match treatments (only primary surgeries with valid OPCS-4 codes)
+    pipeline.append({
+        "$match": {
+            "treatment_type": "surgery_primary",
+            "opcs4_code": {"$exists": True, "$ne": ""}
+        }
+    })
+
+    # Stage 2: Lookup episode to get lead_clinician name and cancer_type
+    pipeline.append({
+        "$lookup": {
+            "from": "episodes",
+            "localField": "episode_id",
+            "foreignField": "episode_id",
+            "as": "episode"
+        }
+    })
+
+    # Stage 3: Unwind episode array (should be 1-to-1)
+    pipeline.append({
+        "$unwind": {
+            "path": "$episode",
+            "preserveNullAndEmptyArrays": False  # Skip treatments without episodes
+        }
+    })
+
+    # Stage 4: Filter by cancer type if specialty is specified
     if specialty and specialty in specialty_to_cancer_types:
         cancer_types = specialty_to_cancer_types[specialty]
         if cancer_types:  # Only filter if there are specific cancer types (not 'other')
-            episode_query["cancer_type"] = {"$in": cancer_types}
+            pipeline.append({
+                "$match": {
+                    "episode.cancer_type": {"$in": cancer_types}
+                }
+            })
 
-    all_episodes = await episodes_collection.find(episode_query).to_list(length=None)
-    episode_to_lead_clinician = {}
-    for episode in all_episodes:
-        episode_id = episode.get('episode_id')
-        lead_clinician_name = episode.get('lead_clinician')
-        if episode_id and lead_clinician_name:
-            # Try to match the name to a clinician ID (for filtering to active surgeons)
-            lead_clinician_lower = lead_clinician_name.lower()
-            matched_id = None
-            for known_name, cid in clinician_name_to_id.items():
-                if known_name in lead_clinician_lower or lead_clinician_lower in known_name:
-                    matched_id = cid
-                    break
-            if matched_id:
-                episode_to_lead_clinician[episode_id] = matched_id
-    
-    # Get all surgical treatments with valid OPCS-4 codes
-    # Only count primary surgeries (RTT and reversals are captured in other metrics)
-    all_treatments = await treatments_collection.find({
-        "treatment_type": "surgery_primary",
-        "opcs4_code": {"$exists": True, "$ne": ""}
-    }).to_list(length=None)
-    
-    # Group by episode lead clinician
-    surgeon_stats = {}
-    for treatment in all_treatments:
-        episode_id = treatment.get('episode_id')
-        if not episode_id:
-            continue
-        
-        # Look up lead clinician from episode
-        lead_clinician_id = episode_to_lead_clinician.get(episode_id)
-        if not lead_clinician_id or lead_clinician_id not in clinician_ids:
-            continue
-        
-        # Use the full name for display
-        surgeon_name = clinician_id_to_name.get(lead_clinician_id, lead_clinician_id)
-        
-        if surgeon_name not in surgeon_stats:
-            surgeon_stats[surgeon_name] = {
-                '_id': surgeon_name,
-                'total_surgeries': 0,
-                'surgeries_with_complications': 0,
-                'readmissions': 0,
-                'mortality_30day': 0,
-                'mortality_90day': 0,
-                'return_to_theatre_count': 0,
-                'icu_admissions': 0,
-                'duration_values': [],  # Changed to list for median calculation
-                'los_values': []  # Changed to list for median calculation
+    # Stage 5: Group by lead clinician name and calculate statistics
+    pipeline.append({
+        "$group": {
+            "_id": "$episode.lead_clinician",
+            "total_surgeries": {"$sum": 1},
+            "surgeries_with_complications": {
+                "$sum": {
+                    "$cond": [
+                        {"$eq": ["$postoperative_events.complications", True]},
+                        1,
+                        0
+                    ]
+                }
+            },
+            "readmissions": {
+                "$sum": {
+                    "$cond": [
+                        {"$eq": ["$outcomes.readmission_30day", "yes"]},
+                        1,
+                        0
+                    ]
+                }
+            },
+            "mortality_30day": {
+                "$sum": {
+                    "$cond": [
+                        {"$eq": ["$outcomes.mortality_30day", True]},
+                        1,
+                        0
+                    ]
+                }
+            },
+            "mortality_90day": {
+                "$sum": {
+                    "$cond": [
+                        {"$eq": ["$outcomes.mortality_90day", True]},
+                        1,
+                        0
+                    ]
+                }
+            },
+            "return_to_theatre_count": {
+                "$sum": {
+                    "$cond": [
+                        {"$eq": ["$outcomes.return_to_theatre", "yes"]},
+                        1,
+                        0
+                    ]
+                }
+            },
+            "icu_admissions": {
+                "$sum": {
+                    "$cond": [
+                        {"$eq": ["$postoperative_events.icu_admission", True]},
+                        1,
+                        0
+                    ]
+                }
+            },
+            "duration_values": {
+                "$push": {
+                    "$cond": [
+                        {"$ne": ["$perioperative_timeline.operation_duration_minutes", None]},
+                        "$perioperative_timeline.operation_duration_minutes",
+                        "$$REMOVE"
+                    ]
+                }
+            },
+            "los_values": {
+                "$push": {
+                    "$cond": [
+                        {"$ne": ["$perioperative_timeline.length_of_stay_days", None]},
+                        "$perioperative_timeline.length_of_stay_days",
+                        "$$REMOVE"
+                    ]
+                }
             }
-        
-        stats = surgeon_stats[surgeon_name]
-        stats['total_surgeries'] += 1
+        }
+    })
 
-        # Using nested fields from database structure
-        # Note: 'complications' is a boolean, 'occurred' fields are strings "yes"/"no"
-        if treatment.get('postoperative_events', {}).get('complications'):
-            stats['surgeries_with_complications'] += 1
-        if treatment.get('outcomes', {}).get('readmission_30day') == 'yes':
-            stats['readmissions'] += 1
+    # Stage 6: Keep raw values and counts for accurate merging later
+    # Don't calculate rates/medians yet - we'll merge raw data first, then calculate
+    pipeline.append({
+        "$project": {
+            "_id": 1,
+            "total_surgeries": 1,
+            "surgeries_with_complications": 1,
+            "readmissions": 1,
+            "mortality_30day": 1,
+            "mortality_90day": 1,
+            "return_to_theatre_count": 1,
+            "duration_values": 1,
+            "los_values": 1
+        }
+    })
 
-        # Use boolean mortality fields (auto-populated from deceased_date)
-        if treatment.get('outcomes', {}).get('mortality_30day') == True:
-            stats['mortality_30day'] += 1
-        if treatment.get('outcomes', {}).get('mortality_90day') == True:
-            stats['mortality_90day'] += 1
+    # Execute aggregation pipeline - returns results grouped by lead_clinician name
+    aggregated_results = await treatments_collection.aggregate(pipeline).to_list(length=None)
 
-        if treatment.get('outcomes', {}).get('return_to_theatre') == 'yes':
-            stats['return_to_theatre_count'] += 1
-        if treatment.get('postoperative_events', {}).get('icu_admission'):
-            stats['icu_admissions'] += 1
+    # Step 3: Filter results to only include known surgeons and calculate statistics
+    # Helper function to calculate median
+    def calculate_median(values):
+        """Calculate true median from array of values"""
+        if not values:
+            return None
+        sorted_values = sorted(values)
+        n = len(sorted_values)
+        if n % 2 == 1:
+            return round(sorted_values[n // 2], 2)
+        else:
+            return round((sorted_values[n // 2 - 1] + sorted_values[n // 2]) / 2, 2)
 
-        duration = treatment.get('perioperative_timeline', {}).get('operation_duration_minutes')
-        if duration:
-            stats['duration_values'].append(duration)
-
-        los = treatment.get('perioperative_timeline', {}).get('length_of_stay_days')
-        if los is not None:
-            stats['los_values'].append(los)
-    
-    # Calculate rates and medians
     surgeon_list = []
-    for surgeon, stats in surgeon_stats.items():
-        total = stats['total_surgeries']
-        
-        # Calculate median duration
-        median_duration = None
-        if stats['duration_values']:
-            sorted_duration = sorted(stats['duration_values'])
-            n = len(sorted_duration)
-            median_duration = sorted_duration[n // 2] if n % 2 == 1 else (sorted_duration[n // 2 - 1] + sorted_duration[n // 2]) / 2
-            median_duration = round(median_duration, 2)
-        
-        # Calculate median LOS
-        median_los = None
-        if stats['los_values']:
-            sorted_los = sorted(stats['los_values'])
-            n = len(sorted_los)
-            median_los = sorted_los[n // 2] if n % 2 == 1 else (sorted_los[n // 2 - 1] + sorted_los[n // 2]) / 2
-            median_los = round(median_los, 2)
-        
-        surgeon_list.append({
-            '_id': surgeon,
-            'total_surgeries': total,
-            'complication_rate': round((stats['surgeries_with_complications'] / total * 100) if total > 0 else 0, 2),
-            'readmission_rate': round((stats['readmissions'] / total * 100) if total > 0 else 0, 2),
-            'return_to_theatre_rate': round((stats['return_to_theatre_count'] / total * 100) if total > 0 else 0, 2),
-            'mortality_30d_rate': round((stats['mortality_30day'] / total * 100) if total > 0 else 0, 2),
-            'mortality_90d_rate': round((stats['mortality_90day'] / total * 100) if total > 0 else 0, 2),
-            'median_duration': median_duration,
-            'median_los': median_los
-        })
-    
-    # Sort by total surgeries
+    for result in aggregated_results:
+        lead_clinician_name = result.get('_id')
+        if not lead_clinician_name:
+            continue
+
+        # Only include if exact match with known surgeon (case-insensitive)
+        lead_clinician_lower = lead_clinician_name.lower()
+        if lead_clinician_lower in clinician_name_to_info:
+            matched_name = clinician_name_to_info[lead_clinician_lower]
+            total = result['total_surgeries']
+
+            surgeon_list.append({
+                '_id': matched_name,
+                'total_surgeries': total,
+                'complication_rate': round((result['surgeries_with_complications'] / total) * 100, 2) if total > 0 else 0.0,
+                'readmission_rate': round((result['readmissions'] / total) * 100, 2) if total > 0 else 0.0,
+                'return_to_theatre_rate': round((result['return_to_theatre_count'] / total) * 100, 2) if total > 0 else 0.0,
+                'mortality_30d_rate': round((result['mortality_30day'] / total) * 100, 2) if total > 0 else 0.0,
+                'mortality_90d_rate': round((result['mortality_90day'] / total) * 100, 2) if total > 0 else 0.0,
+                'median_duration': calculate_median(result.get('duration_values', [])),
+                'median_los': calculate_median(result.get('los_values', []))
+            })
+
+    # Sort by total surgeries descending
     surgeon_list.sort(key=lambda x: x['total_surgeries'], reverse=True)
     
     filter_description = "Only primary surgical treatments (surgery_primary) with valid OPCS-4 codes"

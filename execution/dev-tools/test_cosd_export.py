@@ -1,3 +1,4 @@
+import os
 #!/usr/bin/env python3
 """
 Test COSD/Somerset XML export by directly calling the export logic.
@@ -205,7 +206,7 @@ def create_episode_xml(episode: dict, patient: dict, treatments: list, tumours: 
 async def main():
     """Generate COSD/Somerset XML export."""
     print("Connecting to MongoDB...")
-    client = AsyncIOMotorClient('mongodb://admin:admin123@surg-db.vps:27017/surgdb?authSource=admin')
+    client = AsyncIOMotorClient(os.getenv("MONGODB_URI", "mongodb://localhost:27017"))
     db = client['surgdb']
     
     # Check for cancer episodes

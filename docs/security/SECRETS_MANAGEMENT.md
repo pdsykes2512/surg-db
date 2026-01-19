@@ -36,7 +36,7 @@ Later files can override earlier values if needed for local development.
 
 ```bash
 # MongoDB Database Credentials
-MONGODB_URI=mongodb://admin:STRONG_PASSWORD_HERE@surg-db.vps:27017/surgdb?authSource=admin
+MONGODB_URI=mongodb://admin:STRONG_PASSWORD_HERE@impact.vps:27017/surgdb?authSource=admin
 
 # GitHub API Credentials
 GITHUB_TOKEN=ghp_YOUR_GITHUB_PAT_HERE

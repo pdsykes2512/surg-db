@@ -3,7 +3,8 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from bson import ObjectId
-from pydantic import BaseModel, Field
+from bson.errors import InvalidId
+from pydantic import BaseModel, Field, ValidationError
 
 from ..database import get_database
 from ..auth import get_current_user, get_password_hash, require_admin, get_system_database
@@ -89,7 +90,7 @@ async def get_user(
     """Get a user by ID (Admin only)"""
     try:
         user_doc = await db.users.find_one({"_id": ObjectId(user_id)})
-    except:
+    except InvalidId:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid user ID")
     
     if not user_doc:
@@ -109,7 +110,7 @@ async def update_user(
     """Update a user (Admin only)"""
     try:
         existing_user = await db.users.find_one({"_id": ObjectId(user_id)})
-    except:
+    except InvalidId:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid user ID")
     
     if not existing_user:
@@ -162,7 +163,7 @@ async def delete_user(
     """Delete a user (Admin only)"""
     try:
         result = await db.users.delete_one({"_id": ObjectId(user_id)})
-    except:
+    except InvalidId:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid user ID")
     
     if result.deleted_count == 0:
@@ -181,7 +182,7 @@ async def change_user_password(
     """Change a user's password (Admin only)"""
     try:
         existing_user = await db.users.find_one({"_id": ObjectId(user_id)})
-    except:
+    except InvalidId:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid user ID")
     
     if not existing_user:

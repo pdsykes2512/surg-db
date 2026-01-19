@@ -1,3 +1,4 @@
+import os
 #!/usr/bin/env python3
 """
 Debug script to understand data relationships between collections.
@@ -7,7 +8,7 @@ import asyncio
 from motor.motor_asyncio import AsyncIOMotorClient
 
 async def main():
-    client = AsyncIOMotorClient('mongodb://admin:admin123@surg-db.vps:27017/surgdb?authSource=admin')
+    client = AsyncIOMotorClient(os.getenv("MONGODB_URI", "mongodb://localhost:27017"))
     db = client['surgdb']
     
     print("=" * 80)

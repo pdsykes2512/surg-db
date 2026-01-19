@@ -7,41 +7,7 @@ from datetime import datetime
 from bson import ObjectId
 import re
 
-
-class PyObjectId(str):
-    """Custom ObjectId type for Pydantic v2"""
-    @classmethod
-    def __get_pydantic_core_schema__(cls, _source_type, _handler):
-        from pydantic_core import core_schema
-        
-        def validate(value):
-            """Validate and convert MongoDB ObjectId to string.
-            
-            Accepts ObjectId instances or valid ObjectId strings and ensures
-            the output is always a string representation of the ObjectId.
-            
-            Args:
-                value: ObjectId instance, valid ObjectId string, or invalid value
-            
-            Returns:
-                str: String representation of the ObjectId
-            
-            Raises:
-                ValueError: If value is not a valid ObjectId or correct type
-            """
-            if isinstance(value, ObjectId):
-                return str(value)
-            if isinstance(value, str):
-                if not ObjectId.is_valid(value):
-                    raise ValueError("Invalid ObjectId")
-                return value
-            raise ValueError("Invalid ObjectId type")
-        
-        return core_schema.no_info_plain_validator_function(validate)
-    
-    @classmethod
-    def __get_pydantic_json_schema__(cls, field_schema, _handler):
-        field_schema.update(type="string")
+from .utils import PyObjectId
 
 
 class Demographics(BaseModel):

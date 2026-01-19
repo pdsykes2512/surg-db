@@ -2,13 +2,15 @@
 """Test script to verify audit logging is working."""
 
 import asyncio
+import os
 import sys
 from motor.motor_asyncio import AsyncIOMotorClient
 
 async def test_audit_logging():
     """Test audit logging collection access."""
-    # Connect to MongoDB
-    client = AsyncIOMotorClient("mongodb://admin:admin123@surg-db.vps:27017/surgdb?authSource=admin")
+    # Get MongoDB URI from environment or use default
+    mongodb_uri = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
+    client = AsyncIOMotorClient(mongodb_uri)
     db = client.surgdb
     audit_collection = db.audit_logs
     

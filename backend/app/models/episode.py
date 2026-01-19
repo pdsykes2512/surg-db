@@ -9,34 +9,7 @@ from datetime import datetime, date
 from bson import ObjectId
 from enum import Enum
 
-from .utils import parse_date_string
-
-
-class PyObjectId(ObjectId):
-    @classmethod
-    def __get_validators__(cls):
-        yield cls.validate
-
-    @classmethod
-    def validate(cls, v):
-        """Validate ObjectId string format.
-        
-        Args:
-            v: ObjectId string to validate
-        
-        Returns:
-            ObjectId: Valid MongoDB ObjectId instance
-        
-        Raises:
-            ValueError: If string is not a valid ObjectId format
-        """
-        if not ObjectId.is_valid(v):
-            raise ValueError("Invalid ObjectId")
-        return ObjectId(v)
-
-    @classmethod
-    def __get_pydantic_json_schema__(cls, field_schema):
-        field_schema.update(type="string")
+from .utils import parse_date_string, PyObjectId
 
 
 # Enums for standardized values

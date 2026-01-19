@@ -16,7 +16,7 @@ class Database:
     async def connect_db(cls):
         """Establish database connection"""
         cls.client = AsyncIOMotorClient(settings.mongodb_uri)
-        print(f"Connected to MongoDB at {settings.mongodb_uri}")
+        logger.info(f"Connected to MongoDB at {settings.mongodb_uri}")
 
     @classmethod
     async def initialize_indexes(cls):
@@ -24,8 +24,7 @@ class Database:
         if not cls.client:
             raise Exception("Database not connected. Call connect_db first.")
 
-        print("🔧 Initializing database indexes...")  # Use print for visibility
-        logger.info("Initializing database indexes...")
+        logger.info("🔧 Initializing database indexes...")
         created_indexes = []
         failed_indexes = []
 
@@ -140,10 +139,8 @@ class Database:
             await create_index_safe(system_db.audit_logs, "timestamp", name="idx_audit_timestamp")
 
             # Summary
-            print(f"✅ Index initialization complete: {len(created_indexes)} created/verified, {len(failed_indexes)} skipped")
             logger.info(f"✅ Index initialization complete: {len(created_indexes)} created/verified, {len(failed_indexes)} skipped")
             if failed_indexes:
-                print(f"⚠️  Skipped indexes (data quality issues): {', '.join(failed_indexes)}")
                 logger.warning(f"⚠️  Skipped indexes (data quality issues): {', '.join(failed_indexes)}")
 
             return {'success': True, 'created': len(created_indexes), 'failed': len(failed_indexes)}
@@ -158,7 +155,7 @@ class Database:
         """Close database connection"""
         if cls.client:
             cls.client.close()
-            print("Closed MongoDB connection")
+            logger.info("Closed MongoDB connection")
     
     @classmethod
     def get_database(cls):

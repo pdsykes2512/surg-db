@@ -12,6 +12,9 @@ from ..database import Database
 from ..utils.encryption import decrypt_field
 import httpx
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/rstudio", tags=["rstudio"])
 
@@ -162,7 +165,7 @@ async def rstudio_auth(
             subprocess.run(['chown', 'rstudio-user:rstudio-user', token_file], check=False)
         except Exception as e:
             # Log error but don't fail the request
-            print(f"Warning: Failed to save RStudio token: {e}")
+            logger.warning(f"Failed to save RStudio token: {e}")
 
     # Get RStudio password from environment (stored in /etc/impact/secrets.env)
     rstudio_password = os.getenv("RSTUDIO_PASSWORD", "")
@@ -193,7 +196,7 @@ async def rstudio_auth(
                         session_cookie = cookie.split(";")[0]
                         break
     except Exception as e:
-        print(f"Warning: Failed to auto-sign-in to RStudio: {e}")
+        logger.warning(f"Failed to auto-sign-in to RStudio: {e}")
 
     # Construct RStudio URL for nginx proxy
     # Use the Host header directly, which should be the public-facing host:port
