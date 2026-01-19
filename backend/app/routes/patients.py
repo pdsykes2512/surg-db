@@ -96,8 +96,9 @@ async def create_patient(
     try:
         collection = await get_patients_collection()
 
-        # Check if MRN already exists
-        existing = await collection.find_one({"mrn": patient.mrn})
+        # Check if MRN already exists (using hash since MRNs are encrypted)
+        mrn_hash = generate_search_hash("mrn", patient.mrn)
+        existing = await collection.find_one({"mrn_hash": mrn_hash})
         if existing:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,

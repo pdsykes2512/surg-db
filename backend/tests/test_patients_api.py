@@ -34,7 +34,6 @@ class TestPatientsAPI:
         assert data["demographics"]["gender"] == sample_patient_data["demographics"]["gender"]
 
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason="Bug in production code - duplicate check compares plaintext MRN against encrypted MRN in DB. Should use mrn_hash instead.")
     async def test_create_duplicate_patient_fails(
         self,
         client: AsyncClient,
@@ -60,7 +59,10 @@ class TestPatientsAPI:
 
         # Should fail with 400 or 409
         assert response2.status_code in [400, 409]
-        assert "already exists" in response2.json()["detail"].lower()
+        response_data = response2.json()
+        # Check for error message in various possible fields
+        error_text = str(response_data.get("detail") or response_data.get("error") or response_data).lower()
+        assert "already exists" in error_text
 
     @pytest.mark.asyncio
     async def test_get_patient(
