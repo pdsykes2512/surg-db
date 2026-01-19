@@ -83,6 +83,13 @@ pytest backend/tests/test_patients_api.py -v
   - Automatically adds utility imports
   - Provides refactoring guidance
 
+**Agent Instructions Updated:**
+- [AGENTS.md](AGENTS.md) (and [CLAUDE.md](CLAUDE.md) symlink) - Added section 0.7:
+  - Documents all utility functions for future use
+  - Includes code examples for each utility
+  - References REFACTORING_GUIDE.md for complete examples
+  - Ensures AI agents use utilities in new code (prevents future duplication)
+
 ---
 
 ## 2026-01-19 - Bug Fix: Duplicate Patient Detection & RStudio Package Verification
