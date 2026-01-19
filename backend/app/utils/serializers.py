@@ -2,6 +2,7 @@
 MongoDB serialization utilities for consistent document handling
 """
 from typing import List, Dict, Any
+from datetime import datetime
 from bson import ObjectId
 
 
@@ -84,3 +85,88 @@ def serialize_nested_object_ids(data: Any) -> Any:
         return [serialize_nested_object_ids(item) for item in data]
     else:
         return data
+
+
+def convert_datetime_to_iso(document: Dict[str, Any], fields: List[str]) -> Dict[str, Any]:
+    """
+    Convert specified datetime fields to ISO format strings.
+
+    Recursively checks nested dictionaries for datetime fields and converts them.
+    Only converts fields that have the isoformat() method (datetime objects).
+
+    Args:
+        document: Dictionary potentially containing datetime fields
+        fields: List of field names that might contain datetime values
+
+    Returns:
+        Dictionary with datetime fields converted to ISO strings
+
+    Example:
+        >>> from datetime import datetime
+        >>> doc = {
+        ...     "demographics": {
+        ...         "date_of_birth": datetime(1990, 1, 1),
+        ...         "deceased_date": datetime(2020, 12, 31)
+        ...     }
+        ... }
+        >>> convert_datetime_to_iso(doc, ["date_of_birth", "deceased_date"])
+        {
+            "demographics": {
+                "date_of_birth": "1990-01-01T00:00:00",
+                "deceased_date": "2020-12-31T00:00:00"
+            }
+        }
+    """
+    if not document:
+        return document
+
+    def convert_nested(obj: Any) -> Any:
+        """Recursively convert datetime fields in nested structures"""
+        if isinstance(obj, dict):
+            result = {}
+            for key, value in obj.items():
+                if key in fields and hasattr(value, "isoformat"):
+                    result[key] = value.isoformat()
+                else:
+                    result[key] = convert_nested(value)
+            return result
+        elif isinstance(obj, list):
+            return [convert_nested(item) for item in obj]
+        else:
+            return obj
+
+    return convert_nested(document)
+
+
+def serialize_datetime_fields(document: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Convert common datetime fields to ISO format strings.
+
+    This is a convenience wrapper around convert_datetime_to_iso that handles
+    the most common datetime fields in the IMPACT database.
+
+    Common fields converted:
+    - date_of_birth, deceased_date (demographics)
+    - admission_date, discharge_date (episodes)
+    - surgery_date, diagnosis_date (treatments)
+    - created_at, updated_at (audit fields)
+
+    Args:
+        document: Dictionary potentially containing datetime fields
+
+    Returns:
+        Dictionary with datetime fields converted to ISO strings
+
+    Example:
+        >>> doc = {"created_at": datetime.utcnow(), "name": "Test"}
+        >>> serialize_datetime_fields(doc)
+        {"created_at": "2024-01-01T00:00:00", "name": "Test"}
+    """
+    common_date_fields = [
+        "date_of_birth", "deceased_date",
+        "admission_date", "discharge_date",
+        "surgery_date", "diagnosis_date",
+        "created_at", "updated_at", "last_login",
+        "date_of_death", "procedure_date"
+    ]
+    return convert_datetime_to_iso(document, common_date_fields)
