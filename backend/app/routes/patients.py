@@ -44,6 +44,11 @@ from ..auth import get_current_user, require_data_entry_or_higher, require_admin
 from ..database import get_patients_collection, get_episodes_collection
 from ..models.patient import Patient, PatientCreate, PatientUpdate
 from ..utils.encryption import encrypt_document, decrypt_document, create_searchable_query, generate_search_hash
+from ..utils.route_decorators import handle_route_errors
+from ..utils.search_helpers import is_mrn_or_nhs_pattern, build_encrypted_field_query
+from ..utils.serializers import serialize_object_id, serialize_object_ids, serialize_datetime_fields
+from ..utils.clinician_helpers import resolve_clinician_name
+from ..utils.validation_helpers import check_entity_exists, check_entity_not_exists
 from ..utils.search_helpers import sanitize_search_input
 
 logger = logging.getLogger(__name__)
@@ -53,33 +58,34 @@ router = APIRouter(prefix="/api/patients", tags=["patients"])
 
 
 @router.post("/", response_model=Patient, status_code=status.HTTP_201_CREATED)
+@handle_route_errors(entity_type="patient")
 async def create_patient(
     patient: PatientCreate,
     current_user: dict = Depends(require_data_entry_or_higher)
 ):
     """Create a new patient record with encrypted sensitive fields.
-    
+
     Creates a new patient in the database with automatic encryption of sensitive identifiers
     (NHS number, MRN, DOB, postcode). Generates searchable hashes for encrypted fields to
     enable fast lookups without decryption.
-    
+
     Args:
         patient: PatientCreate model containing patient demographics and medical history
         current_user: Authenticated user context (requires data_entry role or higher)
-    
+
     Returns:
         Patient: Created patient record with decrypted fields for response
-    
+
     Raises:
         HTTPException(400): If MRN already exists (duplicate patient)
         HTTPException(500): If database operation fails
-    
+
     Security:
         - Requires data_entry role or higher
         - Encrypts NHS number, MRN, DOB, and postcode using AES-256
         - Generates searchable hashes for MRN and NHS number
         - Records created_by and created_at for audit trail
-    
+
     Example:
         POST /api/patients/
         {
@@ -93,62 +99,35 @@ async def create_patient(
             }
         }
     """
-    try:
-        collection = await get_patients_collection()
+    collection = await get_patients_collection()
 
-        # Check if MRN already exists (using hash since MRNs are encrypted)
-        mrn_hash = generate_search_hash("mrn", patient.mrn)
-        existing = await collection.find_one({"mrn_hash": mrn_hash})
-        if existing:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Patient with MRN {patient.mrn} already exists"
-            )
+    # Check if MRN already exists (using validation helper)
+    mrn_hash = generate_search_hash("mrn", patient.mrn)
+    await check_entity_not_exists(
+        collection=collection,
+        query_filter={"mrn_hash": mrn_hash},
+        entity_name="Patient",
+        conflict_message=f"Patient with MRN {patient.mrn} already exists"
+    )
 
-        # Insert patient with encrypted sensitive fields
-        patient_dict = patient.model_dump()
-        patient_dict["created_at"] = datetime.utcnow()
-        patient_dict["updated_at"] = datetime.utcnow()
-        patient_dict["created_by"] = current_user["username"]
-        patient_dict["updated_by"] = current_user["username"]
+    # Insert patient with encrypted sensitive fields
+    patient_dict = patient.model_dump()
+    patient_dict["created_at"] = datetime.utcnow()
+    patient_dict["updated_at"] = datetime.utcnow()
+    patient_dict["created_by"] = current_user["username"]
+    patient_dict["updated_by"] = current_user["username"]
 
-        # Encrypt sensitive fields before storing
-        encrypted_patient = encrypt_document(patient_dict)
+    # Encrypt sensitive fields before storing
+    encrypted_patient = encrypt_document(patient_dict)
 
-        result = await collection.insert_one(encrypted_patient)
+    result = await collection.insert_one(encrypted_patient)
 
-        # Retrieve and return created patient (decrypted for response)
-        created_patient = await collection.find_one({"_id": result.inserted_id})
-        created_patient["_id"] = str(created_patient["_id"])
-        # Decrypt before returning
-        decrypted_patient = decrypt_document(created_patient)
-        return Patient(**decrypted_patient)
-    except HTTPException:
-        raise
-    except DuplicateKeyError:
-        logger.warning(f"Duplicate patient MRN attempted: {patient.mrn}")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Patient with MRN {patient.mrn} already exists"
-        )
-    except ValidationError as e:
-        logger.error(f"Validation error creating patient: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Invalid patient data: {str(e)}"
-        )
-    except PyMongoError as e:
-        logger.error(f"Database error creating patient: {str(e)}", exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Database operation failed"
-        )
-    except Exception as e:
-        logger.error(f"Unexpected error creating patient: {str(e)}", exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An unexpected error occurred"
-        )
+    # Retrieve and return created patient (decrypted for response)
+    created_patient = await collection.find_one({"_id": result.inserted_id})
+    created_patient = serialize_object_id(created_patient)  # Convert ObjectId to string
+    # Decrypt before returning
+    decrypted_patient = decrypt_document(created_patient)
+    return Patient(**decrypted_patient)
 
 
 @router.get("/count")

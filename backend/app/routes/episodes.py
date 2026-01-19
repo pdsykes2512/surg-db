@@ -28,6 +28,11 @@ from ..models.episode import Episode, EpisodeCreate, EpisodeUpdate, ConditionTyp
 from ..utils.audit import log_action
 from ..utils.clinician_helpers import build_clinician_maps
 from ..utils.encryption import decrypt_field
+from ..utils.route_decorators import handle_route_errors
+from ..utils.search_helpers import is_mrn_or_nhs_pattern, build_encrypted_field_query
+from ..utils.serializers import serialize_object_id, serialize_object_ids, serialize_datetime_fields
+from ..utils.clinician_helpers import resolve_clinician_name
+from ..utils.validation_helpers import check_entity_exists, check_entity_not_exists
 from ..utils.mortality import enrich_treatment_with_mortality
 
 logger = logging.getLogger(__name__)
