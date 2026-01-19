@@ -86,6 +86,53 @@ If a task requires schema changes:
 5. Test in `impact_test` database before production
 6. Document all changes in `RECENT_CHANGES.md`
 
+**0.7. Use refactored utility functions** **When writing new route handlers or modifying existing ones, use the utility functions in `backend/app/utils/` to avoid code duplication.** Read `backend/app/utils/REFACTORING_GUIDE.md` for complete examples. Key utilities:
+
+- **Error Handling**: Use `@handle_route_errors(entity_type="...")` decorator instead of try/catch blocks
+  ```python
+  from app.utils.route_decorators import handle_route_errors
+
+  @router.post("/patients/")
+  @handle_route_errors(entity_type="patient")
+  async def create_patient(...):
+      # No try/catch needed - decorator handles all errors
+  ```
+
+- **Validation**: Use `check_entity_exists()` and `check_entity_not_exists()` instead of manual checks
+  ```python
+  from app.utils.validation_helpers import check_entity_exists, check_entity_not_exists
+
+  # For uniqueness checks (creates)
+  await check_entity_not_exists(collection, {"mrn_hash": hash}, "Patient", "Patient with this MRN already exists")
+
+  # For existence checks (updates/deletes)
+  existing = await check_entity_exists(collection, {"patient_id": id}, "Patient", id)
+  ```
+
+- **Search**: Use `build_encrypted_field_query()` for MRN/NHS searches instead of repetitive pattern matching
+  ```python
+  from app.utils.search_helpers import build_encrypted_field_query
+
+  _, patient_ids = await build_encrypted_field_query(search, patients_collection, create_searchable_query)
+  ```
+
+- **Serialization**: Use `serialize_object_id()` and `serialize_datetime_fields()` for consistent conversions
+  ```python
+  from app.utils.serializers import serialize_object_id, serialize_datetime_fields
+
+  document = serialize_object_id(document)  # Convert ObjectId to string
+  document = serialize_datetime_fields(document)  # Convert datetime to ISO strings
+  ```
+
+- **Clinician Names**: Use `resolve_clinician_name()` for multi-strategy name resolution
+  ```python
+  from app.utils.clinician_helpers import resolve_clinician_name
+
+  name = resolve_clinician_name(clinician_id=id, clinician_text=text, clinician_map=map, surname_map=smap)
+  ```
+
+These utilities eliminate ~400 LOC of duplicate code and ensure consistency. See `backend/app/routes/patients.py:create_patient()` for a complete example.
+
 **1. Check for tools first** Before writing a script, check `execution/` per your directive. Only create new scripts if none exist.
 
 **2. Self-anneal when things break** - Read error message and stack trace  
